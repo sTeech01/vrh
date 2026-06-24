@@ -429,23 +429,19 @@ function renderProject(el, projectId) {
                 </div>
               </div>
             </div>
-            <div style="overflow-x:auto">
-              <table class="items-table">
-                <thead>
-                  <tr>
-                    <th>№</th>
-                    <th>Наименование</th>
-                    <th>Кол-во</th>
-                    <th>Готово</th>
-                    <th>Статус</th>
-                    <th>Прогресс</th>
-                    <th>Дедлайн</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${cItems.map(item => itemTableRow(item, projectId)).join('')}
-                </tbody>
-              </table>
+            <div class="items-grid-wrap">
+              <div class="items-grid">
+                <div class="ig-header">
+                  <div class="ig-cell ig-num">№</div>
+                  <div class="ig-cell ig-name">Наименование</div>
+                  <div class="ig-cell ig-qty">Кол-во</div>
+                  <div class="ig-cell ig-done">Готово</div>
+                  <div class="ig-cell ig-status">Статус</div>
+                  <div class="ig-cell ig-progress">Прогресс</div>
+                  <div class="ig-cell ig-deadline">Дедлайн</div>
+                </div>
+                ${cItems.map(item => itemTableRow(item, projectId)).join('')}
+              </div>
             </div>
           </div>`;
       }).join('')}
@@ -462,32 +458,50 @@ function itemTableRow(item, projectId) {
   const color  = pctColor(pct);
   const bn     = getBottleneck(item);
 
+  // Вторичная строка наименования
+  const secondary = item.blockReason
+    ? `<div class="ig-name-secondary warn">${item.blockReason}</div>`
+    : bn && bn.done < item.quantity
+      ? `<div class="ig-name-secondary">Узкое место: ${bn.name} ${bn.done} / ${item.quantity}</div>`
+      : '';
+
+  // Дедлайн
+  const deadlineClass = od > 0 && status !== ST.DONE ? 'overdue' : '';
+  const overdueNote   = od > 0 && status !== ST.DONE
+    ? `<span class="ig-overdue-note">+${od} дн.</span>` : '';
+
   return `
-    <tr onclick="navigate('item','${projectId}','${item.id}')">
-      <td style="color:var(--gray-400);font-size:11px;white-space:nowrap">${item.number}</td>
-      <td class="item-name">
-        ${item.nameShort}
-        ${item.blockReason
-          ? `<small style="color:#F59E0B;display:flex;align-items:center;gap:3px;margin-top:2px">${iconSvg('pause',9)} ${item.blockReason}</small>`
-          : bn && bn.done < item.quantity
-            ? `<small style="color:var(--gray-400);margin-top:2px">Бутылочное горлышко: ${bn.name} ${bn.done}/${item.quantity}</small>`
-            : ''}
-      </td>
-      <td style="white-space:nowrap;color:var(--gray-700)">${item.quantity} ${item.unit}</td>
-      <td style="white-space:nowrap;font-weight:700;color:${done>0?'var(--black)':'var(--gray-400)'}">${done} / ${item.quantity}</td>
-      <td>${statusBadge(status)}</td>
-      <td>
-        <div style="display:flex;align-items:center;gap:6px;white-space:nowrap">
-          <span style="font-size:12px;font-weight:700;color:${color}">${pct}%</span>
-          <div class="items-mini-bar">
-            <div class="items-mini-fill ${pbarClass(pct)}" style="width:${pct}%"></div>
+    <div class="ig-row" onclick="navigate('item','${projectId}','${item.id}')">
+      <div class="ig-cell ig-num">
+        <span class="ig-num-text">${item.number}</span>
+      </div>
+      <div class="ig-cell ig-name">
+        <div class="ig-name-primary">${item.nameShort}</div>
+        ${secondary}
+      </div>
+      <div class="ig-cell ig-qty">
+        <span class="ig-qty-text">${item.quantity} ${item.unit}</span>
+      </div>
+      <div class="ig-cell ig-done">
+        <span class="ig-done-text ${done === 0 ? 'zero' : ''}">${done} / ${item.quantity}</span>
+      </div>
+      <div class="ig-cell ig-status">
+        ${statusPill(status)}
+      </div>
+      <div class="ig-cell ig-progress">
+        <div class="ig-progress-wrap">
+          <div class="ig-progress-pct" style="color:${color}">${pct}%</div>
+          <div class="ig-progress-track">
+            <div class="ig-progress-fill ${pbarClass(pct)}" style="width:${pct}%"></div>
           </div>
         </div>
-      </td>
-      <td style="white-space:nowrap;font-size:12px;${od>0&&status!==ST.DONE?'color:#EF4444;font-weight:600':'color:var(--gray-500)'}">
-        ${formatDate(new Date(item.deadline))}${od>0&&status!==ST.DONE?` <span style="font-size:10px">(${od}д.)</span>`:''}
-      </td>
-    </tr>`;
+      </div>
+      <div class="ig-cell ig-deadline">
+        <div class="ig-deadline-text ${deadlineClass}">
+          ${formatDate(new Date(item.deadline))}${overdueNote}
+        </div>
+      </div>
+    </div>`;
 }
 
 // =============================================================
@@ -1122,6 +1136,19 @@ function statusBadge(status) {
   };
   const [cls, label] = map[status] || ['badge-pending', status];
   return `<span class="badge ${cls}">${label}</span>`;
+}
+
+// Pill для CSS Grid-таблицы (фиксированный размер, единая ширина)
+function statusPill(status) {
+  const map = {
+    done:        ['sp-done',        'Готово'],
+    in_progress: ['sp-in_progress', 'В работе'],
+    overdue:     ['sp-overdue',     'Просрочено'],
+    pending:     ['sp-pending',     'Ожидает'],
+    blocked:     ['sp-blocked',     'Заблок.'],
+  };
+  const [cls, label] = map[status] || ['sp-pending', status];
+  return `<span class="status-pill ${cls}">${label}</span>`;
 }
 
 function progressCircle(pct, size = 100) {

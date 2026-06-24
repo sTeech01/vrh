@@ -83,11 +83,11 @@ body::before {
 #app { display: flex; height: 100dvh; overflow: hidden; position: relative; z-index: 1; }
 
 /* ════════════════════════════════════════════════════════════
-   SIDEBAR — светлая тема, Linear-стиль
+   SIDEBAR — светлая тема, Linear-стиль, Premium 2026
    ════════════════════════════════════════════════════════════ */
 #sidebar {
-  width: 240px;
-  min-width: 240px;
+  width: 280px;
+  min-width: 280px;
   background: var(--white);
   border-right: 1px solid var(--gray-200);
   display: flex;
@@ -101,46 +101,59 @@ body::before {
   box-shadow: var(--shadow-lg);
 }
 
+/* ── Блок логотипа ─────────────────────────────────────────── */
 .sidebar-logo {
-  padding: 18px 16px 16px;
-  border-bottom: 1px solid var(--gray-100);
+  padding: 24px 28px 20px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 0;
 }
 .sidebar-logo-img {
-  width: 148px;
-  height: auto;
+  height: 44px;
+  width: auto;
   object-fit: contain;
   display: block;
-  /* Светлый сайдбар — показываем оригинальный логотип без инверсии */
 }
 .sidebar-sub {
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--gray-400);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-900);
+  letter-spacing: 0;
+  margin-top: 8px;
+  margin-bottom: 0;
+  line-height: 1.2;
 }
 
-.sidebar-nav { padding: 12px 8px; flex: 1; overflow-y: auto; }
+/* ── Навигация ─────────────────────────────────────────────── */
+.sidebar-nav {
+  padding: 8px 16px 16px;
+  flex: 1;
+  overflow-y: auto;
+}
 .sidebar-section {
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--gray-400);
-  letter-spacing: 0.07em;
+  font-size: 11px;
+  font-weight: 600;
+  color: #94A3B8;
+  letter-spacing: 1px;
   text-transform: uppercase;
-  padding: 8px 8px 5px;
+  padding: 16px 8px 8px;
 }
 
+/* ── Пункты меню ───────────────────────────────────────────── */
 .nav-item {
-  display: flex; align-items: center; gap: 9px;
-  padding: 8px 10px; border-radius: var(--radius);
-  font-size: 14px; font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 52px;
+  padding: 0 18px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 22px;
   color: var(--gray-600);
   transition: background var(--transition), color var(--transition);
-  margin-bottom: 1px;
-  border-left: 2px solid transparent;
+  margin-bottom: 4px;
+  border-left: 3px solid transparent;
   letter-spacing: -0.01em;
 }
 .nav-item:hover {
@@ -148,35 +161,61 @@ body::before {
   color: var(--gray-900);
 }
 .nav-item.active {
-  background: rgba(14, 165, 233, 0.07);
+  background: #EEF6FF;
   color: #0284C7;
   border-left-color: var(--cyan);
+  border-radius: 12px;
   font-weight: 500;
 }
-.nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+.nav-item svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* ── Счётчик-бейдж ─────────────────────────────────────────── */
 .nav-badge {
   margin-left: auto;
   background: var(--red);
   color: var(--white);
-  font-size: 10px; font-weight: 600;
-  padding: 1px 7px; border-radius: var(--radius-full);
-  min-width: 20px; text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  height: 24px;
+  min-width: 24px;
+  padding: 0 7px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
+/* ── Нижний блок ───────────────────────────────────────────── */
 .sidebar-footer {
-  padding: 10px 8px;
+  padding: 12px 16px 24px;
   border-top: 1px solid var(--gray-100);
 }
 .sidebar-footer button {
   width: 100%;
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 10px; border-radius: var(--radius);
-  font-size: 13px; color: var(--gray-500);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 52px;
+  padding: 0 18px;
+  border-radius: 12px;
+  font-size: 16px;
   font-weight: 500;
+  color: var(--gray-500);
   transition: background var(--transition), color var(--transition);
 }
-.sidebar-footer button:hover { background: var(--gray-100); color: var(--gray-700); }
-.sidebar-footer button svg { width: 14px; height: 14px; }
+.sidebar-footer button:hover {
+  background: var(--gray-100);
+  color: var(--gray-700);
+}
+.sidebar-footer button svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
 
 /* ════════════════════════════════════════════════════════════
    TOP HEADER
@@ -328,7 +367,7 @@ body::before {
    ════════════════════════════════════════════════════════════ */
 .projects-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
   gap: 12px;
 }
 .project-card {
@@ -496,6 +535,203 @@ table.items-table { width: 100%; border-collapse: collapse; }
   overflow: hidden; vertical-align: middle; margin-left: 5px;
 }
 .items-mini-fill { height: 100%; border-radius: var(--radius-full); }
+
+/* ════════════════════════════════════════════════════════════
+   ITEMS GRID — фиксированная CSS Grid-таблица
+   grid-template-columns: 64px / minmax(420px,2fr) / 120px /
+                          140px / 180px / 180px / 160px
+   ════════════════════════════════════════════════════════════ */
+
+/* Wrapper для горизонтального скролла */
+.items-grid-wrap { overflow-x: auto; }
+
+/* Контейнер — минимальная ширина гарантирует колонки */
+.items-grid { min-width: 900px; }
+
+/* Единая сетка — для заголовка и всех строк */
+.ig-header,
+.ig-row {
+  display: grid;
+  grid-template-columns: 52px minmax(220px, 2fr) 90px 100px 140px 140px 130px;
+  align-items: center;
+}
+
+/* ── Заголовок таблицы ──────────────────────────────────── */
+.ig-header {
+  height: 40px;
+  border-bottom: 1px solid var(--gray-100);
+  background: var(--gray-50);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.ig-header .ig-cell {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--gray-400);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 0 16px;
+  white-space: nowrap;
+}
+
+/* ── Строки данных ──────────────────────────────────────── */
+.ig-row {
+  min-height: 72px;
+  border-bottom: 1px solid var(--gray-100);
+  cursor: pointer;
+  transition: background var(--transition);
+  position: relative;
+}
+.ig-row:last-child { border-bottom: none; }
+.ig-row:hover { background: var(--gray-50); }
+.ig-row:hover::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--cyan);
+}
+
+/* ── Базовая ячейка ─────────────────────────────────────── */
+.ig-cell {
+  padding: 0 16px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* ── Выравнивание по колонкам ───────────────────────────── */
+.ig-cell.ig-num {
+  text-align: center;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ig-cell.ig-name {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+.ig-cell.ig-qty      { display: flex; align-items: center; justify-content: center; }
+.ig-cell.ig-done     { display: flex; align-items: center; justify-content: center; }
+.ig-cell.ig-status   { display: flex; align-items: center; justify-content: center; }
+.ig-cell.ig-progress { display: flex; align-items: center; justify-content: center; }
+.ig-cell.ig-deadline { display: flex; align-items: center; justify-content: center; }
+
+/* ── № ─────────────────────────────────────────────────── */
+.ig-num-text {
+  font-size: 12px;
+  color: var(--gray-400);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Наименование ──────────────────────────────────────── */
+.ig-name-primary {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-900);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+.ig-name-secondary {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--gray-400);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+.ig-name-secondary.warn { color: #B45309; }
+
+/* ── Кол-во / Готово ───────────────────────────────────── */
+.ig-qty-text {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--gray-500);
+  font-variant-numeric: tabular-nums;
+}
+.ig-done-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-900);
+  font-variant-numeric: tabular-nums;
+}
+.ig-done-text.zero { color: var(--gray-400); font-weight: 400; }
+
+/* ── Status pill ────────────────────────────────────────── */
+.status-pill {
+  height: 28px;
+  min-width: 100px;
+  padding: 0 12px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+  flex-shrink: 0;
+}
+.sp-done        { background: rgba(16,185,129,0.09);  color: #059669; }
+.sp-in_progress { background: var(--gray-900);        color: #FFFFFF; }
+.sp-overdue     { background: rgba(239,68,68,0.09);   color: #DC2626; }
+.sp-pending     {
+  background: var(--gray-100); color: var(--gray-500);
+  border: 1px solid var(--gray-200);
+}
+.sp-blocked     { background: rgba(245,158,11,0.09);  color: #B45309; }
+
+/* ── Прогресс ───────────────────────────────────────────── */
+.ig-progress-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.ig-progress-pct {
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.ig-progress-track {
+  width: 80px;
+  height: 4px;
+  background: var(--gray-100);
+  border-radius: 9999px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.ig-progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Дедлайн ────────────────────────────────────────────── */
+.ig-deadline-text {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--gray-600);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  line-height: 1.4;
+}
+.ig-deadline-text.overdue { color: #DC2626; }
+.ig-overdue-note {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: #DC2626;
+  margin-top: 2px;
+}
 
 /* ════════════════════════════════════════════════════════════
    ITEM DETAIL
