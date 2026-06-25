@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #037';
+const APP_BUILD = 'DEPLOY #038';
 
 // ── State ──────────────────────────────────────────────────────
 const state = {
@@ -483,9 +483,11 @@ function itemTableRow(item, projectId) {
   const purTag      = purStatus
     ? `<span class="pur-mini pur-mini-${purStatus}">${purMiniLabel(purStatus)}</span>`
     : '';
-  const assigneeTag = item.assignee
-    ? `<span class="assignee-mini" onclick="event.stopPropagation();openAssigneeDrop('${item.id}',this)">${iconSvg('user', 9)} ${item.assignee}</span>`
-    : `<span class="assignee-mini assignee-empty" onclick="event.stopPropagation();openAssigneeDrop('${item.id}',this)">${iconSvg('user', 9)} Назначить</span>`;
+  const assigneeTag = (()=>{
+    if (!item.assignee) return `<span class="assignee-mini assignee-empty" onclick="event.stopPropagation();openAssigneeDrop('${item.id}',this)">${iconSvg('user', 9)} Назначить</span>`;
+    const aObj = getAllAssignees().find(a => a.name === item.assignee) || { colorIdx: 0 };
+    return `<span class="assignee-mini" style="${assigneeStyle(aObj)}" onclick="event.stopPropagation();openAssigneeDrop('${item.id}',this)">${iconSvg('user', 9)} ${item.assignee}</span>`;
+  })();
   const tagsLine    = (purTag || assigneeTag)
     ? `<div class="ig-name-tags">${purTag}${assigneeTag}</div>`
     : '';
@@ -1245,33 +1247,109 @@ window.closeModal = closeModal;
 // =============================================================
 // ASSIGNEE INLINE DROPDOWN
 // =============================================================
-const ASSIGNEE_OPTIONS = ['Тренин А.', 'Парамузов О.Н.'];
+const ASSIGNEE_PALETTE = [
+  { bg: 'rgba(99,102,241,0.12)',  color: '#4338CA' },
+  { bg: 'rgba(20,184,166,0.13)',  color: '#0F766E' },
+  { bg: 'rgba(245,158,11,0.13)',  color: '#B45309' },
+  { bg: 'rgba(236,72,153,0.12)',  color: '#9D174D' },
+  { bg: 'rgba(59,130,246,0.13)',  color: '#1D4ED8' },
+  { bg: 'rgba(34,197,94,0.13)',   color: '#166534' },
+  { bg: 'rgba(239,68,68,0.12)',   color: '#991B1B' },
+  { bg: 'rgba(168,85,247,0.12)',  color: '#6B21A8' },
+];
+const ASSIGNEE_DEFAULTS = [
+  { name: 'Тренин А.',      colorIdx: 0 },
+  { name: 'Парамузов О.Н.', colorIdx: 1 },
+];
+const ASSIGNEES_KEY = 'vrh_assignees_v1';
+
+function loadAssignees() {
+  try { return JSON.parse(localStorage.getItem(ASSIGNEES_KEY)) || []; } catch { return []; }
+}
+function saveAssignees(list) {
+  localStorage.setItem(ASSIGNEES_KEY, JSON.stringify(list));
+}
+function getAllAssignees() {
+  const custom = loadAssignees();
+  const names  = new Set(ASSIGNEE_DEFAULTS.map(a => a.name));
+  return [...ASSIGNEE_DEFAULTS, ...custom.filter(a => !names.has(a.name))];
+}
+function assigneeStyle(a) {
+  const p = ASSIGNEE_PALETTE[a.colorIdx % ASSIGNEE_PALETTE.length];
+  return `background:${p.bg};color:${p.color}`;
+}
+function assigneeDotStyle(a) {
+  return `background:${ASSIGNEE_PALETTE[a.colorIdx % ASSIGNEE_PALETTE.length].color}`;
+}
+
+function renderAssigneeDrop(itemId) {
+  const item = VRH_ITEMS.find(i => i.id === itemId);
+  if (!item) return;
+  const all = getAllAssignees();
+  return all.map(a => {
+    const active = item.assignee === a.name;
+    return `<div class="adrop-item${active ? ' active' : ''}" onclick="setAssignee('${itemId}','${a.name.replace(/'/g,'\\\'')}')" style="${active ? assigneeStyle(a) : ''}">
+      <span class="adrop-color-dot" style="${assigneeDotStyle(a)}"></span>${a.name}
+    </div>`;
+  }).join('') +
+  `<div class="adrop-divider"></div>
+   <div class="adrop-item adrop-add" onclick="showAddAssigneeInput('${itemId}')">${iconSvg('plus',12)} Добавить...</div>
+   <div class="adrop-divider"></div>
+   <div class="adrop-item adrop-clear" onclick="setAssignee('${itemId}','')">— Не назначен —</div>`;
+}
 
 function openAssigneeDrop(itemId, anchor) {
   closeAssigneeDrop();
-  const item = VRH_ITEMS.find(i => i.id === itemId);
-  if (!item) return;
   const rect = anchor.getBoundingClientRect();
   const drop = document.createElement('div');
   drop.id = 'assignee-drop';
-  drop.innerHTML = ASSIGNEE_OPTIONS.map(o =>
-    `<div class="adrop-item${item.assignee === o ? ' active' : ''}" onclick="setAssignee('${itemId}','${o}')">${iconSvg('user',12)} ${o}</div>`
-  ).join('') +
-  `<div class="adrop-divider"></div>
-   <div class="adrop-item adrop-clear" onclick="setAssignee('${itemId}','')">— Не назначен —</div>`;
+  drop.innerHTML = renderAssigneeDrop(itemId);
   document.body.appendChild(drop);
+  positionDrop(drop, rect);
+  setTimeout(() => document.addEventListener('click', closeAssigneeDrop, { once: true }), 0);
+}
+function positionDrop(drop, rect) {
   const dw = drop.offsetWidth, dh = drop.offsetHeight;
   let left = rect.left;
   let top  = rect.bottom + 5;
-  if (left + dw > window.innerWidth - 8) left = window.innerWidth - dw - 8;
-  if (top  + dh > window.innerHeight - 8) top = rect.top - dh - 5;
+  if (left + dw > window.innerWidth - 8)  left = window.innerWidth - dw - 8;
+  if (top  + dh > window.innerHeight - 8) top  = rect.top - dh - 5;
   drop.style.left = left + 'px';
   drop.style.top  = top  + 'px';
-  setTimeout(() => document.addEventListener('click', closeAssigneeDrop, { once: true }), 0);
 }
 function closeAssigneeDrop() {
   const el = document.getElementById('assignee-drop');
   if (el) el.remove();
+}
+function showAddAssigneeInput(itemId) {
+  const drop = document.getElementById('assignee-drop');
+  if (!drop) return;
+  document.removeEventListener('click', closeAssigneeDrop);
+  drop.innerHTML = `<div class="adrop-new-row">
+    <input id="adrop-new-input" type="text" placeholder="Имя Фамилия" autocomplete="off">
+    <button onclick="confirmAddAssignee('${itemId}')">Ок</button>
+  </div>`;
+  const inp = document.getElementById('adrop-new-input');
+  inp.focus();
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') confirmAddAssignee(itemId);
+    if (e.key === 'Escape') closeAssigneeDrop();
+  });
+  setTimeout(() => document.addEventListener('click', closeAssigneeDrop, { once: true }), 0);
+}
+function confirmAddAssignee(itemId) {
+  const inp = document.getElementById('adrop-new-input');
+  if (!inp) return;
+  const name = inp.value.trim();
+  if (!name) return;
+  const all = getAllAssignees();
+  if (!all.find(a => a.name === name)) {
+    const custom = loadAssignees();
+    const nextIdx = all.length % ASSIGNEE_PALETTE.length;
+    custom.push({ name, colorIdx: nextIdx });
+    saveAssignees(custom);
+  }
+  setAssignee(itemId, name);
 }
 function setAssignee(itemId, value) {
   const item = VRH_ITEMS.find(i => i.id === itemId);
@@ -1283,8 +1361,10 @@ function setAssignee(itemId, value) {
   closeAssigneeDrop();
   render();
 }
-window.openAssigneeDrop = openAssigneeDrop;
-window.setAssignee = setAssignee;
+window.openAssigneeDrop   = openAssigneeDrop;
+window.setAssignee        = setAssignee;
+window.showAddAssigneeInput = showAddAssigneeInput;
+window.confirmAddAssignee = confirmAddAssignee;
 
 // =============================================================
 // NAME TOOLTIP
