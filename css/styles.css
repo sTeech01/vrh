@@ -726,13 +726,20 @@ table.items-table { width: 100%; border-collapse: collapse; }
 
 /* ── Наименование ──────────────────────────────────────── */
 .ig-name-primary {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 14px;
   font-weight: 500;
   color: var(--gray-900);
-  white-space: nowrap;
+  line-height: 1.4;
+  min-width: 0;
+}
+.ig-name-text {
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.4;
+  white-space: nowrap;
+  min-width: 0;
 }
 .ig-name-secondary {
   font-size: 12px;
