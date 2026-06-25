@@ -121,8 +121,8 @@ const VRH_ITEMS = [
 
   {
     id: 'mb_35', projectId: 'kalalahti', complexId: 'MB',
-    number: '35', name: 'Решетка заградительная 2×1.5 вход',
-    nameShort: 'Решетка вход 2×1.5', quantity: 32, unit: 'шт',
+    number: '35', name: 'Решетка заградительная 2×1.6 выход, зазор между ламелями 5мм, AISI 304',
+    nameShort: 'Решетка выход 2×1.6', quantity: 32, unit: 'шт',
     deadline: '2026-05-12', type: 'own',
     doneCount: 16, materialsStatus: PUR.RECEIVED,
     components: [],
@@ -135,8 +135,8 @@ const VRH_ITEMS = [
 
   {
     id: 'mb_36', projectId: 'kalalahti', complexId: 'MB',
-    number: '36', name: 'Решетка заградительная 2×1.6 выход',
-    nameShort: 'Решетка выход 2×1.6', quantity: 16, unit: 'шт',
+    number: '36', name: 'Решетка заградительная 2×1.5 вход, зазор между ламелями 5мм, AISI 304',
+    nameShort: 'Решетка вход 2×1.5', quantity: 16, unit: 'шт',
     deadline: '2026-06-02', type: 'own',
     doneCount: 12, materialsStatus: PUR.RECEIVED,
     components: [],
@@ -149,8 +149,8 @@ const VRH_ITEMS = [
 
   {
     id: 'mb_36p', projectId: 'kalalahti', complexId: 'MB',
-    number: '36п', name: 'Решетка заградительная 2×1.6 промежуточная',
-    nameShort: 'Решетка промеж. 2×1.6', quantity: 16, unit: 'шт',
+    number: '36п', name: 'Решетка заградительная 2×1.5 промежуточная, зазор между ламелями 5мм, AISI 304',
+    nameShort: 'Решетка промеж. 2×1.5', quantity: 16, unit: 'шт',
     deadline: '2026-06-02', type: 'own',
     doneCount: 0, materialsStatus: PUR.RECEIVED,
     components: [], history: [], notes: '',
