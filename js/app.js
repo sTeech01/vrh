@@ -144,6 +144,7 @@ function iconSvg(name, size = 14) {
     plus:      `<svg viewBox="0 0 20 20" fill="currentColor" width="${s}" height="${s}"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>`,
     cart:      `<svg viewBox="0 0 20 20" fill="currentColor" width="${s}" height="${s}"><path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/></svg>`,
     ai:        `<svg viewBox="0 0 24 24" fill="currentColor" width="${s}" height="${s}"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5A2.5 2.5 0 0 0 7.5 18A2.5 2.5 0 0 0 10 15.5A2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5a2.5 2.5 0 0 0 2.5 2.5a2.5 2.5 0 0 0 2.5-2.5a2.5 2.5 0 0 0-2.5-2.5z"/></svg>`,
+    grip:      `<svg viewBox="0 0 16 16" fill="currentColor" width="${s}" height="${s}"><circle cx="5.5" cy="4" r="1.1"/><circle cx="10.5" cy="4" r="1.1"/><circle cx="5.5" cy="8" r="1.1"/><circle cx="10.5" cy="8" r="1.1"/><circle cx="5.5" cy="12" r="1.1"/><circle cx="10.5" cy="12" r="1.1"/></svg>`,
   };
   return icons[name] || '';
 }
@@ -418,7 +419,7 @@ function renderProject(el, projectId) {
     ${complexIds
       .filter(cid => filtered.some(i => i.complexId === cid))
       .map(cid => {
-        const cItems = filtered.filter(i => i.complexId === cid);
+        const cItems = applyItemOrder(cid, filtered.filter(i => i.complexId === cid));
         const complex = COMPLEXES.find(c => c.id === cid);
         const cTotalQty  = cItems.reduce((s,i) => s + i.quantity, 0);
         const cTotalDone = cItems.reduce((s,i) => s + getItemDone(i), 0);
@@ -439,8 +440,9 @@ function renderProject(el, projectId) {
               </div>
             </div>
             <div class="items-grid-wrap">
-              <div class="items-grid">
+              <div class="items-grid" data-complex="${cid}">
                 <div class="ig-header">
+                  <div class="ig-cell ig-drag"></div>
                   <div class="ig-cell ig-num">№</div>
                   <div class="ig-cell ig-name">Наименование</div>
                   <div class="ig-cell ig-qty">Кол-во</div>
@@ -457,6 +459,11 @@ function renderProject(el, projectId) {
 
     ${filtered.length === 0 ? '<div class="empty-state"><p>Нет позиций по выбранным фильтрам</p></div>' : ''}
   `;
+
+  complexIds.forEach(cid => {
+    const grid = el.querySelector(`.items-grid[data-complex="${cid}"]`);
+    if (grid) initGridDrag(grid, cid, projectId);
+  });
 }
 
 function purMiniLabel(status) {
@@ -508,7 +515,8 @@ function itemTableRow(item, projectId) {
     ? `<span class="ig-overdue-note">+${od} дн.</span>` : '';
 
   return `
-    <div class="ig-row" onclick="navigate('item','${projectId}','${item.id}')">
+    <div class="ig-row" draggable="true" data-id="${item.id}" onclick="navigate('item','${projectId}','${item.id}')">
+      <div class="ig-cell ig-drag" onclick="event.stopPropagation()">${iconSvg('grip', 12)}</div>
       <div class="ig-cell ig-num">
         <span class="ig-num-text">${item.number}</span>
       </div>
@@ -705,9 +713,6 @@ function renderPurchaseBlock(item) {
       </div>
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <span style="font-size:14px;font-weight:700;color:${cur.color}">${cur.label}</span>
-        <button class="btn-secondary" onclick="openUpdateModal('${item.id}')" style="font-size:11px">
-          ${iconSvg('edit',11)} Изменить статус
-        </button>
       </div>
       ${item.notes ? `<div style="margin-top:12px;font-size:13px;color:var(--gray-600)">${item.notes}</div>` : ''}
     </div>`;
@@ -1400,6 +1405,73 @@ document.addEventListener('mouseout', e => {
 // =============================================================
 // PERSISTENCE
 // =============================================================
+// =============================================================
+// ITEM ORDER (drag-and-drop)
+// =============================================================
+const ORDER_KEY = 'vrh_order_v1';
+let _dragId = null;
+
+function loadItemOrder() {
+  try { return JSON.parse(localStorage.getItem(ORDER_KEY)) || {}; } catch { return {}; }
+}
+function saveItemOrder(o) {
+  try { localStorage.setItem(ORDER_KEY, JSON.stringify(o)); } catch(e) {}
+}
+function applyItemOrder(complexId, items) {
+  const ids = loadItemOrder()[complexId];
+  if (!ids || !ids.length) return items;
+  return [...items].sort((a, b) => {
+    const ai = ids.indexOf(a.id), bi = ids.indexOf(b.id);
+    if (ai === -1 && bi === -1) return 0;
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  });
+}
+function initGridDrag(grid, complexId, projectId) {
+  grid.addEventListener('dragstart', e => {
+    const row = e.target.closest('.ig-row[draggable]');
+    if (!row) return;
+    _dragId = row.dataset.id;
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => row.classList.add('dragging'), 0);
+  });
+  grid.addEventListener('dragend', () => {
+    _dragId = null;
+    grid.querySelectorAll('.ig-row').forEach(r => r.classList.remove('dragging', 'drag-over'));
+  });
+  grid.addEventListener('dragover', e => {
+    e.preventDefault();
+    const row = e.target.closest('.ig-row[draggable]');
+    if (!row || row.dataset.id === _dragId) return;
+    grid.querySelectorAll('.ig-row.drag-over').forEach(r => r.classList.remove('drag-over'));
+    row.classList.add('drag-over');
+  });
+  grid.addEventListener('dragleave', e => {
+    if (!grid.contains(e.relatedTarget))
+      grid.querySelectorAll('.ig-row.drag-over').forEach(r => r.classList.remove('drag-over'));
+  });
+  grid.addEventListener('drop', e => {
+    e.preventDefault();
+    const target = e.target.closest('.ig-row[draggable]');
+    if (!target || !_dragId || target.dataset.id === _dragId) return;
+    const allItems = VRH_ITEMS.filter(i => i.complexId === complexId && i.projectId === projectId);
+    const order = loadItemOrder();
+    const ids = order[complexId] ? [...order[complexId]] : allItems.map(i => i.id);
+    allItems.forEach(i => { if (!ids.includes(i.id)) ids.push(i.id); });
+    const si = ids.indexOf(_dragId);
+    const ti = ids.indexOf(target.dataset.id);
+    if (si === -1 || ti === -1) return;
+    ids.splice(si, 1);
+    const newTi = ids.indexOf(target.dataset.id);
+    const after = e.clientY > target.getBoundingClientRect().top + target.offsetHeight / 2;
+    ids.splice(after ? newTi + 1 : newTi, 0, _dragId);
+    order[complexId] = ids;
+    saveItemOrder(order);
+    navigate('project', projectId);
+  });
+}
+
 function saveEditsToStorage() {
   try { localStorage.setItem('vrh_edits_v2', JSON.stringify(localEdits)); } catch(e) {}
 }
