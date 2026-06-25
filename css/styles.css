@@ -1322,14 +1322,9 @@ table.items-table { width: 100%; border-collapse: collapse; }
 
   .proj-delete-btn { font-size: 11px; padding: 4px 8px; white-space: nowrap; }
 
-  .proj-problems-bar {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    margin-bottom: 12px;
-    padding-bottom: 2px;
-    -webkit-overflow-scrolling: touch;
-  }
-  .proj-problem-tag { font-size: 11px; padding: 5px 10px; }
+  .proj-problems-bar { flex-wrap: nowrap; gap: 6px; margin-bottom: 12px; }
+  .proj-problem-tag  { font-size: 11px; padding: 4px 9px; gap: 4px; }
+  .proj-problem-tag svg { width: 10px !important; height: 10px !important; }
 
   /* ── Item detail ────────────────────────────────────────── */
   .item-header-card  { padding: 16px; }
