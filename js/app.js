@@ -1,10 +1,10 @@
-'use strict';
+﻿'use strict';
 // =============================================================
 // VRH Production OS — Application v3.0
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #025';
+const APP_BUILD = 'DEPLOY #026';
 
 // ── State ──────────────────────────────────────────────────────
 const state = {
@@ -478,16 +478,19 @@ function itemTableRow(item, projectId) {
       ? `<div class="ig-name-secondary">Узкое место: ${bn.name} ${bn.done} / ${item.quantity}</div>`
       : '';
 
-  // Теги: статус закупки + примечание
+  // Теги: статус закупки + ответственный + примечание
   const purStatus = item.purchaseStatus || item.materialsStatus;
-  const purTag    = purStatus
+  const purTag      = purStatus
     ? `<span class="pur-mini pur-mini-${purStatus}">${purMiniLabel(purStatus)}</span>`
     : '';
-  const noteTag   = item.notes
+  const assigneeTag = item.assignee
+    ? `<span class="assignee-mini">${iconSvg('user', 9)} ${item.assignee}</span>`
+    : '';
+  const noteTag     = item.notes
     ? `<span class="note-mini">${iconSvg('document', 9)} ${item.notes}</span>`
     : '';
-  const tagsLine  = (purTag || noteTag)
-    ? `<div class="ig-name-tags">${purTag}${noteTag}</div>`
+  const tagsLine    = (purTag || assigneeTag || noteTag)
+    ? `<div class="ig-name-tags">${purTag}${assigneeTag}${noteTag}</div>`
     : '';
 
   // Дедлайн
@@ -944,6 +947,15 @@ function openUpdateModal(itemId) {
         </select>
       </div>
       <div class="form-group">
+        <label class="form-label">Ответственный</label>
+        <input type="text" class="form-input" id="modal-assignee" list="assignee-list"
+          value="${item.assignee || ''}" placeholder="Выбрать или ввести..." style="margin-top:4px">
+        <datalist id="assignee-list">
+          <option value="Тренин А.">
+          <option value="Парамузов О.Н.">
+        </datalist>
+      </div>
+      <div class="form-group">
         <label class="form-label">Дедлайн</label>
         <input type="date" class="form-input" id="modal-deadline" value="${item.deadline}" style="margin-top:4px">
       </div>
@@ -1048,6 +1060,11 @@ function saveItemUpdate(itemId) {
     item.materialsStatus = purVal;
     localEdits[itemId].purchaseStatus = purVal;
   }
+
+  // Ответственный (все типы)
+  const assigneeVal = document.getElementById('modal-assignee')?.value?.trim() ?? '';
+  item.assignee = assigneeVal;
+  localEdits[itemId].assignee = assigneeVal;
 
   // Дедлайн (все типы)
   const dlVal = document.getElementById('modal-deadline')?.value;
@@ -1196,6 +1213,7 @@ function applyEdits() {
     if (edit.purchaseStatus   !== undefined)  item.purchaseStatus   = edit.purchaseStatus;
     if (edit.notes            !== undefined)  item.notes            = edit.notes;
     if (edit.deadline         !== undefined)  item.deadline         = edit.deadline;
+    if (edit.assignee         !== undefined)  item.assignee         = edit.assignee;
     if (edit.components) {
       edit.components.forEach(ec => {
         const c = item.components?.find(x => x.id === ec.id);
