@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #030';
+const APP_BUILD = 'DEPLOY #031';
 
 // ── State ──────────────────────────────────────────────────────
 const state = {
@@ -505,7 +505,7 @@ function itemTableRow(item, projectId) {
       </div>
       <div class="ig-cell ig-name">
         <div class="ig-name-primary">
-          <span class="ig-name-text">${item.nameShort}</span>${item.name !== item.nameShort ? `<span class="name-full-tip" data-tip="${item.name.replace(/"/g, '&quot;')}"><svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2.5a.75.75 0 110 1.5.75.75 0 010-1.5zM7 7h2v4H7V7z"/></svg></span>` : ''}
+          <span class="ig-name-text">${item.nameShort}</span>${(()=>{const nf=item.nameFullOverride!==undefined?item.nameFullOverride:item.name;return item.nameFullEnabled!==false&&nf&&nf!==item.nameShort?`<span class="name-full-tip" data-tip="${nf.replace(/"/g,'&quot;')}"><svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2.5a.75.75 0 110 1.5.75.75 0 010-1.5zM7 7h2v4H7V7z"/></svg></span>`:'';})()}
         </div>
         ${secondary}${tagsLine}
       </div>
@@ -610,6 +610,26 @@ function renderItem(el, projectId, itemId) {
 
     ${componentsHtml}
     ${historyHtml}
+
+    <div class="card" style="padding:20px 24px;margin-top:16px">
+      <div style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">
+        <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12" style="vertical-align:-1px;margin-right:4px"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2.5a.75.75 0 110 1.5.75.75 0 010-1.5zM7 7h2v4H7V7z"/></svg>
+        Полное наименование — подсказка в таблице
+      </div>
+      <div style="font-size:12px;color:var(--gray-400);line-height:1.6;margin-bottom:14px">
+        Текст, который появляется при наведении на иконку
+        <svg viewBox="0 0 16 16" fill="currentColor" width="11" height="11" style="vertical-align:-1px;margin:0 2px;color:#9CA3AF"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2.5a.75.75 0 110 1.5.75.75 0 010-1.5zM7 7h2v4H7V7z"/></svg>
+        рядом с коротким именем в таблице позиций. Если включено и текст отличается от короткого имени — иконка отображается автоматически.
+      </div>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:14px;user-select:none">
+        <input type="checkbox" id="name-full-enabled" ${item.nameFullEnabled !== false ? 'checked' : ''} style="width:16px;height:16px;accent-color:#0EA5E9;cursor:pointer">
+        <span style="font-size:13px;font-weight:500;color:var(--gray-700)">Показывать иконку подсказки в таблице</span>
+      </label>
+      <textarea class="form-textarea" id="name-full-text" style="min-height:56px;resize:vertical" placeholder="Введите полное наименование...">${(item.nameFullOverride !== undefined ? item.nameFullOverride : item.name).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+      <button class="btn-primary" style="margin-top:10px;display:flex;align-items:center;gap:6px" onclick="saveNameFull('${item.id}')">
+        ${iconSvg('save',13)} Сохранить
+      </button>
+    </div>
 
     <div class="card" style="padding:20px 24px;margin-top:16px">
       <div style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">
@@ -1089,6 +1109,22 @@ function saveItemUpdate(itemId) {
 }
 window.saveItemUpdate = saveItemUpdate;
 
+function saveNameFull(itemId) {
+  const item = VRH_ITEMS.find(i => i.id === itemId);
+  if (!item) return;
+  const enabled = document.getElementById('name-full-enabled')?.checked ?? true;
+  const text = (document.getElementById('name-full-text')?.value ?? '').trim();
+  item.nameFullEnabled = enabled;
+  item.nameFullOverride = text || item.name;
+  if (!localEdits[itemId]) localEdits[itemId] = {};
+  localEdits[itemId].nameFullEnabled = enabled;
+  localEdits[itemId].nameFullOverride = item.nameFullOverride;
+  saveEditsToStorage();
+  showToast('Сохранено');
+  render();
+}
+window.saveNameFull = saveNameFull;
+
 // =============================================================
 // DELETE PROJECT
 // =============================================================
@@ -1262,6 +1298,8 @@ function applyEdits() {
     if (edit.deadline         !== undefined)  item.deadline         = edit.deadline;
     if (edit.assignee         !== undefined)  item.assignee         = edit.assignee;
     if (edit.blockReason      !== undefined)  item.blockReason      = edit.blockReason;
+    if (edit.nameFullEnabled  !== undefined)  item.nameFullEnabled  = edit.nameFullEnabled;
+    if (edit.nameFullOverride !== undefined)  item.nameFullOverride = edit.nameFullOverride;
     if (edit.components) {
       edit.components.forEach(ec => {
         const c = item.components?.find(x => x.id === ec.id);
