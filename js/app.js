@@ -925,7 +925,7 @@ function openUpdateModal(itemId) {
   const nameFullOn = item.nameFullEnabled !== false;
 
   const sec = (label) =>
-    `<div style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">${label}</div>`;
+    `<div style="font-size:11px;font-weight:700;color:var(--gray-800);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">${label}</div>`;
   const div = () =>
     `<div style="height:1px;background:var(--gray-100);margin:18px 0"></div>`;
 
@@ -950,7 +950,7 @@ function openUpdateModal(itemId) {
 
   document.getElementById('modal-box').innerHTML = `
     <div class="modal-header">
-      <div class="modal-title">${iconSvg('edit',14)} Редактировать позицию</div>
+      <div class="modal-title" style="display:flex;align-items:center;gap:6px;font-weight:700">${iconSvg('edit',14)} Редактировать позицию</div>
       <button class="modal-close" onclick="closeModal()">${iconSvg('x', 12)}</button>
     </div>
     <div class="modal-body">
