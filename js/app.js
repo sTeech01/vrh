@@ -1293,11 +1293,8 @@ function renderAssigneeDrop(itemId) {
   const all = getAllAssignees();
   return all.map(a => {
     const active = item.assignee === a.name;
-    const isCustom = !ASSIGNEE_DEFAULTS.find(d => d.name === a.name);
     const safeName = a.name.replace(/'/g, "\\'");
-    const editBtn = isCustom
-      ? `<button class="adrop-edit-btn" onclick="event.stopPropagation();showEditAssigneeInput('${itemId}','${safeName}')">${iconSvg('edit', 11)}</button>`
-      : '';
+    const editBtn = `<button class="adrop-edit-btn" onclick="event.stopPropagation();showEditAssigneeInput('${itemId}','${safeName}')">${iconSvg('edit', 11)}</button>`;
     return `<div class="adrop-item${active ? ' active' : ''}" onclick="setAssignee('${itemId}','${safeName}')" style="${active ? assigneeStyle(a) : ''}">
       <span class="adrop-color-dot" style="${assigneeDotStyle(a)}"></span>
       <span style="flex:1">${a.name}</span>${editBtn}
@@ -1396,7 +1393,14 @@ function confirmEditAssignee(itemId, oldName) {
   if (!newName || newName === oldName) { closeAssigneeDrop(); return; }
   const custom = loadAssignees();
   const ci = custom.findIndex(a => a.name === oldName);
-  if (ci !== -1) custom[ci].name = newName;
+  if (ci !== -1) {
+    custom[ci].name = newName;
+  } else {
+    // стандартный исполнитель — добавляем в custom с сохранением цвета
+    const all = getAllAssignees();
+    const orig = all.find(a => a.name === oldName);
+    custom.push({ name: newName, colorIdx: orig ? orig.colorIdx : 0 });
+  }
   saveAssignees(custom);
   VRH_ITEMS.forEach(item => {
     if (item.assignee === oldName) {
