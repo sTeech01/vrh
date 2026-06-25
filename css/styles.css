@@ -649,6 +649,45 @@ table.items-table { width: 100%; border-collapse: collapse; }
 }
 .ig-name-secondary.warn { color: #B45309; }
 
+/* ── Теги закупки и примечания под наименованием ─────────── */
+.ig-name-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 3px;
+}
+.pur-mini {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 1px 8px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  line-height: 18px;
+}
+.pur-mini-received { background: rgba(16,185,129,0.09); color: #059669; }
+.pur-mini-partial  { background: rgba(245,158,11,0.09); color: #B45309; }
+.pur-mini-ordered  { background: rgba(14,165,233,0.09); color: #0284C7; }
+.pur-mini-pending  { background: var(--gray-100);       color: var(--gray-500); }
+.note-mini {
+  font-size: 11px;
+  font-weight: 400;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--gray-100);
+  color: var(--gray-500);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+  line-height: 18px;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.note-mini svg { flex-shrink: 0; width: 9px !important; height: 9px !important; }
+
 /* ── Кол-во / Готово ───────────────────────────────────── */
 .ig-qty-text {
   font-size: 13px;

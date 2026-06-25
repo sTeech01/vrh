@@ -450,6 +450,10 @@ function renderProject(el, projectId) {
   `;
 }
 
+function purMiniLabel(status) {
+  return { received: 'Получено', partial: 'Частично', ordered: 'Заказано', pending: 'Не заказано' }[status] || status;
+}
+
 function itemTableRow(item, projectId) {
   const pct    = calcProgress(item);
   const status = getItemStatus(item);
@@ -458,17 +462,29 @@ function itemTableRow(item, projectId) {
   const color  = pctColor(pct);
   const bn     = getBottleneck(item);
 
-  // Вторичная строка наименования
+  // Вторичная строка (блокировка / узкое место)
   const secondary = item.blockReason
     ? `<div class="ig-name-secondary warn">${item.blockReason}</div>`
     : bn && bn.done < item.quantity
-      ? `<div class="ig-name-secondary">Узкое место: ${bn.name} ${bn.done} / ${item.quantity}</div>`
+      ? `<div class="ig-name-secondary">Узкое место: ${bn.name} ${bn.done} / ${item.quantity}</div>`
       : '';
+
+  // Теги: статус закупки + примечание
+  const purStatus = item.purchaseStatus || item.materialsStatus;
+  const purTag    = purStatus
+    ? `<span class="pur-mini pur-mini-${purStatus}">${purMiniLabel(purStatus)}</span>`
+    : '';
+  const noteTag   = item.notes
+    ? `<span class="note-mini">${iconSvg('document', 9)} ${item.notes}</span>`
+    : '';
+  const tagsLine  = (purTag || noteTag)
+    ? `<div class="ig-name-tags">${purTag}${noteTag}</div>`
+    : '';
 
   // Дедлайн
   const deadlineClass = od > 0 && status !== ST.DONE ? 'overdue' : '';
   const overdueNote   = od > 0 && status !== ST.DONE
-    ? `<span class="ig-overdue-note">+${od} дн.</span>` : '';
+    ? `<span class="ig-overdue-note">+${od} дн.</span>` : '';
 
   return `
     <div class="ig-row" onclick="navigate('item','${projectId}','${item.id}')">
@@ -477,13 +493,13 @@ function itemTableRow(item, projectId) {
       </div>
       <div class="ig-cell ig-name">
         <div class="ig-name-primary">${item.nameShort}</div>
-        ${secondary}
+        ${secondary}${tagsLine}
       </div>
       <div class="ig-cell ig-qty">
-        <span class="ig-qty-text">${item.quantity} ${item.unit}</span>
+        <span class="ig-qty-text">${item.quantity} ${item.unit}</span>
       </div>
       <div class="ig-cell ig-done">
-        <span class="ig-done-text ${done === 0 ? 'zero' : ''}">${done} / ${item.quantity}</span>
+        <span class="ig-done-text ${done === 0 ? 'zero' : ''}">${done} / ${item.quantity}</span>
       </div>
       <div class="ig-cell ig-status">
         ${statusPill(status)}
@@ -863,33 +879,24 @@ function aiCard(rec) {
 }
 
 // =============================================================
-// MODAL: Update Progress
+// MODAL: Update Item (прогресс + закупка + примечание)
 // =============================================================
 function openUpdateModal(itemId) {
   const item = VRH_ITEMS.find(i => i.id === itemId);
   if (!item) return;
 
-  let body = '';
+  const purOpts = [
+    { val: '',             label: '— не указано —' },
+    { val: PUR.PENDING,   label: 'Не заказано' },
+    { val: PUR.ORDERED,   label: 'Заказано / счёт выставлен' },
+    { val: PUR.PARTIAL,   label: 'Получено частично' },
+    { val: PUR.RECEIVED,  label: 'Получено полностью' },
+  ];
+  const curPur = item.purchaseStatus || item.materialsStatus || '';
 
-  if (item.type === 'purchased') {
-    const opts = [
-      { val: PUR.PENDING,  label: 'Не заказано' },
-      { val: PUR.ORDERED,  label: 'Заказано / счёт выставлен' },
-      { val: PUR.PARTIAL,  label: 'Получено частично' },
-      { val: PUR.RECEIVED, label: 'Получено полностью' },
-    ];
-    body = `
-      <div class="form-group">
-        <label class="form-label">Статус закупки</label>
-        <select class="filter-select" id="modal-pur-status" style="width:100%;margin-top:4px">
-          ${opts.map(o => `<option value="${o.val}" ${item.purchaseStatus===o.val?'selected':''}>${o.label}</option>`).join('')}
-        </select>
-      </div>
-      <button class="btn-primary" onclick="savePurchaseUpdate('${item.id}')" style="margin-top:8px;width:100%;display:flex;align-items:center;justify-content:center;gap:8px">
-        ${iconSvg('save', 14)} Сохранить
-      </button>`;
-  } else {
-    // Собственное производство — обновляем doneCount
+  // Поля прогресса — только для собственного производства
+  let progressFields = '';
+  if (item.type === 'own') {
     const hasComponents = item.components?.length > 0;
     const componentRows = hasComponents
       ? item.components.map(c => `
@@ -899,30 +906,40 @@ function openUpdateModal(itemId) {
               min="0" max="${c.quantity}" value="${c.done}" style="margin-top:4px">
           </div>`).join('')
       : '';
-
-    body = `
+    progressFields = `
       <div class="form-group">
         <label class="form-label">Готово изделий (из ${item.quantity})</label>
         <input type="number" class="form-input" id="modal-done-count"
           min="0" max="${item.quantity}" value="${item.doneCount || 0}" style="margin-top:4px">
       </div>
       ${hasComponents ? `<div style="border-top:1px solid var(--gray-100);margin:14px 0 10px;padding-top:14px">
-        <div class="form-label" style="margin-bottom:10px">Компоненты (необязательно)</div>
-        ${componentRows}
+        <div class="form-label" style="margin-bottom:10px">Компоненты</div>${componentRows}
       </div>` : ''}
-      <button class="btn-primary" onclick="saveProgressUpdate('${item.id}')" style="margin-top:8px;width:100%;display:flex;align-items:center;justify-content:center;gap:8px">
-        ${iconSvg('save', 14)} Сохранить
-      </button>`;
+      <div style="height:1px;background:var(--gray-100);margin:14px 0"></div>`;
   }
 
   document.getElementById('modal-box').innerHTML = `
     <div class="modal-header">
-      <div class="modal-title">${iconSvg('edit',14)} Обновить прогресс</div>
+      <div class="modal-title">${iconSvg('edit',14)} Обновить позицию</div>
       <button class="modal-close" onclick="closeModal()">${iconSvg('x', 12)}</button>
     </div>
     <div class="modal-body">
-      <div style="font-size:12px;color:var(--gray-400);margin-bottom:14px">${item.name}</div>
-      ${body}
+      <div style="font-size:12px;color:var(--gray-400);margin-bottom:16px;line-height:1.5">${item.name}</div>
+      ${progressFields}
+      <div class="form-group">
+        <label class="form-label">Статус закупки</label>
+        <select class="form-select" id="modal-pur-status" style="margin-top:4px">
+          ${purOpts.map(o => `<option value="${o.val}" ${curPur === o.val ? 'selected' : ''}>${o.label}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Примечание</label>
+        <textarea class="form-textarea" id="modal-notes" style="margin-top:4px;min-height:68px">${item.notes || ''}</textarea>
+      </div>
+      <button class="btn-primary" onclick="saveItemUpdate('${item.id}')"
+        style="margin-top:14px;width:100%;display:flex;align-items:center;justify-content:center;gap:8px">
+        ${iconSvg('save', 14)} Сохранить
+      </button>
     </div>`;
 
   document.getElementById('modal-overlay').classList.add('open');
@@ -980,6 +997,55 @@ function savePurchaseUpdate(itemId) {
   render();
 }
 window.savePurchaseUpdate = savePurchaseUpdate;
+
+// Единое сохранение: прогресс + закупка + примечание
+function saveItemUpdate(itemId) {
+  const item = VRH_ITEMS.find(i => i.id === itemId);
+  if (!item) return;
+  if (!localEdits[itemId]) localEdits[itemId] = {};
+
+  // Прогресс (только для own)
+  if (item.type === 'own') {
+    const newDone = parseInt(document.getElementById('modal-done-count')?.value, 10);
+    if (!isNaN(newDone) && newDone >= 0 && newDone <= item.quantity) {
+      item.doneCount = newDone;
+      localEdits[itemId].doneCount = newDone;
+    }
+    if (item.components) {
+      item.components.forEach(c => {
+        const inp = document.getElementById(`comp-${c.id}`);
+        if (!inp) return;
+        const v = parseInt(inp.value, 10);
+        if (!isNaN(v) && v >= 0 && v <= c.quantity) {
+          c.done = v;
+          if (!localEdits[itemId].components) localEdits[itemId].components = [];
+          const ec = localEdits[itemId].components.find(x => x.id === c.id);
+          if (ec) ec.done = v; else localEdits[itemId].components.push({ id: c.id, done: v });
+        }
+      });
+    }
+  }
+
+  // Статус закупки (все типы)
+  const purVal = document.getElementById('modal-pur-status')?.value;
+  if (purVal !== undefined) {
+    item.purchaseStatus = purVal;
+    item.materialsStatus = purVal;
+    localEdits[itemId].purchaseStatus = purVal;
+  }
+
+  // Примечание (все типы)
+  const notesVal = document.getElementById('modal-notes')?.value ?? '';
+  item.notes = notesVal;
+  localEdits[itemId].notes = notesVal;
+
+  saveEditsToStorage();
+  closeModal();
+  showToast('Сохранено');
+  updateProblemsBadge();
+  render();
+}
+window.saveItemUpdate = saveItemUpdate;
 
 // =============================================================
 // DELETE PROJECT
