@@ -349,20 +349,19 @@ function renderProject(el, projectId) {
   const isOverdueProj = new Date(project.deadline) < TODAY;
 
   el.innerHTML = `
-    <div class="card" style="padding:24px 28px;margin-bottom:20px">
-      <div style="display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap">
-        <div style="flex:1;min-width:200px">
-          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px">
-            <div style="font-size:22px;font-weight:900;color:var(--black);letter-spacing:-0.5px">${project.name}</div>
-            <button class="btn-secondary" onclick="confirmDeleteProject('${project.id}')"
-              style="color:#EF4444;border-color:rgba(227,6,19,0.3);font-size:10px;padding:4px 10px;display:flex;align-items:center;gap:5px"
+    <div class="card proj-header-card">
+      <div class="proj-header-row">
+        <div class="proj-header-body">
+          <div class="proj-header-title-row">
+            <div class="proj-header-name">${project.name}</div>
+            <button class="btn-secondary proj-delete-btn" onclick="confirmDeleteProject('${project.id}')"
               onmouseover="this.style.background='rgba(227,6,19,0.06)';this.style.borderColor='#EF4444'"
               onmouseout="this.style.background='var(--white)';this.style.borderColor='rgba(227,6,19,0.3)'">
               ${iconSvg('x', 11)} Удалить проект
             </button>
           </div>
-          <div style="font-size:13px;color:var(--gray-500);margin-top:0">${project.description}</div>
-          <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:14px">
+          <div class="proj-header-desc">${project.description}</div>
+          <div class="proj-header-meta">
             <div class="item-meta-pair"><label>Дедлайн</label>
               <span style="${isOverdueProj ? 'color:#EF4444' : ''}">${formatDate(new Date(project.deadline))}</span>
             </div>
@@ -375,9 +374,9 @@ function renderProject(el, projectId) {
             </div>
           </div>
         </div>
-        <div style="text-align:center;flex-shrink:0">${progressCircle(pct)}</div>
+        <div class="proj-header-circle">${progressCircle(pct)}</div>
       </div>
-      <div class="pbar-wrap" style="margin-top:16px;height:6px">
+      <div class="pbar-wrap proj-header-pbar">
         <div class="pbar-fill ${pbarClass(pct)}" style="width:${pct}%"></div>
       </div>
     </div>
