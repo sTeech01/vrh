@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #041';
+const APP_BUILD = 'DEPLOY #045';
 
 // ── State ──────────────────────────────────────────────────────
 const state = {
@@ -1293,8 +1293,14 @@ function renderAssigneeDrop(itemId) {
   const all = getAllAssignees();
   return all.map(a => {
     const active = item.assignee === a.name;
-    return `<div class="adrop-item${active ? ' active' : ''}" onclick="setAssignee('${itemId}','${a.name.replace(/'/g,'\\\'')}')" style="${active ? assigneeStyle(a) : ''}">
-      <span class="adrop-color-dot" style="${assigneeDotStyle(a)}"></span>${a.name}
+    const isCustom = !ASSIGNEE_DEFAULTS.find(d => d.name === a.name);
+    const safeName = a.name.replace(/'/g, "\\'");
+    const editBtn = isCustom
+      ? `<button class="adrop-edit-btn" onclick="event.stopPropagation();showEditAssigneeInput('${itemId}','${safeName}')">${iconSvg('edit', 11)}</button>`
+      : '';
+    return `<div class="adrop-item${active ? ' active' : ''}" onclick="setAssignee('${itemId}','${safeName}')" style="${active ? assigneeStyle(a) : ''}">
+      <span class="adrop-color-dot" style="${assigneeDotStyle(a)}"></span>
+      <span style="flex:1">${a.name}</span>${editBtn}
     </div>`;
   }).join('') +
   `<div class="adrop-divider"></div>
@@ -1366,10 +1372,49 @@ function setAssignee(itemId, value) {
   closeAssigneeDrop();
   render();
 }
-window.openAssigneeDrop   = openAssigneeDrop;
-window.setAssignee        = setAssignee;
-window.showAddAssigneeInput = showAddAssigneeInput;
-window.confirmAddAssignee = confirmAddAssignee;
+function showEditAssigneeInput(itemId, oldName) {
+  const drop = document.getElementById('assignee-drop');
+  if (!drop) return;
+  document.removeEventListener('click', closeAssigneeDrop);
+  drop.innerHTML = `<div class="adrop-new-row">
+    <input id="adrop-edit-input" type="text" value="${oldName.replace(/"/g, '&quot;')}" autocomplete="off">
+    <button onclick="confirmEditAssignee('${itemId}','${oldName.replace(/'/g, "\\'")}')">Ок</button>
+  </div>`;
+  const inp = document.getElementById('adrop-edit-input');
+  inp.focus();
+  inp.select();
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') confirmEditAssignee(itemId, oldName);
+    if (e.key === 'Escape') closeAssigneeDrop();
+  });
+  setTimeout(() => document.addEventListener('click', closeAssigneeDrop, { once: true }), 0);
+}
+function confirmEditAssignee(itemId, oldName) {
+  const inp = document.getElementById('adrop-edit-input');
+  if (!inp) return;
+  const newName = inp.value.trim();
+  if (!newName || newName === oldName) { closeAssigneeDrop(); return; }
+  const custom = loadAssignees();
+  const ci = custom.findIndex(a => a.name === oldName);
+  if (ci !== -1) custom[ci].name = newName;
+  saveAssignees(custom);
+  VRH_ITEMS.forEach(item => {
+    if (item.assignee === oldName) {
+      item.assignee = newName;
+      if (!localEdits[item.id]) localEdits[item.id] = {};
+      localEdits[item.id].assignee = newName;
+    }
+  });
+  saveEditsToStorage();
+  closeAssigneeDrop();
+  render();
+}
+window.openAssigneeDrop      = openAssigneeDrop;
+window.setAssignee           = setAssignee;
+window.showAddAssigneeInput  = showAddAssigneeInput;
+window.confirmAddAssignee    = confirmAddAssignee;
+window.showEditAssigneeInput = showEditAssigneeInput;
+window.confirmEditAssignee   = confirmEditAssignee;
 
 // =============================================================
 // NAME TOOLTIP
