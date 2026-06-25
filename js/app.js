@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #028';
+const APP_BUILD = 'DEPLOY #029';
 
 // ── State ──────────────────────────────────────────────────────
 const state = {
@@ -950,6 +950,17 @@ function openUpdateModal(itemId) {
         <label class="form-label">Дедлайн</label>
         <input type="date" class="form-input" id="modal-deadline" value="${item.deadline}" style="margin-top:4px">
       </div>
+      <div class="form-group">
+        <label class="form-label" style="display:flex;align-items:center;gap:6px">
+          Блокировка
+          ${item.blockReason ? `<span class="block-badge-active">АКТИВНА</span>` : ''}
+        </label>
+        <input type="text" class="form-input" id="modal-block-reason"
+          value="${(item.blockReason || '').replace(/"/g, '&quot;')}"
+          placeholder="Нет (оставьте пустым чтобы не блокировать)"
+          style="margin-top:4px">
+        ${item.blockReason ? `<div style="margin-top:5px;font-size:11px;color:var(--gray-400)">Очистите поле и сохраните — блокировка будет снята</div>` : ''}
+      </div>
       <div class="form-group" style="margin-bottom:0">
         <label class="form-label">Примечание</label>
         <textarea class="form-textarea" id="modal-notes" style="margin-top:4px;min-height:68px">${item.notes || ''}</textarea>
@@ -1059,6 +1070,11 @@ function saveItemUpdate(itemId) {
     item.deadline = dlVal;
     localEdits[itemId].deadline = dlVal;
   }
+
+  // Блокировка (все типы)
+  const blockVal = (document.getElementById('modal-block-reason')?.value ?? '').trim();
+  item.blockReason = blockVal || null;
+  localEdits[itemId].blockReason = blockVal || null;
 
   // Примечание (все типы)
   const notesVal = document.getElementById('modal-notes')?.value ?? '';
@@ -1245,6 +1261,7 @@ function applyEdits() {
     if (edit.notes            !== undefined)  item.notes            = edit.notes;
     if (edit.deadline         !== undefined)  item.deadline         = edit.deadline;
     if (edit.assignee         !== undefined)  item.assignee         = edit.assignee;
+    if (edit.blockReason      !== undefined)  item.blockReason      = edit.blockReason;
     if (edit.components) {
       edit.components.forEach(ec => {
         const c = item.components?.find(x => x.id === ec.id);

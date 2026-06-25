@@ -866,6 +866,18 @@ table.items-table { width: 100%; border-collapse: collapse; }
 .adrop-clear { color: var(--gray-400); font-weight: 400; }
 .adrop-divider { height: 1px; background: var(--gray-100); margin: 4px 0; }
 
+/* ── Бейдж "блокировка активна" в модалке ─────────────── */
+.block-badge-active {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #F59E0B;
+  background: rgba(245,158,11,0.12);
+  padding: 1px 7px;
+  border-radius: 4px;
+  line-height: 18px;
+}
+
 /* ── Кол-во / Готово ───────────────────────────────────── */
 .ig-qty-text {
   font-size: 13px;
