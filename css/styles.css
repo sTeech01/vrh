@@ -1567,8 +1567,8 @@ table.items-table { width: 100%; border-collapse: collapse; }
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
-  padding: 40px 36px 36px;
-  width: 100%; max-width: 360px;
+  padding: 40px 48px 44px;
+  width: calc(100% - 48px); max-width: 640px;
   display: flex; flex-direction: column; align-items: center; gap: 14px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.08);
 }
