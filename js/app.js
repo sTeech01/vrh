@@ -4,6 +4,8 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
+const APP_BUILD = 'DEPLOY #013';
+
 // ── State ──────────────────────────────────────────────────────
 const state = {
   view: 'dashboard',
@@ -21,6 +23,8 @@ document.addEventListener('DOMContentLoaded', () => {
   setupNavigation();
   handleHash();
   updateProblemsBadge();
+  const badge = document.querySelector('.deploy-badge');
+  if (badge) badge.textContent = APP_BUILD;
 });
 window.addEventListener('hashchange', handleHash);
 

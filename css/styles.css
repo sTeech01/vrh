@@ -198,6 +198,7 @@ body::before {
   width: 100%;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
   height: 52px;
   padding: 0 18px;
