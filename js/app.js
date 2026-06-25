@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #033';
+const APP_BUILD = 'DEPLOY #034';
 
 // ── State ──────────────────────────────────────────────────────
 const state = {
@@ -505,7 +505,7 @@ function itemTableRow(item, projectId) {
       </div>
       <div class="ig-cell ig-name">
         <div class="ig-name-primary">
-          <span class="ig-name-text">${item.nameShort}</span>${(()=>{const nf=item.nameFullOverride!==undefined?item.nameFullOverride:item.name;return item.nameFullEnabled!==false&&nf&&nf!==item.nameShort?`<span class="name-full-tip" data-tip="${nf.replace(/"/g,'&quot;')}"><svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2.5a.75.75 0 110 1.5.75.75 0 010-1.5zM7 7h2v4H7V7z"/></svg></span>`:'';})()}
+          <span class="ig-name-text">${item.nameShort}</span>${nameTipHtml}${noteTipHtml}
         </div>
         ${secondary}${tagsLine}
       </div>
@@ -998,6 +998,12 @@ function openUpdateModal(itemId) {
 
       ${div()}
       ${sec('Примечание')}
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;margin-bottom:10px">
+          <input type="checkbox" id="modal-note-tip-enabled" ${item.noteTipEnabled !== false ? 'checked' : ''} style="width:15px;height:15px;accent-color:#0EA5E9;cursor:pointer;flex-shrink:0">
+          <span style="font-size:13px;color:var(--gray-700)">Показывать иконку примечания в таблице</span>
+        </label>
+      </div>
       <div class="form-group" style="margin-bottom:0">
         <textarea class="form-textarea" id="modal-notes" style="min-height:68px">${item.notes || ''}</textarea>
       </div>
@@ -1132,6 +1138,9 @@ function saveItemUpdate(itemId) {
   const notesVal = document.getElementById('modal-notes')?.value ?? '';
   item.notes = notesVal;
   localEdits[itemId].notes = notesVal;
+  const noteTipEn = document.getElementById('modal-note-tip-enabled')?.checked ?? true;
+  item.noteTipEnabled = noteTipEn;
+  localEdits[itemId].noteTipEnabled = noteTipEn;
 
   saveEditsToStorage();
   closeModal();
@@ -1279,7 +1288,7 @@ window.setAssignee = setAssignee;
 // NAME TOOLTIP
 // =============================================================
 document.addEventListener('mouseover', e => {
-  const tip = e.target.closest('.name-full-tip');
+  const tip = e.target.closest('.name-full-tip, .note-tip');
   if (!tip) return;
   const text = tip.getAttribute('data-tip');
   if (!text) return;
@@ -1300,7 +1309,7 @@ document.addEventListener('mouseover', e => {
   el.style.visibility = 'visible';
 });
 document.addEventListener('mouseout', e => {
-  if (e.target.closest('.name-full-tip')) {
+  if (e.target.closest('.name-full-tip, .note-tip')) {
     const el = document.getElementById('name-tooltip');
     if (el) el.remove();
   }
@@ -1333,6 +1342,7 @@ function applyEdits() {
     if (edit.blockReason      !== undefined)  item.blockReason      = edit.blockReason;
     if (edit.nameFullEnabled  !== undefined)  item.nameFullEnabled  = edit.nameFullEnabled;
     if (edit.nameFullOverride !== undefined)  item.nameFullOverride = edit.nameFullOverride;
+    if (edit.noteTipEnabled   !== undefined)  item.noteTipEnabled   = edit.noteTipEnabled;
     if (edit.components) {
       edit.components.forEach(ec => {
         const c = item.components?.find(x => x.id === ec.id);

@@ -753,7 +753,8 @@ table.items-table { width: 100%; border-collapse: collapse; }
 .ig-name-secondary.warn { color: #B45309; }
 
 /* ── Иконка полного наименования ────────────────────────── */
-.name-full-tip {
+.name-full-tip,
+.note-tip {
   display: inline-flex;
   align-items: center;
   margin-left: 2px;
@@ -762,6 +763,7 @@ table.items-table { width: 100%; border-collapse: collapse; }
   flex-shrink: 0;
 }
 .name-full-tip:hover { color: var(--cyan); }
+.note-tip:hover { color: var(--amber); }
 
 /* ── JS-тултип (добавляется в body) ─────────────────────── */
 #name-tooltip {
