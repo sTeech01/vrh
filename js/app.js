@@ -501,7 +501,9 @@ function itemTableRow(item, projectId) {
         <span class="ig-num-text">${item.number}</span>
       </div>
       <div class="ig-cell ig-name">
-        <div class="ig-name-primary">${item.nameShort}</div>
+        <div class="ig-name-primary">
+          ${item.nameShort}${item.name !== item.nameShort ? `<span class="name-full-tip" data-tip="${item.name.replace(/"/g, '&quot;')}"><svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2.5a.75.75 0 110 1.5.75.75 0 010-1.5zM7 7h2v4H7V7z"/></svg></span>` : ''}
+        </div>
         ${secondary}${tagsLine}
       </div>
       <div class="ig-cell ig-qty">

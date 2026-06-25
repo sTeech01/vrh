@@ -161,13 +161,14 @@ const VRH_ITEMS = [
     number: '37', name: 'Дегазатор погружной аэрационный 2×3м',
     nameShort: 'Дегазатор погружной МБ', quantity: 22, unit: 'шт',
     deadline: '2026-07-03', type: 'own',
-    doneCount: 0, materialsStatus: PUR.RECEIVED,
+    doneCount: 22, materialsStatus: PUR.RECEIVED,
     components: [],
     history: [
+      { date: '2026-06-25', text: 'Все 22 шт готовы.' },
       { date: '2026-06-02', text: 'Нет полосы. Иначе стоят упакованные.' },
       { date: '2026-04-24', text: '24 готовы без пластин крепления к стене.' },
     ],
-    notes: 'Упакованы без монтажной полосы. Ждём полосу.',
+    notes: 'Все 22 шт готовы.',
   },
 
   {

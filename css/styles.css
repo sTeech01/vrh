@@ -745,6 +745,42 @@ table.items-table { width: 100%; border-collapse: collapse; }
 }
 .ig-name-secondary.warn { color: #B45309; }
 
+/* ── Иконка полного наименования (тултип) ────────────────── */
+.name-full-tip {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 5px;
+  color: var(--gray-400);
+  cursor: default;
+  position: relative;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.name-full-tip:hover { color: var(--cyan); }
+.name-full-tip::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 7px);
+  transform: translateX(-50%);
+  background: #1E293B;
+  color: #F8FAFC;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+  padding: 7px 10px;
+  border-radius: 7px;
+  white-space: normal;
+  width: max-content;
+  max-width: 320px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+}
+.name-full-tip:hover::after { opacity: 1; }
+
 /* ── Теги закупки и примечания под наименованием ─────────── */
 .ig-name-tags {
   display: flex;
