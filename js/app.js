@@ -382,10 +382,10 @@ function renderProject(el, projectId) {
     </div>
 
     ${problems.overdue.length || problems.noKd.length || problems.blocked.length ? `
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
-      ${problems.overdue.length  ? `<div style="display:flex;align-items:center;gap:6px;background:rgba(227,6,19,0.06);color:#EF4444;border:1px solid rgba(227,6,19,0.2);border-radius:4px;padding:7px 12px;font-size:12px;font-weight:700">${iconSvg('warning',12)} Просрочено: ${problems.overdue.length}</div>` : ''}
-      ${problems.noKd.length     ? `<div style="display:flex;align-items:center;gap:6px;background:rgba(255,107,0,0.07);color:#F59E0B;border:1px solid rgba(255,107,0,0.2);border-radius:4px;padding:7px 12px;font-size:12px;font-weight:700">${iconSvg('document',12)} Нет КД: ${problems.noKd.length}</div>` : ''}
-      ${problems.blocked.length  ? `<div style="display:flex;align-items:center;gap:6px;background:var(--cyan-dim);color:#0284C7;border:1px solid rgba(0,200,255,0.25);border-radius:4px;padding:7px 12px;font-size:12px;font-weight:700">${iconSvg('pause',12)} Блок: ${problems.blocked.length}</div>` : ''}
+    <div class="proj-problems-bar">
+      ${problems.overdue.length  ? `<div class="proj-problem-tag red">${iconSvg('warning',12)} Просрочено: ${problems.overdue.length}</div>` : ''}
+      ${problems.noKd.length     ? `<div class="proj-problem-tag amber">${iconSvg('document',12)} Нет КД: ${problems.noKd.length}</div>` : ''}
+      ${problems.blocked.length  ? `<div class="proj-problem-tag blue">${iconSvg('pause',12)} Блок: ${problems.blocked.length}</div>` : ''}
     </div>` : ''}
 
     <div class="filters-bar">
@@ -1066,10 +1066,19 @@ function confirmDeleteProject(projectId) {
       <button class="modal-close" onclick="closeModal()">${iconSvg('x', 12)}</button>
     </div>
     <div class="modal-body">
-      <div style="font-size:14px;font-weight:700;color:var(--black);margin-bottom:8px">«${project.name}»</div>
-      <div style="font-size:13px;color:var(--gray-500);line-height:1.6;margin-bottom:20px">
+      <div style="font-size:14px;font-weight:600;color:var(--gray-900);margin-bottom:6px">«${project.name}»</div>
+      <div style="font-size:13px;color:var(--gray-500);line-height:1.6;margin-bottom:16px">
         Будут безвозвратно удалены проект и все <strong>${itemCount} позиций</strong> оборудования.
         Это действие нельзя отменить.
+      </div>
+      <div class="form-group" style="margin-bottom:16px">
+        <label class="form-label">Введите секретное слово для подтверждения</label>
+        <input type="text" class="form-input" id="modal-secret-input"
+          placeholder="секретное слово..." autocomplete="off" style="margin-top:6px">
+        <div id="modal-secret-error"
+          style="display:none;color:#EF4444;font-size:12px;margin-top:6px">
+          Неверное слово. Попробуйте ещё раз.
+        </div>
       </div>
       <div style="display:flex;gap:10px">
         <button class="btn-secondary" onclick="closeModal()" style="flex:1">Отмена</button>
@@ -1085,6 +1094,13 @@ function confirmDeleteProject(projectId) {
 window.confirmDeleteProject = confirmDeleteProject;
 
 function deleteProject(projectId) {
+  const input = document.getElementById('modal-secret-input')?.value?.trim().toLowerCase();
+  if (input !== 'секрет') {
+    const err = document.getElementById('modal-secret-error');
+    if (err) err.style.display = 'block';
+    document.getElementById('modal-secret-input')?.focus();
+    return;
+  }
   const idx = VRH_PROJECTS.findIndex(p => p.id === projectId);
   if (idx === -1) return;
   VRH_PROJECTS.splice(idx, 1);

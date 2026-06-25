@@ -510,6 +510,21 @@ body::before {
 }
 .proj-header-pbar { margin-top: 16px; height: 6px; }
 
+/* ── Теги проблем ─────────────────────────────────────────── */
+.proj-problems-bar {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;
+}
+.proj-problem-tag {
+  display: flex; align-items: center; gap: 6px;
+  border-radius: 6px; padding: 7px 12px;
+  font-size: 12px; font-weight: 600;
+  white-space: nowrap; flex-shrink: 0;
+}
+.proj-problem-tag.red   { background: rgba(227,6,19,0.06);  color: #EF4444; border: 1px solid rgba(227,6,19,0.2); }
+.proj-problem-tag.amber { background: rgba(255,107,0,0.07); color: #F59E0B; border: 1px solid rgba(255,107,0,0.2); }
+.proj-problem-tag.blue  { background: var(--cyan-dim);      color: #0284C7; border: 1px solid rgba(0,200,255,0.25); }
+.proj-problem-tag svg   { flex-shrink: 0; }
+
 .proj-delete-btn {
   color: #EF4444;
   border-color: rgba(227,6,19,0.3);
@@ -1306,6 +1321,15 @@ table.items-table { width: 100%; border-collapse: collapse; }
   .proj-header-pbar { margin-top: 14px; height: 5px; }
 
   .proj-delete-btn { font-size: 11px; padding: 4px 8px; white-space: nowrap; }
+
+  .proj-problems-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin-bottom: 12px;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .proj-problem-tag { font-size: 11px; padding: 5px 10px; }
 
   /* ── Item detail ────────────────────────────────────────── */
   .item-header-card  { padding: 16px; }
