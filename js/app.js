@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #035';
+const APP_BUILD = 'DEPLOY #036';
 
 // ── State ──────────────────────────────────────────────────────
 const state = {
@@ -493,11 +493,11 @@ function itemTableRow(item, projectId) {
   const nameTipHtml = (()=>{
     const nf = item.nameFullOverride !== undefined ? item.nameFullOverride : item.name;
     return item.nameFullEnabled !== false && nf && nf !== item.nameShort
-      ? `<span class="name-full-tip" data-tip="${nf.replace(/"/g,'&quot;')}"><svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2.5a.75.75 0 110 1.5.75.75 0 010-1.5zM7 7h2v4H7V7z"/></svg></span>`
+      ? `<span class="name-full-tip" onclick="event.stopPropagation()" data-tip="${nf.replace(/"/g,'&quot;')}"><svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2.5a.75.75 0 110 1.5.75.75 0 010-1.5zM7 7h2v4H7V7z"/></svg></span>`
       : '';
   })();
   const noteTipHtml = item.notes && item.noteTipEnabled !== false
-    ? `<span class="note-tip" data-tip="${item.notes.replace(/"/g,'&quot;')}">${iconSvg('document', 12)}</span>`
+    ? `<span class="note-tip" onclick="event.stopPropagation()" data-tip="${item.notes.replace(/"/g,'&quot;')}">${iconSvg('document', 12)}</span>`
     : '';
 
   // Дедлайн

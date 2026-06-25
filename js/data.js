@@ -63,7 +63,7 @@ const VRH_ITEMS = [
 
   {
     id: 'mb_31', projectId: 'kalalahti', complexId: 'MB',
-    number: '31', name: 'Конусный отстойник с запорным механизмом',
+    number: '31', name: 'Конусный отстойник с запорным механизмом, 1000х1000х800мм, ПНД',
     nameShort: 'Конусный отстойник', quantity: 64, unit: 'шт',
     deadline: '2026-07-20', type: 'own',
     doneCount: 64,
@@ -122,8 +122,8 @@ const VRH_ITEMS = [
 
   {
     id: 'mb_35', projectId: 'kalalahti', complexId: 'MB',
-    number: '35', name: 'Решетка заградительная 2×1.6 выход, зазор между ламелями 5мм, AISI 304',
-    nameShort: 'Решетка выход 2×1.6', quantity: 32, unit: 'шт',
+    number: '35', name: 'Решетка заградительная 2×1.5 вход, зазор между ламелями 5мм, AISI 304',
+    nameShort: 'Решетка вход 2×1.5', quantity: 32, unit: 'шт',
     deadline: '2026-07-20', type: 'own',
     doneCount: 16, materialsStatus: PUR.RECEIVED,
     components: [],
@@ -136,8 +136,8 @@ const VRH_ITEMS = [
 
   {
     id: 'mb_36', projectId: 'kalalahti', complexId: 'MB',
-    number: '36', name: 'Решетка заградительная 2×1.5 вход, зазор между ламелями 5мм, AISI 304',
-    nameShort: 'Решетка вход 2×1.5', quantity: 16, unit: 'шт',
+    number: '36', name: 'Решетка заградительная 2×1.6 выход, зазор между ламелями 5мм, AISI 304',
+    nameShort: 'Решетка выход 2×1.6', quantity: 16, unit: 'шт',
     deadline: '2026-07-20', type: 'own',
     doneCount: 12, materialsStatus: PUR.RECEIVED,
     components: [],
@@ -150,8 +150,8 @@ const VRH_ITEMS = [
 
   {
     id: 'mb_36p', projectId: 'kalalahti', complexId: 'MB',
-    number: '36п', name: 'Решетка заградительная 2×1.5 промежуточная, зазор между ламелями 5мм, AISI 304',
-    nameShort: 'Решетка промеж. 2×1.5', quantity: 16, unit: 'шт',
+    number: '36п', name: 'Решетка заградительная 2×1.6 промежуточная, зазор между ламелями 5мм, AISI 304',
+    nameShort: 'Решетка промеж. 2×1.6', quantity: 16, unit: 'шт',
     deadline: '2026-07-20', type: 'own',
     doneCount: 0, materialsStatus: PUR.RECEIVED,
     components: [], history: [], notes: '',
@@ -159,7 +159,7 @@ const VRH_ITEMS = [
 
   {
     id: 'mb_37', projectId: 'kalalahti', complexId: 'MB',
-    number: '37', name: 'Дегазатор погружной аэрационный 2×3м',
+    number: '37', name: 'Дегазатор погружной аэрационный 2х3м, труба ПВХ перфорированная',
     nameShort: 'Дегазатор погружной МБ', quantity: 22, unit: 'шт',
     deadline: '2026-07-20', type: 'own',
     doneCount: 22, materialsStatus: PUR.RECEIVED,
@@ -174,7 +174,7 @@ const VRH_ITEMS = [
 
   {
     id: 'mb_38', projectId: 'kalalahti', complexId: 'MB',
-    number: '38', name: 'Платформа биофильтра 5×2м',
+    number: '38', name: 'Платформа биофильтра с набором шиберов и сбросным механизмом, 5х2м',
     nameShort: 'Платформа биофильтра МБ', quantity: 24, unit: 'шт',
     deadline: '2026-07-20', type: 'own',
     doneCount: 0, materialsStatus: PUR.RECEIVED,
@@ -188,7 +188,7 @@ const VRH_ITEMS = [
 
   {
     id: 'mb_40', projectId: 'kalalahti', complexId: 'MB',
-    number: '40', name: 'Оксигенатор 120 л/с',
+    number: '40', name: 'Оксигенатор с патрубками подачи кислорода и озона 120 л/с',
     nameShort: 'Оксигенатор 120 л/с МБ', quantity: 12, unit: 'шт',
     deadline: '2026-07-20', type: 'own',
     doneCount: 12, materialsStatus: PUR.RECEIVED,
@@ -201,7 +201,7 @@ const VRH_ITEMS = [
 
   {
     id: 'mb_41', projectId: 'kalalahti', complexId: 'MB',
-    number: '41', name: 'Комплект фиксации насоса',
+    number: '41', name: 'Комплект для фиксации насоса оксигенатора, нержавеющая сталь AISI 304',
     nameShort: 'Комплект фиксации насоса', quantity: 12, unit: 'шт',
     deadline: '2026-07-20', type: 'own',
     doneCount: 0, materialsStatus: PUR.PENDING,
@@ -212,17 +212,17 @@ const VRH_ITEMS = [
 
   {
     id: 'mb_45', projectId: 'kalalahti', complexId: 'MB',
-    number: '45', name: 'Прижим для рыбы 2000×1600',
+    number: '45', name: 'Прижим для рыбы с фиксаторами ШхВ 2000х1600 из нержавеющей стали AISI 304',
     nameShort: 'Прижим для рыбы', quantity: 4, unit: 'шт',
     deadline: '2026-07-20', type: 'own',
     doneCount: 0, materialsStatus: PUR.PARTIAL,
     components: [], history: [],
-    notes: 'Материалы куплены на 70%.',
+    notes: 'КД в работе.',
   },
 
   {
     id: 'mb_51', projectId: 'kalalahti', complexId: 'MB',
-    number: '51', name: 'Аэратор погружной 4×0.2м',
+    number: '51', name: 'Аэратор погружной 4х0.2м пристенный, ПВХ, AISI 304',
     nameShort: 'Аэратор погружной', quantity: 32, unit: 'шт',
     deadline: '2026-07-20', type: 'own',
     doneCount: 0, materialsStatus: PUR.PARTIAL,
@@ -238,7 +238,7 @@ const VRH_ITEMS = [
 
   {
     id: 'mb_39', projectId: 'kalalahti', complexId: 'MB',
-    number: '39', name: 'Наполнитель биофильтра',
+    number: '39', name: 'Наполнитель биофильтра, тонущий S-650 м2/м3, плотность 1.2',
     nameShort: 'Наполнитель биофильтра МБ', quantity: 192, unit: 'м³',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.ORDERED, doneCount: 0,
@@ -250,7 +250,7 @@ const VRH_ITEMS = [
 
   {
     id: 'mb_42', projectId: 'kalalahti', complexId: 'MB',
-    number: '42', name: 'Насос пропелерный 2,5 кВт (GSD)',
+    number: '42', name: 'Насос пропелерный 2,5 kW, 3х400V, 120 л/с, напор 0,7 м (GSD)',
     nameShort: 'Насос пропелерный 2,5 кВт', quantity: 12, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.ORDERED, doneCount: 0,
@@ -263,7 +263,7 @@ const VRH_ITEMS = [
 
   {
     id: 'mb_43', projectId: 'kalalahti', complexId: 'MB',
-    number: '43', name: 'Кормушки маятниковые',
+    number: '43', name: 'Кормушки маятниковые с бункером на 30 л из ПП',
     nameShort: 'Кормушки маятниковые', quantity: 32, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.ORDERED, doneCount: 0,
@@ -273,7 +273,7 @@ const VRH_ITEMS = [
 
   {
     id: 'mb_44', projectId: 'kalalahti', complexId: 'MB',
-    number: '44', name: 'Шланги аварийного кислородоснабжения',
+    number: '44', name: 'Шланги аварийного кислородоснабжения 27/19 мм, 3000 отверстий на метр',
     nameShort: 'Шланги аварийного O₂', quantity: 448, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -282,7 +282,7 @@ const VRH_ITEMS = [
 
   {
     id: 'mb_46', projectId: 'kalalahti', complexId: 'MB',
-    number: '46', name: 'Рыбнасос д110мм',
+    number: '46', name: 'Рыбнасос д110мм, высота подъема до 4м',
     nameShort: 'Рыбнасос д110', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -291,7 +291,7 @@ const VRH_ITEMS = [
 
   {
     id: 'mb_47', projectId: 'kalalahti', complexId: 'MB',
-    number: '47', name: 'Сортировщик 3 фракции',
+    number: '47', name: 'Сортировщик от 50 г до 800 г, 3 фракции, 3 канала подачи',
     nameShort: 'Сортировщик 3 фр.', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -300,7 +300,7 @@ const VRH_ITEMS = [
 
   {
     id: 'mb_48', projectId: 'kalalahti', complexId: 'MB',
-    number: '48', name: 'Съёмочный блок счётчика',
+    number: '48', name: 'Съемочный блок счетчика от 2 до 20 см, 500 шт/мин',
     nameShort: 'Съёмочный блок счётчика МБ', quantity: 8, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -322,7 +322,7 @@ const VRH_ITEMS = [
 
   {
     id: 'mb_50', projectId: 'kalalahti', complexId: 'MB',
-    number: '50', name: 'Сачок квадратный 328×440',
+    number: '50', name: 'Сачок квадратный 328х440 мм, размер ячейки 24х24',
     nameShort: 'Сачок квадратный', quantity: 4, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -355,7 +355,7 @@ const VRH_ITEMS = [
 
   {
     id: 'ib_2', projectId: 'kalalahti', complexId: 'IB',
-    number: '2', name: 'Раковина технологическая',
+    number: '2', name: 'Раковина технологическая из нержавеющей стали 500х1000х500мм',
     nameShort: 'Раковина технологическая', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -364,7 +364,7 @@ const VRH_ITEMS = [
 
   {
     id: 'ib_3', projectId: 'kalalahti', complexId: 'IB',
-    number: '3', name: 'Стол',
+    number: '3', name: 'Стол из нержавеющей стали 500х1000х500мм',
     nameShort: 'Стол ИБ', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -373,7 +373,7 @@ const VRH_ITEMS = [
 
   {
     id: 'ib_4', projectId: 'kalalahti', complexId: 'IB',
-    number: '4', name: 'Стеллаж для инвентаря',
+    number: '4', name: 'Стеллаж для инвентаря, металлический 180х70х30 см, 5 полок',
     nameShort: 'Стеллаж для инвентаря', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -382,7 +382,7 @@ const VRH_ITEMS = [
 
   {
     id: 'ib_5', projectId: 'kalalahti', complexId: 'IB',
-    number: '5', name: 'Спринцовка-клизма',
+    number: '5', name: 'Спринцовка-клизма с твердым наконечником 210 мл для отбора икры с дефектами',
     nameShort: 'Спринцовка-клизма', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -391,7 +391,7 @@ const VRH_ITEMS = [
 
   {
     id: 'ib_6', projectId: 'kalalahti', complexId: 'IB',
-    number: '6', name: 'Мерный стакан 2 л',
+    number: '6', name: 'Мерный стакан 2 л (полипропилен)',
     nameShort: 'Мерный стакан 2 л', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -400,7 +400,7 @@ const VRH_ITEMS = [
 
   {
     id: 'ib_7', projectId: 'kalalahti', complexId: 'IB',
-    number: '7', name: 'Таз строительный 40 л',
+    number: '7', name: 'Таз строительный прямоугольный 40 л (37х57, глубина 28 см), для приемки икры',
     nameShort: 'Таз строительный 40 л', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -409,7 +409,7 @@ const VRH_ITEMS = [
 
   {
     id: 'ib_8', projectId: 'kalalahti', complexId: 'IB',
-    number: '8', name: 'Пинцет прямой 250 мм',
+    number: '8', name: 'Пинцет прямой анатомический 250х2.5 мм (медицинская сталь)',
     nameShort: 'Пинцет прямой 250 мм', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -418,7 +418,7 @@ const VRH_ITEMS = [
 
   {
     id: 'ib_10', projectId: 'kalalahti', complexId: 'IB',
-    number: '10', name: 'Локтевой диспенсер',
+    number: '10', name: 'Локтевой диспенсер средств для мытья рук',
     nameShort: 'Локтевой диспенсер', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -427,7 +427,7 @@ const VRH_ITEMS = [
 
   {
     id: 'ib_11', projectId: 'kalalahti', complexId: 'IB',
-    number: '11', name: 'Термометр электрический',
+    number: '11', name: 'Термометр электрический водонепроницаемый 0-20 С',
     nameShort: 'Термометр электрический', quantity: 16, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -436,7 +436,7 @@ const VRH_ITEMS = [
 
   {
     id: 'ib_13', projectId: 'kalalahti', complexId: 'IB',
-    number: '13', name: 'Сачок для рыб 10 см',
+    number: '13', name: 'Сачок для рыб, белый, 10 см',
     nameShort: 'Сачок д/рыб 10 см ИБ', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -445,7 +445,7 @@ const VRH_ITEMS = [
 
   {
     id: 'ib_14', projectId: 'kalalahti', complexId: 'IB',
-    number: '14', name: 'Трубка ПВХ гибкая д8 мм',
+    number: '14', name: 'Трубка ПВХ гибкая д8мм, L2м, для уборки дна инкубационных лотков',
     nameShort: 'Трубка ПВХ д8 мм', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -491,7 +491,7 @@ const VRH_ITEMS = [
         notes: '4 шт на ванну. 28 ванн × 4 = 112 шт готовы.',
       },
       {
-        id: 'soedinitel', name: 'Соединитель ванн', quantity: 96, done: 56,
+        id: 'soediaitel', name: 'Соединитель ванн', quantity: 96, done: 56,
         notes: '2 шт на ванну.',
       },
       {
@@ -512,7 +512,7 @@ const VRH_ITEMS = [
 
   {
     id: 'lmk_17', projectId: 'kalalahti', complexId: 'LMK',
-    number: '17', name: 'Платформа биофильтра 5×2м',
+    number: '17', name: 'Платформа биофильтра с набором шиберов и сбросным механизмом, 5х2м',
     nameShort: 'Платформа биофильтра ЛМК', quantity: 10, unit: 'шт',
     deadline: '2026-07-20', type: 'own',
     doneCount: 5,
@@ -531,7 +531,7 @@ const VRH_ITEMS = [
         notes: 'Не готовы. Заготовки у Монолита. Материалы куплены.',
       },
       {
-        id: 'kreplenie', name: 'Крепление биофильтра 204', quantity: 10, done: 0,
+        id: 'krepleaie', name: 'Крепление биофильтра 204', quantity: 10, done: 0,
         notes: 'Андрей гнёт — в процессе.',
       },
     ],
@@ -544,7 +544,7 @@ const VRH_ITEMS = [
 
   {
     id: 'lmk_20', projectId: 'kalalahti', complexId: 'LMK',
-    number: '20', name: 'Оксигенатор 120 л/с',
+    number: '20', name: 'Оксигенатор с патрубками подачи кислорода и озона 120 л/с',
     nameShort: 'Оксигенатор 120 л/с ЛМК', quantity: 4, unit: 'шт',
     deadline: '2026-07-20', type: 'own',
     doneCount: 4, materialsStatus: PUR.PARTIAL,
@@ -557,7 +557,7 @@ const VRH_ITEMS = [
 
   {
     id: 'lmk_21', projectId: 'kalalahti', complexId: 'LMK',
-    number: '21', name: 'Дегазатор погружной 2×3м',
+    number: '21', name: 'Дегазатор погружной аэрационный 2х3м',
     nameShort: 'Дегазатор погружной ЛМК', quantity: 8, unit: 'шт',
     deadline: '2026-07-20', type: 'own',
     doneCount: 8, materialsStatus: PUR.RECEIVED,
@@ -572,7 +572,7 @@ const VRH_ITEMS = [
 
   {
     id: 'lmk_25', projectId: 'kalalahti', complexId: 'LMK',
-    number: '25', name: 'Канал сбросной из ПП',
+    number: '25', name: 'Канал сбросной из ПП 6мм',
     nameShort: 'Канал сбросной ПП', quantity: 4, unit: 'шт',
     deadline: '2026-07-20', type: 'own',
     doneCount: 0, materialsStatus: PUR.RECEIVED,
@@ -588,7 +588,7 @@ const VRH_ITEMS = [
 
   {
     id: 'lmk_19', projectId: 'kalalahti', complexId: 'LMK',
-    number: '19', name: 'Насос подачи воды в оксигенационные колодцы, Q-60 л/с, H-3м',
+    number: '19', name: 'Насос подачи воды в оксигенационные колодцы, Q-60 л/с, H-3м, масса 35 кг',
     nameShort: 'Насос подачи воды ЛМК', quantity: 6, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.ORDERED, doneCount: 0,
@@ -602,7 +602,7 @@ const VRH_ITEMS = [
 
   {
     id: 'lmk_23', projectId: 'kalalahti', complexId: 'LMK',
-    number: '23', name: 'Ультразвуковой расходомер Ду 50-700 мм',
+    number: '23', name: 'Ультразвуковой расходомер Ду 50-700 мм, +160 С',
     nameShort: 'УЗ расходомер', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.ORDERED, doneCount: 0,
@@ -629,7 +629,7 @@ const VRH_ITEMS = [
 
   {
     id: 'lmk_18', projectId: 'kalalahti', complexId: 'LMK',
-    number: '18', name: 'Наполнитель биофильтра',
+    number: '18', name: 'Наполнитель биофильтра, тонущий S-650 м2/м3, плотность 1.2',
     nameShort: 'Наполнитель биофильтра ЛМК', quantity: 80, unit: 'м³',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.ORDERED, doneCount: 0,
@@ -641,7 +641,7 @@ const VRH_ITEMS = [
 
   {
     id: 'lmk_22', projectId: 'kalalahti', complexId: 'LMK',
-    number: '22', name: 'Кормушка дисковая 3 л',
+    number: '22', name: 'Кормушка на мальковую ванну 3 л, дисковая',
     nameShort: 'Кормушка дисковая 3 л', quantity: 48, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -650,7 +650,7 @@ const VRH_ITEMS = [
 
   {
     id: 'lmk_24', projectId: 'kalalahti', complexId: 'LMK',
-    number: '24', name: 'Диффузор для аварийного кислорода',
+    number: '24', name: 'Диффузор для аварийного кислорода 3м, 2-5 bar, 2-8 л/мин',
     nameShort: 'Диффузор аварийного O₂', quantity: 48, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -659,7 +659,7 @@ const VRH_ITEMS = [
 
   {
     id: 'lmk_26', projectId: 'kalalahti', complexId: 'LMK',
-    number: '26', name: 'Сачок для рыб 10 см',
+    number: '26', name: 'Сачок для рыб, белый, 10 см',
     nameShort: 'Сачок д/рыб 10 см ЛМК', quantity: 10, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -668,7 +668,7 @@ const VRH_ITEMS = [
 
   {
     id: 'lmk_27', projectId: 'kalalahti', complexId: 'LMK',
-    number: '27', name: 'Рыбнасос д75 мм',
+    number: '27', name: 'Рыбнасос д75мм, высота подъема до 4м',
     nameShort: 'Рыбнасос д75', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -677,7 +677,7 @@ const VRH_ITEMS = [
 
   {
     id: 'lmk_28', projectId: 'kalalahti', complexId: 'LMK',
-    number: '28', name: 'Сортировщик 1–50 г',
+    number: '28', name: 'Сортировщик от 1 г до 50 г, 3 фракции, 3 канала подачи',
     nameShort: 'Сортировщик 1–50 г', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -686,7 +686,7 @@ const VRH_ITEMS = [
 
   {
     id: 'lmk_29', projectId: 'kalalahti', complexId: 'LMK',
-    number: '29', name: 'Съёмочный блок счётчика',
+    number: '29', name: 'Съемочный блок счетчика от 2 до 20 см, 500 шт/мин',
     nameShort: 'Съёмочный блок счётчика ЛМК', quantity: 6, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -699,7 +699,7 @@ const VRH_ITEMS = [
 
   {
     id: 'opo_55', projectId: 'kalalahti', complexId: 'OPO',
-    number: '55', name: 'Коллектор для вентиляторов дегазации',
+    number: '55', name: 'Коллектор для вентиляторов дегазации Ду1 Н-3м, полипропилен толщина 4мм',
     nameShort: 'Коллектор вентиляторов', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'own',
     doneCount: 0, materialsStatus: PUR.PENDING,
@@ -710,7 +710,7 @@ const VRH_ITEMS = [
 
   {
     id: 'opo_56', projectId: 'kalalahti', complexId: 'OPO',
-    number: '56', name: 'Подставка для вентиляторов',
+    number: '56', name: 'Подставка для вентиляторов дегазации на 4 вентилятора, сталь СТ3',
     nameShort: 'Подставка вентиляторов', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'own',
     doneCount: 0, materialsStatus: PUR.PENDING,
@@ -723,7 +723,7 @@ const VRH_ITEMS = [
 
   {
     id: 'opo_52', projectId: 'kalalahti', complexId: 'OPO',
-    number: '52', name: 'Компрессор коловратный (Мегатехника)',
+    number: '52', name: 'Компрессор коловратный 10 м3/мин at 140 мбар (Мегатехника)',
     nameShort: 'Компрессор коловратный', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.RECEIVED, doneCount: 0,
@@ -737,7 +737,7 @@ const VRH_ITEMS = [
 
   {
     id: 'opo_53', projectId: 'kalalahti', complexId: 'OPO',
-    number: '53', name: 'Генератор озона 200 г/ч (3озон)',
+    number: '53', name: 'Генератор озона 200 г/ч, давление до 1 бар (3озон)',
     nameShort: 'Генератор озона 200 г/ч', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.ORDERED, doneCount: 0,
@@ -749,7 +749,7 @@ const VRH_ITEMS = [
 
   {
     id: 'opo_54', projectId: 'kalalahti', complexId: 'OPO',
-    number: '54', name: 'Вентилятор напорный 5.5 кВт',
+    number: '54', name: 'Вентилятор напорный 3х380В, 50 Гц, 5,5 кВт, 1500 м3/ч at 0,8 м',
     nameShort: 'Вентилятор напорный 5.5 кВт', quantity: 10, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.ORDERED, doneCount: 0,
@@ -771,7 +771,7 @@ const VRH_ITEMS = [
 
   {
     id: 'opo_58', projectId: 'kalalahti', complexId: 'OPO',
-    number: '58', name: 'Микроскоп',
+    number: '58', name: 'Микроскоп ахроматический, объективы 4х/0.1, 10х/0.25, 40х/0.65, 100х/1.25',
     nameShort: 'Микроскоп', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.ORDERED, doneCount: 0,
@@ -792,7 +792,7 @@ const VRH_ITEMS = [
 
   {
     id: 'opo_60', projectId: 'kalalahti', complexId: 'OPO',
-    number: '60', name: 'Весы отгрузки до 2 т',
+    number: '60', name: 'Весы отгрузки готовой продукции до 2 т',
     nameShort: 'Весы отгрузки до 2 т', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -801,7 +801,7 @@ const VRH_ITEMS = [
 
   {
     id: 'opo_61', projectId: 'kalalahti', complexId: 'OPO',
-    number: '61', name: 'Морозильник 165 л',
+    number: '61', name: 'Морозильник для воды 165 л',
     nameShort: 'Морозильник 165 л', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -810,7 +810,7 @@ const VRH_ITEMS = [
 
   {
     id: 'opo_62', projectId: 'kalalahti', complexId: 'OPO',
-    number: '62', name: 'Морозильник для отхода малька 165 л',
+    number: '62', name: 'Морозильник для отхода малька до 5 г, 165 л',
     nameShort: 'Морозильник малька', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -819,7 +819,7 @@ const VRH_ITEMS = [
 
   {
     id: 'opo_63', projectId: 'kalalahti', complexId: 'OPO',
-    number: '63', name: 'Пульверизатор 16 л',
+    number: '63', name: 'Пульверизатор на 16 л с насосом аккумуляторный Champion',
     nameShort: 'Пульверизатор 16 л', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -828,7 +828,7 @@ const VRH_ITEMS = [
 
   {
     id: 'opo_64', projectId: 'kalalahti', complexId: 'OPO',
-    number: '64', name: 'Измеритель уровня CO₂',
+    number: '64', name: 'Измеритель уровня CO2 в воздухе от 200 до 5000 ppm',
     nameShort: 'Измеритель CO₂', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -837,7 +837,7 @@ const VRH_ITEMS = [
 
   {
     id: 'opo_65', projectId: 'kalalahti', complexId: 'OPO',
-    number: '65', name: 'Ручной измеритель TDS',
+    number: '65', name: 'Ручной измеритель TDS 0-10000 ppm',
     nameShort: 'Измеритель TDS', quantity: 4, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -846,7 +846,7 @@ const VRH_ITEMS = [
 
   {
     id: 'opo_66', projectId: 'kalalahti', complexId: 'OPO',
-    number: '66', name: 'Ручной измеритель ОВП',
+    number: '66', name: 'Ручной измеритель ОВП +/-800 мВ',
     nameShort: 'Измеритель ОВП', quantity: 4, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -855,7 +855,7 @@ const VRH_ITEMS = [
 
   {
     id: 'opo_67', projectId: 'kalalahti', complexId: 'OPO',
-    number: '67', name: 'Ручной измеритель pH',
+    number: '67', name: 'Ручной измеритель pH от 4 до 10',
     nameShort: 'Измеритель pH', quantity: 4, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -864,7 +864,7 @@ const VRH_ITEMS = [
 
   {
     id: 'opo_68', projectId: 'kalalahti', complexId: 'OPO',
-    number: '68', name: 'Ручной измеритель растворённого кислорода',
+    number: '68', name: 'Ручной измеритель растворенного кислорода в воде',
     nameShort: 'Измеритель O₂', quantity: 4, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -877,7 +877,7 @@ const VRH_ITEMS = [
 
   {
     id: 'vk_69', projectId: 'kalalahti', complexId: 'VK',
-    number: '69', name: 'Ванна для вакцинации ПП в каркасе нерж.',
+    number: '69', name: 'Ванна для вакцинации, полипропилен в каркасе из нержавеющей стали',
     nameShort: 'Ванна вакцинации ПП', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.ORDERED, doneCount: 0,
@@ -887,7 +887,7 @@ const VRH_ITEMS = [
 
   {
     id: 'vk_70', projectId: 'kalalahti', complexId: 'VK',
-    number: '70', name: 'Перекидная ванна для вакцинации ПП',
+    number: '70', name: 'Перекидная ванна для вакцинации из ПП 1000х500х500',
     nameShort: 'Перекидная ванна ПП', quantity: 4, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -896,7 +896,7 @@ const VRH_ITEMS = [
 
   {
     id: 'vk_71', projectId: 'kalalahti', complexId: 'VK',
-    number: '71', name: 'Насос подачи воды в ванну вакцинации',
+    number: '71', name: 'Насос подачи воды в ванну вакцинации Н-3м, Q-3 м/ч',
     nameShort: 'Насос подачи воды ВК', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -905,7 +905,7 @@ const VRH_ITEMS = [
 
   {
     id: 'vk_72', projectId: 'kalalahti', complexId: 'VK',
-    number: '72', name: 'Стол для вакцинации 2000×1200×700',
+    number: '72', name: 'Стол для вакцинации 2000х1200х700, с патрубками подачи воды, AISI 304, ПП',
     nameShort: 'Стол вакцинации', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -914,7 +914,7 @@ const VRH_ITEMS = [
 
   {
     id: 'vk_73', projectId: 'kalalahti', complexId: 'VK',
-    number: '73', name: 'Счётчик воды Ду15 с импульсным выходом',
+    number: '73', name: 'Счетчик воды на систему подпитки ванн с антисептиком Ду15 с импульсным выходом',
     nameShort: 'Счётчик воды Ду15', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -923,7 +923,7 @@ const VRH_ITEMS = [
 
   {
     id: 'vk_74', projectId: 'kalalahti', complexId: 'VK',
-    number: '74', name: 'Дозирующий насос для компонента А',
+    number: '74', name: 'Дозирующий насос с цифровым управлением для компонента А (Seko)',
     nameShort: 'Дозирующий насос А', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -932,7 +932,7 @@ const VRH_ITEMS = [
 
   {
     id: 'vk_75', projectId: 'kalalahti', complexId: 'VK',
-    number: '75', name: 'Дозирующий насос для компонента Б',
+    number: '75', name: 'Дозирующий насос с цифровым управлением для компонента Б (Seko)',
     nameShort: 'Дозирующий насос Б', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
@@ -941,7 +941,7 @@ const VRH_ITEMS = [
 
   {
     id: 'vk_76', projectId: 'kalalahti', complexId: 'VK',
-    number: '76', name: 'Съёмочный блок счётчика малька',
+    number: '76', name: 'Съемочный блок счетчика малька от 2 до 20 см, 500 шт/мин',
     nameShort: 'Съёмочный блок малька', quantity: 2, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
