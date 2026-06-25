@@ -692,7 +692,7 @@ table.items-table { width: 100%; border-collapse: collapse; }
   gap: 3px;
   white-space: nowrap;
   line-height: 18px;
-  max-width: 180px;
+  max-width: 420px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
