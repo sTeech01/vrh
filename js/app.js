@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #036';
+const APP_BUILD = 'DEPLOY #037';
 
 // ── State ──────────────────────────────────────────────────────
 const state = {
@@ -964,11 +964,6 @@ function openUpdateModal(itemId) {
           <svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2.5a.75.75 0 110 1.5.75.75 0 010-1.5zM7 7h2v4H7V7z"/></svg>
           Подсказка с полным наименованием
         </label>
-        <div style="font-size:11px;color:var(--gray-400);line-height:1.55;margin-bottom:10px">
-          Текст, который появляется при наведении на иконку
-          <svg viewBox="0 0 16 16" fill="currentColor" width="10" height="10" style="vertical-align:-1px;margin:0 2px"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2.5a.75.75 0 110 1.5.75.75 0 010-1.5zM7 7h2v4H7V7z"/></svg>
-          рядом с коротким именем в таблице.
-        </div>
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;margin-bottom:10px">
           <input type="checkbox" id="modal-name-full-enabled" ${nameFullOn ? 'checked' : ''} style="width:15px;height:15px;accent-color:#0EA5E9;cursor:pointer;flex-shrink:0">
           <span style="font-size:13px;color:var(--gray-700)">Показывать иконку подсказки</span>
