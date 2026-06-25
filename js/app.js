@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #031';
+const APP_BUILD = 'DEPLOY #032';
 
 // ── State ──────────────────────────────────────────────────────
 const state = {
@@ -558,7 +558,7 @@ function renderItem(el, projectId, itemId) {
   const componentsHtml = (item.type === 'own' && item.components?.length)
     ? renderComponents(item)
     : item.type === 'own'
-      ? `<div style="margin-top:16px;padding:14px 16px;background:var(--gray-50);border-radius:4px;border:1px solid var(--gray-200);font-size:12px;color:var(--gray-400)">${iconSvg('document',12)} Состав по КД не внесён — «Требует уточнения»</div>`
+      ? `<div style="margin-top:16px;padding:14px 16px;background:var(--gray-50);border-radius:4px;border:1px solid var(--gray-200);font-size:12px;color:var(--gray-400);display:flex;align-items:center;gap:6px">${iconSvg('document',12)} Состав по КД не внесён — «Требует уточнения»</div>`
       : renderPurchaseBlock(item);
 
   // История
@@ -606,6 +606,11 @@ function renderItem(el, projectId, itemId) {
           <span style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:4px">Примечание</span>
           ${item.notes}
         </div>` : ''}
+      <div style="margin-top:16px">
+        <button class="btn-secondary" onclick="openUpdateModal('${item.id}')" style="display:inline-flex;align-items:center;gap:6px">
+          ${iconSvg('edit',12)} Редактировать
+        </button>
+      </div>
     </div>
 
     ${componentsHtml}
@@ -632,16 +637,13 @@ function renderItem(el, projectId, itemId) {
     </div>
 
     <div class="card" style="padding:20px 24px;margin-top:16px">
-      <div style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:6px;font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">
         ${iconSvg('plus',12)} Добавить запись в историю
       </div>
       <textarea id="item-comment-input" class="form-textarea" placeholder="Введите текущий статус, что сделано, что ожидается..."></textarea>
       <div style="display:flex;gap:8px;margin-top:10px">
         <button class="btn-primary" style="display:flex;align-items:center;gap:6px" onclick="saveHistoryEntry('${item.id}')">
-          ${iconSvg('save',13)} Сохранить запись
-        </button>
-        <button class="btn-secondary" onclick="openUpdateModal('${item.id}')">
-          ${iconSvg('edit',12)} Обновить прогресс
+          ${iconSvg('plus',13)} Добавить запись
         </button>
       </div>
     </div>
@@ -726,16 +728,19 @@ function renderHistory(item) {
   const sorted = [...item.history].sort((a,b) => b.date.localeCompare(a.date));
   return `
     <div class="card" style="padding:20px 24px;margin-top:16px">
-      <div style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:6px;font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px">
         ${iconSvg('clock',12)} История · ${sorted.length} записей
       </div>
       <div style="display:grid;gap:0">
         ${sorted.map((h, i) => `
-          <div style="display:flex;gap:14px;padding:10px 0;${i<sorted.length-1?'border-bottom:1px solid var(--gray-100)':''}">
-            <div style="flex-shrink:0;font-size:11px;color:var(--gray-400);font-weight:600;width:80px;padding-top:1px">
+          <div id="hist-row-${i}" style="display:flex;gap:14px;padding:10px 0;${i<sorted.length-1?'border-bottom:1px solid var(--gray-100)':''}">
+            <div style="flex-shrink:0;font-size:11px;color:var(--gray-400);font-weight:600;width:80px;padding-top:2px">
               ${formatDateShort(h.date)}
             </div>
-            <div style="font-size:13px;color:var(--gray-700);line-height:1.55">${h.text}</div>
+            <div class="hist-text" style="font-size:13px;color:var(--gray-700);line-height:1.55;flex:1">${h.text}</div>
+            <button onclick="editHistoryEntry('${item.id}',${i})" style="flex-shrink:0;background:none;border:none;cursor:pointer;color:var(--gray-300);padding:2px 4px;border-radius:4px;line-height:1;align-self:flex-start;margin-top:2px" title="Редактировать запись">
+              ${iconSvg('edit',11)}
+            </button>
           </div>`).join('')}
       </div>
     </div>`;
@@ -1306,7 +1311,9 @@ function applyEdits() {
         if (c && ec.done !== undefined) c.done = ec.done;
       });
     }
-    if (edit.history) {
+    if (edit.historyFull) {
+      item.history = edit.historyFull.map(h => ({ ...h }));
+    } else if (edit.history) {
       edit.history.forEach(h => {
         if (!item.history.find(x => x.date === h.date && x.text === h.text)) {
           item.history.push(h);
@@ -1328,8 +1335,12 @@ function saveHistoryEntry(itemId) {
   item.history.push(entry);
 
   if (!localEdits[itemId]) localEdits[itemId] = {};
-  if (!localEdits[itemId].history) localEdits[itemId].history = [];
-  localEdits[itemId].history.push(entry);
+  if (localEdits[itemId].historyFull) {
+    localEdits[itemId].historyFull.push(entry);
+  } else {
+    if (!localEdits[itemId].history) localEdits[itemId].history = [];
+    localEdits[itemId].history.push(entry);
+  }
 
   saveEditsToStorage();
   showToast('Запись добавлена в историю');
@@ -1337,6 +1348,47 @@ function saveHistoryEntry(itemId) {
   render();
 }
 window.saveHistoryEntry = saveHistoryEntry;
+
+function editHistoryEntry(itemId, idx) {
+  const item = VRH_ITEMS.find(i => i.id === itemId);
+  if (!item) return;
+  const sorted = [...item.history].sort((a,b) => b.date.localeCompare(a.date));
+  const entry = sorted[idx];
+  if (!entry) return;
+  const row = document.getElementById(`hist-row-${idx}`);
+  if (!row) return;
+  const textEl = row.querySelector('.hist-text');
+  if (!textEl) return;
+  textEl.innerHTML = `
+    <div>
+      <textarea id="hist-edit-${idx}" class="form-textarea" style="min-height:52px;margin-bottom:8px">${entry.text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+      <div style="display:flex;gap:6px">
+        <button class="btn-primary" style="font-size:11px;padding:4px 12px;display:inline-flex;align-items:center;gap:4px" onclick="saveHistoryEdit('${itemId}',${idx})">${iconSvg('save',11)} Сохранить</button>
+        <button class="btn-secondary" style="font-size:11px;padding:4px 10px" onclick="render()">Отмена</button>
+      </div>
+    </div>`;
+  row.querySelector(`#hist-edit-${idx}`)?.focus();
+}
+window.editHistoryEntry = editHistoryEntry;
+
+function saveHistoryEdit(itemId, idx) {
+  const item = VRH_ITEMS.find(i => i.id === itemId);
+  if (!item) return;
+  const sorted = [...item.history].sort((a,b) => b.date.localeCompare(a.date));
+  const entry = sorted[idx];
+  if (!entry) return;
+  const newText = (document.getElementById(`hist-edit-${idx}`)?.value ?? '').trim();
+  if (!newText) { showToast('Текст не может быть пустым'); return; }
+  const orig = item.history.find(h => h.date === entry.date && h.text === entry.text);
+  if (orig) orig.text = newText;
+  if (!localEdits[itemId]) localEdits[itemId] = {};
+  localEdits[itemId].historyFull = item.history.map(h => ({ ...h }));
+  delete localEdits[itemId].history;
+  saveEditsToStorage();
+  showToast('Запись обновлена');
+  render();
+}
+window.saveHistoryEdit = saveHistoryEdit;
 
 function exportData() {
   const data = {
