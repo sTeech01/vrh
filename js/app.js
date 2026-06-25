@@ -943,6 +943,10 @@ function openUpdateModal(itemId) {
           ${purOpts.map(o => `<option value="${o.val}" ${curPur === o.val ? 'selected' : ''}>${o.label}</option>`).join('')}
         </select>
       </div>
+      <div class="form-group">
+        <label class="form-label">Дедлайн</label>
+        <input type="date" class="form-input" id="modal-deadline" value="${item.deadline}" style="margin-top:4px">
+      </div>
       <div class="form-group" style="margin-bottom:0">
         <label class="form-label">Примечание</label>
         <textarea class="form-textarea" id="modal-notes" style="margin-top:4px;min-height:68px">${item.notes || ''}</textarea>
@@ -1043,6 +1047,13 @@ function saveItemUpdate(itemId) {
     item.purchaseStatus = purVal;
     item.materialsStatus = purVal;
     localEdits[itemId].purchaseStatus = purVal;
+  }
+
+  // Дедлайн (все типы)
+  const dlVal = document.getElementById('modal-deadline')?.value;
+  if (dlVal) {
+    item.deadline = dlVal;
+    localEdits[itemId].deadline = dlVal;
   }
 
   // Примечание (все типы)
@@ -1153,6 +1164,7 @@ function applyEdits() {
     if (edit.doneCount        !== undefined)  item.doneCount        = edit.doneCount;
     if (edit.purchaseStatus   !== undefined)  item.purchaseStatus   = edit.purchaseStatus;
     if (edit.notes            !== undefined)  item.notes            = edit.notes;
+    if (edit.deadline         !== undefined)  item.deadline         = edit.deadline;
     if (edit.components) {
       edit.components.forEach(ec => {
         const c = item.components?.find(x => x.id === ec.id);
