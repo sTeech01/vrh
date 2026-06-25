@@ -4,7 +4,14 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #045';
+const APP_BUILD = 'DEPLOY #046';
+
+// ── Supabase ────────────────────────────────────────────────────
+const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
+const _SB_KEY = 'sb_publishable_r6GaseHA38EkvSNlnVEn2g_n6HX16Uw';
+let _sb = null;
+let _customAssignees = [];
+let _itemOrder = {};
 
 // ── State ──────────────────────────────────────────────────────
 const state = {
@@ -17,15 +24,82 @@ const state = {
 let localEdits = {};
 
 // ── Init ────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  loadEditsFromStorage();
+document.addEventListener('DOMContentLoaded', async () => {
+  _sb = supabase.createClient(_SB_URL, _SB_KEY);
+  const { data: { session } } = await _sb.auth.getSession();
+  if (!session) { showLoginScreen(); return; }
+  await initApp();
+});
+
+async function initApp() {
+  await loadRemoteData();
   applyEdits();
   setupNavigation();
   handleHash();
   updateProblemsBadge();
   const badge = document.querySelector('.deploy-badge');
   if (badge) badge.textContent = APP_BUILD;
-});
+}
+
+function showLoginScreen() {
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('mobile-nav').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pw = document.getElementById('login-password').value;
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-error');
+  if (!email || !pw) { err.textContent = 'Введите email и пароль'; return; }
+  btn.disabled = true; btn.textContent = 'Вход...'; err.textContent = '';
+  const { error } = await _sb.auth.signInWithPassword({ email, password: pw });
+  if (error) {
+    err.textContent = 'Неверный email или пароль';
+    btn.disabled = false; btn.textContent = 'Войти';
+    return;
+  }
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = '';
+  document.getElementById('mobile-nav').style.display = '';
+  await initApp();
+}
+
+async function doLogout() {
+  await _sb.auth.signOut();
+  localEdits = {}; _customAssignees = []; _itemOrder = {};
+  VRH_ITEMS.forEach(item => {
+    const orig = window._VRH_ORIG?.[item.id];
+    if (orig) Object.assign(item, orig);
+  });
+  showLoginScreen();
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-password').value = '';
+  document.getElementById('login-error').textContent = '';
+}
+
+async function loadRemoteData() {
+  const [ovRes, asRes, orRes] = await Promise.all([
+    _sb.from('item_overrides').select('*'),
+    _sb.from('custom_assignees').select('*').order('id'),
+    _sb.from('item_order').select('*'),
+  ]);
+  if (ovRes.data) {
+    localEdits = {};
+    ovRes.data.forEach(r => { localEdits[r.item_id] = r.data; });
+  }
+  if (asRes.data) {
+    _customAssignees = asRes.data.map(r => ({ name: r.name, colorIdx: r.color_idx }));
+  }
+  if (orRes.data) {
+    _itemOrder = {};
+    orRes.data.forEach(r => { _itemOrder[r.complex_id] = r.order_json; });
+  }
+}
+
+window.doLogin  = doLogin;
+window.doLogout = doLogout;
 window.addEventListener('hashchange', handleHash);
 
 // ── Router ──────────────────────────────────────────────────────
@@ -1055,7 +1129,7 @@ function saveProgressUpdate(itemId) {
     });
   }
 
-  saveEditsToStorage();
+  saveEditsToStorage(itemId);
   closeModal();
   showToast('Прогресс обновлён');
   updateProblemsBadge();
@@ -1071,7 +1145,7 @@ function savePurchaseUpdate(itemId) {
   item.purchaseStatus = val;
   if (!localEdits[itemId]) localEdits[itemId] = {};
   localEdits[itemId].purchaseStatus = val;
-  saveEditsToStorage();
+  saveEditsToStorage(itemId);
   closeModal();
   showToast('Статус закупки обновлён');
   updateProblemsBadge();
@@ -1151,7 +1225,7 @@ function saveItemUpdate(itemId) {
   item.noteTipEnabled = noteTipEn;
   localEdits[itemId].noteTipEnabled = noteTipEn;
 
-  saveEditsToStorage();
+  saveEditsToStorage(itemId);
   closeModal();
   showToast('Сохранено');
   updateProblemsBadge();
@@ -1169,7 +1243,7 @@ function saveNameFull(itemId) {
   if (!localEdits[itemId]) localEdits[itemId] = {};
   localEdits[itemId].nameFullEnabled = enabled;
   localEdits[itemId].nameFullOverride = item.nameFullOverride;
-  saveEditsToStorage();
+  saveEditsToStorage(itemId);
   showToast('Сохранено');
   render();
 }
@@ -1234,8 +1308,8 @@ function deleteProject(projectId) {
     const i = VRH_ITEMS.findIndex(x => x.id === id);
     if (i !== -1) VRH_ITEMS.splice(i, 1);
     delete localEdits[id];
+    if (_sb) _sb.from('item_overrides').delete().eq('item_id', id).catch(() => {});
   });
-  saveEditsToStorage();
   closeModal();
   updateProblemsBadge();
   navigate('projects');
@@ -1266,13 +1340,14 @@ const ASSIGNEE_DEFAULTS = [
   { name: 'Тренин А.',      colorIdx: 0 },
   { name: 'Парамузов О.Н.', colorIdx: 1 },
 ];
-const ASSIGNEES_KEY = 'vrh_assignees_v1';
-
-function loadAssignees() {
-  try { return JSON.parse(localStorage.getItem(ASSIGNEES_KEY)) || []; } catch { return []; }
-}
-function saveAssignees(list) {
-  localStorage.setItem(ASSIGNEES_KEY, JSON.stringify(list));
+function loadAssignees() { return _customAssignees; }
+async function saveAssignees(list) {
+  _customAssignees = list;
+  if (!_sb) return;
+  await _sb.from('custom_assignees').delete().neq('name', '__never__');
+  if (list.length) {
+    await _sb.from('custom_assignees').insert(list.map(a => ({ name: a.name, color_idx: a.colorIdx })));
+  }
 }
 function getAllAssignees() {
   const custom = loadAssignees();
@@ -1365,7 +1440,7 @@ function setAssignee(itemId, value) {
   item.assignee = value;
   if (!localEdits[itemId]) localEdits[itemId] = {};
   localEdits[itemId].assignee = value;
-  saveEditsToStorage();
+  saveEditsToStorage(itemId);
   closeAssigneeDrop();
   render();
 }
@@ -1402,14 +1477,16 @@ function confirmEditAssignee(itemId, oldName) {
     custom.push({ name: newName, colorIdx: orig ? orig.colorIdx : 0 });
   }
   saveAssignees(custom);
+  const _affectedIds = [];
   VRH_ITEMS.forEach(item => {
     if (item.assignee === oldName) {
       item.assignee = newName;
       if (!localEdits[item.id]) localEdits[item.id] = {};
       localEdits[item.id].assignee = newName;
+      _affectedIds.push(item.id);
     }
   });
-  saveEditsToStorage();
+  _affectedIds.forEach(id => saveEditsToStorage(id));
   closeAssigneeDrop();
   render();
 }
@@ -1457,14 +1534,15 @@ document.addEventListener('mouseout', e => {
 // =============================================================
 // ITEM ORDER (drag-and-drop)
 // =============================================================
-const ORDER_KEY = 'vrh_order_v1';
 let _dragId = null;
 
-function loadItemOrder() {
-  try { return JSON.parse(localStorage.getItem(ORDER_KEY)) || {}; } catch { return {}; }
-}
+function loadItemOrder() { return { ..._itemOrder }; }
 function saveItemOrder(o) {
-  try { localStorage.setItem(ORDER_KEY, JSON.stringify(o)); } catch(e) {}
+  _itemOrder = { ...o };
+  if (!_sb) return;
+  Object.entries(o).forEach(([complex_id, order_json]) => {
+    _sb.from('item_order').upsert({ complex_id, order_json }).catch(() => {});
+  });
 }
 function applyItemOrder(complexId, items) {
   const ids = loadItemOrder()[complexId];
@@ -1521,16 +1599,17 @@ function initGridDrag(grid, complexId, projectId) {
   });
 }
 
-function saveEditsToStorage() {
-  try { localStorage.setItem('vrh_edits_v2', JSON.stringify(localEdits)); } catch(e) {}
+function saveEditsToStorage(changedItemId) {
+  if (!_sb || changedItemId === undefined) return;
+  const data = localEdits[changedItemId];
+  if (data === undefined) {
+    _sb.from('item_overrides').delete().eq('item_id', changedItemId).catch(() => {});
+  } else {
+    _sb.from('item_overrides').upsert({ item_id: changedItemId, data, updated_at: new Date().toISOString() }).catch(() => {});
+  }
 }
 
-function loadEditsFromStorage() {
-  try {
-    const raw = localStorage.getItem('vrh_edits_v2');
-    if (raw) localEdits = JSON.parse(raw);
-  } catch(e) { localEdits = {}; }
-}
+function loadEditsFromStorage() { /* data loaded from Supabase via loadRemoteData() */ }
 
 function applyEdits() {
   VRH_ITEMS.forEach(item => {
@@ -1583,7 +1662,7 @@ function saveHistoryEntry(itemId) {
     localEdits[itemId].history.push(entry);
   }
 
-  saveEditsToStorage();
+  saveEditsToStorage(itemId);
   showToast('Запись добавлена в историю');
   document.getElementById('item-comment-input').value = '';
   render();
@@ -1625,7 +1704,7 @@ function saveHistoryEdit(itemId, idx) {
   if (!localEdits[itemId]) localEdits[itemId] = {};
   localEdits[itemId].historyFull = item.history.map(h => ({ ...h }));
   delete localEdits[itemId].history;
-  saveEditsToStorage();
+  saveEditsToStorage(itemId);
   showToast('Запись обновлена');
   render();
 }
