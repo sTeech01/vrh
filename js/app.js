@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #023';
+const APP_BUILD = 'DEPLOY #024';
 
 // ── State ──────────────────────────────────────────────────────
 const state = {
@@ -1142,6 +1142,37 @@ function closeModal(e) {
   document.getElementById('modal-overlay').classList.remove('open');
 }
 window.closeModal = closeModal;
+
+// =============================================================
+// NAME TOOLTIP
+// =============================================================
+document.addEventListener('mouseover', e => {
+  const tip = e.target.closest('.name-full-tip');
+  if (!tip) return;
+  const text = tip.getAttribute('data-tip');
+  if (!text) return;
+  let el = document.getElementById('name-tooltip');
+  if (!el) { el = document.createElement('div'); el.id = 'name-tooltip'; document.body.appendChild(el); }
+  el.textContent = text;
+  const rect = tip.getBoundingClientRect();
+  el.style.visibility = 'hidden';
+  el.style.display = 'block';
+  const tw = el.offsetWidth, th = el.offsetHeight;
+  let top = rect.top - th - 8;
+  let left = rect.left + rect.width / 2 - tw / 2;
+  if (top < 8) top = rect.bottom + 8;
+  if (left < 8) left = 8;
+  if (left + tw > window.innerWidth - 8) left = window.innerWidth - tw - 8;
+  el.style.top = top + 'px';
+  el.style.left = left + 'px';
+  el.style.visibility = 'visible';
+});
+document.addEventListener('mouseout', e => {
+  if (e.target.closest('.name-full-tip')) {
+    const el = document.getElementById('name-tooltip');
+    if (el) el.remove();
+  }
+});
 
 // =============================================================
 // PERSISTENCE
