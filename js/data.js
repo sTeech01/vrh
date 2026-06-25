@@ -277,7 +277,7 @@ const VRH_ITEMS = [
     nameShort: 'Шланги аварийного O₂', quantity: 448, unit: 'шт',
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
-    notes: 'Ждём Максима.',
+    notes: 'Выбираем между польским и немецким, сегодня закажем.',
   },
 
   {
