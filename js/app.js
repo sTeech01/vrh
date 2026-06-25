@@ -1333,7 +1333,7 @@ function showAddAssigneeInput(itemId) {
   const drop = document.getElementById('assignee-drop');
   if (!drop) return;
   document.removeEventListener('click', closeAssigneeDrop);
-  drop.innerHTML = `<div class="adrop-new-row">
+  drop.innerHTML = `<div class="adrop-new-row" onclick="event.stopPropagation()">
     <input id="adrop-new-input" type="text" placeholder="Имя Фамилия" autocomplete="off">
     <button onclick="confirmAddAssignee('${itemId}')">Ок</button>
   </div>`;
@@ -1373,7 +1373,7 @@ function showEditAssigneeInput(itemId, oldName) {
   const drop = document.getElementById('assignee-drop');
   if (!drop) return;
   document.removeEventListener('click', closeAssigneeDrop);
-  drop.innerHTML = `<div class="adrop-new-row">
+  drop.innerHTML = `<div class="adrop-new-row" onclick="event.stopPropagation()">
     <input id="adrop-edit-input" type="text" value="${oldName.replace(/"/g, '&quot;')}" autocomplete="off">
     <button onclick="confirmEditAssignee('${itemId}','${oldName.replace(/'/g, "\\'")}')">Ок</button>
   </div>`;
