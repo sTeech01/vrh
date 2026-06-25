@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #032';
+const APP_BUILD = 'DEPLOY #033';
 
 // ── State ──────────────────────────────────────────────────────
 const state = {
@@ -617,26 +617,6 @@ function renderItem(el, projectId, itemId) {
     ${historyHtml}
 
     <div class="card" style="padding:20px 24px;margin-top:16px">
-      <div style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">
-        <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12" style="vertical-align:-1px;margin-right:4px"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2.5a.75.75 0 110 1.5.75.75 0 010-1.5zM7 7h2v4H7V7z"/></svg>
-        Полное наименование — подсказка в таблице
-      </div>
-      <div style="font-size:12px;color:var(--gray-400);line-height:1.6;margin-bottom:14px">
-        Текст, который появляется при наведении на иконку
-        <svg viewBox="0 0 16 16" fill="currentColor" width="11" height="11" style="vertical-align:-1px;margin:0 2px;color:#9CA3AF"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2.5a.75.75 0 110 1.5.75.75 0 010-1.5zM7 7h2v4H7V7z"/></svg>
-        рядом с коротким именем в таблице позиций. Если включено и текст отличается от короткого имени — иконка отображается автоматически.
-      </div>
-      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:14px;user-select:none">
-        <input type="checkbox" id="name-full-enabled" ${item.nameFullEnabled !== false ? 'checked' : ''} style="width:16px;height:16px;accent-color:#0EA5E9;cursor:pointer">
-        <span style="font-size:13px;font-weight:500;color:var(--gray-700)">Показывать иконку подсказки в таблице</span>
-      </label>
-      <textarea class="form-textarea" id="name-full-text" style="min-height:56px;resize:vertical" placeholder="Введите полное наименование...">${(item.nameFullOverride !== undefined ? item.nameFullOverride : item.name).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
-      <button class="btn-primary" style="margin-top:10px;display:flex;align-items:center;gap:6px" onclick="saveNameFull('${item.id}')">
-        ${iconSvg('save',13)} Сохранить
-      </button>
-    </div>
-
-    <div class="card" style="padding:20px 24px;margin-top:16px">
       <div style="display:flex;align-items:center;gap:6px;font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">
         ${iconSvg('plus',12)} Добавить запись в историю
       </div>
@@ -918,81 +898,113 @@ function aiCard(rec) {
 }
 
 // =============================================================
-// MODAL: Update Item (прогресс + закупка + примечание)
+// MODAL: Edit Item (все поля в одном месте)
 // =============================================================
 function openUpdateModal(itemId) {
   const item = VRH_ITEMS.find(i => i.id === itemId);
   if (!item) return;
 
   const purOpts = [
-    { val: '',             label: '— не указано —' },
-    { val: PUR.PENDING,   label: 'Не заказано' },
-    { val: PUR.ORDERED,   label: 'Заказано / счёт выставлен' },
-    { val: PUR.PARTIAL,   label: 'Получено частично' },
-    { val: PUR.RECEIVED,  label: 'Получено полностью' },
+    { val: '',            label: '— не указано —' },
+    { val: PUR.PENDING,  label: 'Не заказано' },
+    { val: PUR.ORDERED,  label: 'Заказано / счёт выставлен' },
+    { val: PUR.PARTIAL,  label: 'Получено частично' },
+    { val: PUR.RECEIVED, label: 'Получено полностью' },
   ];
   const curPur = item.purchaseStatus || item.materialsStatus || '';
+  const nameFull = item.nameFullOverride !== undefined ? item.nameFullOverride : item.name;
+  const nameFullOn = item.nameFullEnabled !== false;
 
-  // Поля прогресса — только для собственного производства
-  let progressFields = '';
+  const sec = (label) =>
+    `<div style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">${label}</div>`;
+  const div = () =>
+    `<div style="height:1px;background:var(--gray-100);margin:18px 0"></div>`;
+
+  // Прогресс — только для 'own'
+  let progressSection = '';
   if (item.type === 'own') {
-    const hasComponents = item.components?.length > 0;
-    const componentRows = hasComponents
-      ? item.components.map(c => `
-          <div style="margin-bottom:8px">
-            <label class="form-label">${c.name} (из ${c.quantity})</label>
-            <input type="number" class="form-input" id="comp-${c.id}"
-              min="0" max="${c.quantity}" value="${c.done}" style="margin-top:4px">
-          </div>`).join('')
-      : '';
-    progressFields = `
+    const hasComp = item.components?.length > 0;
+    const compRows = hasComp ? item.components.map(c => `
       <div class="form-group">
-        <label class="form-label">Готово изделий (из ${item.quantity})</label>
-        <input type="number" class="form-input" id="modal-done-count"
-          min="0" max="${item.quantity}" value="${item.doneCount || 0}" style="margin-top:4px">
+        <label class="form-label">${c.name} <span style="color:var(--gray-400);font-weight:400">(из ${c.quantity})</span></label>
+        <input type="number" class="form-input" id="comp-${c.id}" min="0" max="${c.quantity}" value="${c.done}" style="margin-top:4px">
+      </div>`).join('') : '';
+    progressSection = `
+      ${div()}
+      ${sec('Прогресс')}
+      <div class="form-group">
+        <label class="form-label">Готово <span style="color:var(--gray-400);font-weight:400">(из ${item.quantity} ${item.unit})</span></label>
+        <input type="number" class="form-input" id="modal-done-count" min="0" max="${item.quantity}" value="${item.doneCount || 0}" style="margin-top:4px">
       </div>
-      ${hasComponents ? `<div style="border-top:1px solid var(--gray-100);margin:14px 0 10px;padding-top:14px">
-        <div class="form-label" style="margin-bottom:10px">Компоненты</div>${componentRows}
-      </div>` : ''}
-      <div style="height:1px;background:var(--gray-100);margin:14px 0"></div>`;
+      ${hasComp ? `<div style="background:var(--gray-50);border-radius:8px;padding:12px;margin-top:4px">${compRows}</div>` : ''}`;
   }
 
   document.getElementById('modal-box').innerHTML = `
     <div class="modal-header">
-      <div class="modal-title">${iconSvg('edit',14)} Обновить позицию</div>
+      <div class="modal-title">${iconSvg('edit',14)} Редактировать позицию</div>
       <button class="modal-close" onclick="closeModal()">${iconSvg('x', 12)}</button>
     </div>
     <div class="modal-body">
-      <div style="font-size:12px;color:var(--gray-400);margin-bottom:16px;line-height:1.5">${item.name}</div>
-      ${progressFields}
+
+      ${sec('Наименование')}
       <div class="form-group">
-        <label class="form-label">Статус закупки</label>
+        <label class="form-label">Короткое имя <span style="color:var(--gray-400);font-weight:400">(отображается в таблице)</span></label>
+        <input type="text" class="form-input" id="modal-name-short"
+          value="${item.nameShort.replace(/"/g,'&quot;')}" style="margin-top:4px">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2.5a.75.75 0 110 1.5.75.75 0 010-1.5zM7 7h2v4H7V7z"/></svg>
+          Подсказка с полным наименованием
+        </label>
+        <div style="font-size:11px;color:var(--gray-400);line-height:1.55;margin-bottom:10px">
+          Текст, который появляется при наведении на иконку
+          <svg viewBox="0 0 16 16" fill="currentColor" width="10" height="10" style="vertical-align:-1px;margin:0 2px"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2.5a.75.75 0 110 1.5.75.75 0 010-1.5zM7 7h2v4H7V7z"/></svg>
+          рядом с коротким именем в таблице.
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;margin-bottom:10px">
+          <input type="checkbox" id="modal-name-full-enabled" ${nameFullOn ? 'checked' : ''} style="width:15px;height:15px;accent-color:#0EA5E9;cursor:pointer;flex-shrink:0">
+          <span style="font-size:13px;color:var(--gray-700)">Показывать иконку подсказки</span>
+        </label>
+        <textarea class="form-textarea" id="modal-name-full-text" style="min-height:52px;resize:vertical"
+          placeholder="Полное наименование для подсказки...">${nameFull.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+      </div>
+
+      ${progressSection}
+
+      ${div()}
+      ${sec('Статус')}
+      <div class="form-group">
+        <label class="form-label">Статус закупки / материалов</label>
         <select class="form-select" id="modal-pur-status" style="margin-top:4px">
-          ${purOpts.map(o => `<option value="${o.val}" ${curPur === o.val ? 'selected' : ''}>${o.label}</option>`).join('')}
+          ${purOpts.map(o => `<option value="${o.val}" ${curPur===o.val?'selected':''}>${o.label}</option>`).join('')}
         </select>
       </div>
       <div class="form-group">
         <label class="form-label">Дедлайн</label>
         <input type="date" class="form-input" id="modal-deadline" value="${item.deadline}" style="margin-top:4px">
       </div>
-      <div class="form-group">
+      <div class="form-group" style="margin-bottom:0">
         <label class="form-label" style="display:flex;align-items:center;gap:6px">
           Блокировка
           ${item.blockReason ? `<span class="block-badge-active">АКТИВНА</span>` : ''}
         </label>
         <input type="text" class="form-input" id="modal-block-reason"
-          value="${(item.blockReason || '').replace(/"/g, '&quot;')}"
-          placeholder="Нет (оставьте пустым чтобы не блокировать)"
+          value="${(item.blockReason || '').replace(/"/g,'&quot;')}"
+          placeholder="Нет (оставьте пустым чтобы снять блокировку)"
           style="margin-top:4px">
         ${item.blockReason ? `<div style="margin-top:5px;font-size:11px;color:var(--gray-400)">Очистите поле и сохраните — блокировка будет снята</div>` : ''}
       </div>
+
+      ${div()}
+      ${sec('Примечание')}
       <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">Примечание</label>
-        <textarea class="form-textarea" id="modal-notes" style="margin-top:4px;min-height:68px">${item.notes || ''}</textarea>
+        <textarea class="form-textarea" id="modal-notes" style="min-height:68px">${item.notes || ''}</textarea>
       </div>
+
       <button class="btn-primary" onclick="saveItemUpdate('${item.id}')"
-        style="margin-top:14px;width:100%;display:flex;align-items:center;justify-content:center;gap:8px">
-        ${iconSvg('save', 14)} Сохранить
+        style="margin-top:18px;width:100%;display:flex;align-items:center;justify-content:center;gap:8px">
+        ${iconSvg('save', 14)} Сохранить изменения
       </button>
     </div>`;
 
@@ -1057,6 +1069,21 @@ function saveItemUpdate(itemId) {
   const item = VRH_ITEMS.find(i => i.id === itemId);
   if (!item) return;
   if (!localEdits[itemId]) localEdits[itemId] = {};
+
+  // Короткое имя
+  const nameShortVal = (document.getElementById('modal-name-short')?.value ?? '').trim();
+  if (nameShortVal) {
+    item.nameShort = nameShortVal;
+    localEdits[itemId].nameShort = nameShortVal;
+  }
+
+  // Полное наименование / подсказка
+  const nameFullEn = document.getElementById('modal-name-full-enabled')?.checked ?? true;
+  const nameFullTxt = (document.getElementById('modal-name-full-text')?.value ?? '').trim();
+  item.nameFullEnabled = nameFullEn;
+  item.nameFullOverride = nameFullTxt || item.name;
+  localEdits[itemId].nameFullEnabled = nameFullEn;
+  localEdits[itemId].nameFullOverride = item.nameFullOverride;
 
   // Прогресс (только для own)
   if (item.type === 'own') {
@@ -1297,6 +1324,7 @@ function applyEdits() {
   VRH_ITEMS.forEach(item => {
     const edit = localEdits[item.id];
     if (!edit) return;
+    if (edit.nameShort        !== undefined)  item.nameShort        = edit.nameShort;
     if (edit.doneCount        !== undefined)  item.doneCount        = edit.doneCount;
     if (edit.purchaseStatus   !== undefined)  item.purchaseStatus   = edit.purchaseStatus;
     if (edit.notes            !== undefined)  item.notes            = edit.notes;
