@@ -93,7 +93,7 @@ function render() {
   content.classList.add('fade-in');
 
   switch (state.view) {
-    case 'dashboard': renderDashboard(content); setBreadcrumb('Дашборд');    break;
+    case 'dashboard': renderDashboard(content); setBreadcrumb('Обзор');    break;
     case 'projects':  renderProjects(content);  setBreadcrumb('Проекты');    break;
     case 'project':   renderProject(content, state.projectId);               break;
     case 'item':      renderItem(content, state.projectId, state.itemId);    break;
