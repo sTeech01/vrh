@@ -429,7 +429,7 @@ function renderProject(el, projectId) {
               <div class="items-card-title">
                 <span class="complex-badge complex-${cid}">${cid}</span>
                 ${complex?.name || cid}
-                <span class="items-count">${cItems.length}</span>
+                <span class="items-count">${cItems.length} поз.</span>
               </div>
               <div style="display:flex;align-items:center;gap:10px">
                 <div style="font-size:12px;font-weight:700;color:${pctColor(cPct)}">${cPct}%</div>
