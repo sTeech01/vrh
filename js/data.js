@@ -254,8 +254,9 @@ const VRH_ITEMS = [
     number: '43', name: 'Кормушки маятниковые',
     nameShort: 'Кормушки маятниковые', quantity: 32, unit: 'шт',
     deadline: '2026-08-04', type: 'purchased',
-    purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
-    notes: 'Ждём Богдана.',
+    purchaseStatus: PUR.ORDERED, doneCount: 0,
+    history: [{ date: '2026-03-23', text: 'Оплачены бункеры.' }],
+    notes: 'Оплачены (23.03.2026). Ждём поставки.',
   },
 
   {
@@ -865,8 +866,9 @@ const VRH_ITEMS = [
     number: '69', name: 'Ванна для вакцинации ПП в каркасе нерж.',
     nameShort: 'Ванна вакцинации ПП', quantity: 2, unit: 'шт',
     deadline: '2026-09-13', type: 'purchased',
-    purchaseStatus: PUR.PENDING, doneCount: 0, history: [],
-    notes: 'Ждём Максима.',
+    purchaseStatus: PUR.ORDERED, doneCount: 0,
+    history: [{ date: '2026-03-23', text: 'Оплачена.' }],
+    notes: 'Оплачена (23.03.2026). Требует корректировки после уточнения проекта.',
   },
 
   {
