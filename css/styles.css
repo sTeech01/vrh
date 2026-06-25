@@ -510,6 +510,45 @@ body::before {
 }
 .proj-header-pbar { margin-top: 16px; height: 6px; }
 
+/* ── Stat tiles ───────────────────────────────────────────── */
+.proj-stat-tiles {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+.proj-stat-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  text-align: center;
+  flex: 1;
+}
+.proj-stat-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.65;
+  margin-bottom: 5px;
+  white-space: nowrap;
+}
+.proj-stat-value {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+}
+.proj-stat-tile.slate { background: var(--gray-100);            color: var(--gray-700); }
+.proj-stat-tile.blue  { background: rgba(14,165,233,0.09);      color: #0369A1; }
+.proj-stat-tile.red   { background: rgba(239,68,68,0.09);       color: #DC2626; }
+.proj-stat-tile.amber { background: rgba(245,158,11,0.10);      color: #B45309; }
+.proj-stat-tile.green { background: rgba(16,185,129,0.09);      color: #059669; }
+
 /* ── Теги проблем ─────────────────────────────────────────── */
 .proj-problems-bar {
   display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;

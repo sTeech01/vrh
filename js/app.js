@@ -361,16 +361,22 @@ function renderProject(el, projectId) {
             </button>
           </div>
           <div class="proj-header-desc">${project.description}</div>
-          <div class="proj-header-meta">
-            <div class="item-meta-pair"><label>Дедлайн</label>
-              <span style="${isOverdueProj ? 'color:#EF4444' : ''}">${formatDate(new Date(project.deadline))}</span>
+          <div class="proj-stat-tiles">
+            <div class="proj-stat-tile slate">
+              <div class="proj-stat-label">Дедлайн</div>
+              <div class="proj-stat-value">${formatDate(new Date(project.deadline))}</div>
             </div>
-            <div class="item-meta-pair"><label>Позиций</label><span>${items.length} шт.</span></div>
-            <div class="item-meta-pair"><label>Просрочено</label>
-              <span style="color:${problems.overdue.length ? '#EF4444' : '#10B981'}">${problems.overdue.length}</span>
+            <div class="proj-stat-tile blue">
+              <div class="proj-stat-label">Позиций</div>
+              <div class="proj-stat-value">${items.length} шт.</div>
             </div>
-            <div class="item-meta-pair"><label>Блок</label>
-              <span style="color:${problems.blocked.length ? '#F59E0B' : '#10B981'}">${problems.blocked.length}</span>
+            <div class="proj-stat-tile ${problems.overdue.length ? 'red' : 'green'}">
+              <div class="proj-stat-label">Просрочено</div>
+              <div class="proj-stat-value">${problems.overdue.length}</div>
+            </div>
+            <div class="proj-stat-tile ${problems.blocked.length ? 'amber' : 'green'}">
+              <div class="proj-stat-label">Блок</div>
+              <div class="proj-stat-value">${problems.blocked.length}</div>
             </div>
           </div>
         </div>
