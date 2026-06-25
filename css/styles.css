@@ -221,7 +221,7 @@ body::before {
   font-size: 10px;
   font-weight: 400;
   font-family: 'SF Mono', 'Fira Code', 'Fira Mono', monospace;
-  color: var(--gray-300);
+  color: var(--gray-400);
   letter-spacing: 0.06em;
   user-select: none;
   text-align: center;
