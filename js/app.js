@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #027';
+const APP_BUILD = 'DEPLOY #028';
 
 // ── State ──────────────────────────────────────────────────────
 const state = {
@@ -484,8 +484,8 @@ function itemTableRow(item, projectId) {
     ? `<span class="pur-mini pur-mini-${purStatus}">${purMiniLabel(purStatus)}</span>`
     : '';
   const assigneeTag = item.assignee
-    ? `<span class="assignee-mini">${iconSvg('user', 9)} ${item.assignee}</span>`
-    : '';
+    ? `<span class="assignee-mini" onclick="event.stopPropagation();openAssigneeDrop('${item.id}',this)">${iconSvg('user', 9)} ${item.assignee}</span>`
+    : `<span class="assignee-mini assignee-empty" onclick="event.stopPropagation();openAssigneeDrop('${item.id}',this)">${iconSvg('user', 9)} Назначить</span>`;
   const noteTag     = item.notes
     ? `<span class="note-mini">${iconSvg('document', 9)} ${item.notes}</span>`
     : '';
@@ -947,15 +947,6 @@ function openUpdateModal(itemId) {
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label">Ответственный</label>
-        <input type="text" class="form-input" id="modal-assignee" list="assignee-list"
-          value="${item.assignee || ''}" placeholder="Выбрать или ввести..." style="margin-top:4px">
-        <datalist id="assignee-list">
-          <option value="Тренин А.">
-          <option value="Парамузов О.Н.">
-        </datalist>
-      </div>
-      <div class="form-group">
         <label class="form-label">Дедлайн</label>
         <input type="date" class="form-input" id="modal-deadline" value="${item.deadline}" style="margin-top:4px">
       </div>
@@ -1061,10 +1052,6 @@ function saveItemUpdate(itemId) {
     localEdits[itemId].purchaseStatus = purVal;
   }
 
-  // Ответственный (все типы)
-  const assigneeVal = document.getElementById('modal-assignee')?.value?.trim() ?? '';
-  item.assignee = assigneeVal;
-  localEdits[itemId].assignee = assigneeVal;
 
   // Дедлайн (все типы)
   const dlVal = document.getElementById('modal-deadline')?.value;
@@ -1159,6 +1146,50 @@ function closeModal(e) {
   document.getElementById('modal-overlay').classList.remove('open');
 }
 window.closeModal = closeModal;
+
+// =============================================================
+// ASSIGNEE INLINE DROPDOWN
+// =============================================================
+const ASSIGNEE_OPTIONS = ['Тренин А.', 'Парамузов О.Н.'];
+
+function openAssigneeDrop(itemId, anchor) {
+  closeAssigneeDrop();
+  const item = VRH_ITEMS.find(i => i.id === itemId);
+  if (!item) return;
+  const rect = anchor.getBoundingClientRect();
+  const drop = document.createElement('div');
+  drop.id = 'assignee-drop';
+  drop.innerHTML = ASSIGNEE_OPTIONS.map(o =>
+    `<div class="adrop-item${item.assignee === o ? ' active' : ''}" onclick="setAssignee('${itemId}','${o}')">${iconSvg('user',12)} ${o}</div>`
+  ).join('') +
+  `<div class="adrop-divider"></div>
+   <div class="adrop-item adrop-clear" onclick="setAssignee('${itemId}','')">— Не назначен —</div>`;
+  document.body.appendChild(drop);
+  const dw = drop.offsetWidth, dh = drop.offsetHeight;
+  let left = rect.left;
+  let top  = rect.bottom + 5;
+  if (left + dw > window.innerWidth - 8) left = window.innerWidth - dw - 8;
+  if (top  + dh > window.innerHeight - 8) top = rect.top - dh - 5;
+  drop.style.left = left + 'px';
+  drop.style.top  = top  + 'px';
+  setTimeout(() => document.addEventListener('click', closeAssigneeDrop, { once: true }), 0);
+}
+function closeAssigneeDrop() {
+  const el = document.getElementById('assignee-drop');
+  if (el) el.remove();
+}
+function setAssignee(itemId, value) {
+  const item = VRH_ITEMS.find(i => i.id === itemId);
+  if (!item) return;
+  item.assignee = value;
+  if (!localEdits[itemId]) localEdits[itemId] = {};
+  localEdits[itemId].assignee = value;
+  saveEditsToStorage();
+  closeAssigneeDrop();
+  render();
+}
+window.openAssigneeDrop = openAssigneeDrop;
+window.setAssignee = setAssignee;
 
 // =============================================================
 // NAME TOOLTIP
