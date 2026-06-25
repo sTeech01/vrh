@@ -268,7 +268,7 @@ const VRH_ITEMS = [
     deadline: '2026-07-20', type: 'purchased',
     purchaseStatus: PUR.ORDERED, doneCount: 0,
     history: [{ date: '2026-03-23', text: 'Оплачены бункеры.' }],
-    notes: 'Оплачены (23.03.2026). Ждём поставки.',
+    notes: 'Оплачены бункеры, КД в работе.',
   },
 
   {
