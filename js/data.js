@@ -258,12 +258,11 @@ const VRH_ITEMS = [
     nameShort: 'Комплект фиксации насоса', quantity: 12, unit: 'шт',
     deadline: '2026-07-20', type: 'own',
     doneCount: 0, materialsStatus: PUR.PENDING,
-    blockReason: 'КД не готово',
     components: [],
     history: [
       { date: '2026-03-17', text: 'Не начинали, нет КД.' },
     ],
-    notes: 'КД ещё не сделано.',
+    notes: '',
   },
 
   {
