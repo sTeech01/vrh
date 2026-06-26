@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #053';
+const APP_BUILD = 'DEPLOY #055';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -112,7 +112,8 @@ function handleHash() {
   state.itemId    = parts[2] || null;
   render();
   updateActiveNav();
-  window.scrollTo(0, 0);
+  const viewEl = document.getElementById('view');
+  if (viewEl) viewEl.scrollTop = 0;
 }
 
 function navigate(view, id1, id2) {
