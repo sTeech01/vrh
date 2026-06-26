@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #052';
+const APP_BUILD = 'DEPLOY #053';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -236,6 +236,7 @@ function iconSvg(name, size = 14) {
     cart:      `<svg viewBox="0 0 20 20" fill="currentColor" width="${s}" height="${s}"><path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/></svg>`,
     ai:        `<svg viewBox="0 0 24 24" fill="currentColor" width="${s}" height="${s}"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5A2.5 2.5 0 0 0 7.5 18A2.5 2.5 0 0 0 10 15.5A2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5a2.5 2.5 0 0 0 2.5 2.5a2.5 2.5 0 0 0 2.5-2.5a2.5 2.5 0 0 0-2.5-2.5z"/></svg>`,
     grip:      `<svg viewBox="0 0 16 16" fill="currentColor" width="${s}" height="${s}"><circle cx="5.5" cy="4" r="1.1"/><circle cx="10.5" cy="4" r="1.1"/><circle cx="5.5" cy="8" r="1.1"/><circle cx="10.5" cy="8" r="1.1"/><circle cx="5.5" cy="12" r="1.1"/><circle cx="10.5" cy="12" r="1.1"/></svg>`,
+    trash:     `<svg viewBox="0 0 20 20" fill="currentColor" width="${s}" height="${s}"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>`,
   };
   return icons[name] || '';
 }
@@ -1369,8 +1370,13 @@ async function saveAssignees(list) {
 }
 function getAllAssignees() {
   const custom = loadAssignees();
-  const names  = new Set(ASSIGNEE_DEFAULTS.map(a => a.name));
-  return [...ASSIGNEE_DEFAULTS, ...custom.filter(a => !names.has(a.name))];
+  const suppressed = new Set(custom.filter(a => a.colorIdx === -1).map(a => a.name));
+  const customVisible = custom.filter(a => a.colorIdx !== -1);
+  const defaultNames = new Set(ASSIGNEE_DEFAULTS.map(a => a.name));
+  return [
+    ...ASSIGNEE_DEFAULTS.filter(a => !suppressed.has(a.name)),
+    ...customVisible.filter(a => !defaultNames.has(a.name)),
+  ];
 }
 function assigneeStyle(a) {
   const p = ASSIGNEE_PALETTE[a.colorIdx % ASSIGNEE_PALETTE.length];
@@ -1387,10 +1393,11 @@ function renderAssigneeDrop(itemId) {
   return all.map(a => {
     const active = item.assignee === a.name;
     const safeName = a.name.replace(/'/g, "\\'");
-    const editBtn = `<button class="adrop-edit-btn" onclick="event.stopPropagation();showEditAssigneeInput('${itemId}','${safeName}')">${iconSvg('edit', 11)}</button>`;
+    const editBtn  = `<button class="adrop-edit-btn"   onclick="event.stopPropagation();showEditAssigneeInput('${itemId}','${safeName}')">${iconSvg('edit', 11)}</button>`;
+    const delBtn   = `<button class="adrop-delete-btn" onclick="event.stopPropagation();deleteAssignee('${safeName}')">${iconSvg('trash', 11)}</button>`;
     return `<div class="adrop-item${active ? ' active' : ''}" onclick="setAssignee('${itemId}','${safeName}')" style="${active ? assigneeStyle(a) : ''}">
       <span class="adrop-color-dot" style="${assigneeDotStyle(a)}"></span>
-      <span style="flex:1">${a.name}</span>${editBtn}
+      <span style="flex:1">${a.name}</span>${editBtn}${delBtn}
     </div>`;
   }).join('') +
   `<div class="adrop-divider"></div>
@@ -1486,13 +1493,17 @@ function confirmEditAssignee(itemId, oldName) {
   if (!newName || newName === oldName) { closeAssigneeDrop(); return; }
   const custom = loadAssignees();
   const ci = custom.findIndex(a => a.name === oldName);
-  if (ci !== -1) {
+  if (ci !== -1 && custom[ci].colorIdx !== -1) {
     custom[ci].name = newName;
   } else {
-    // стандартный исполнитель — добавляем в custom с сохранением цвета
-    const all = getAllAssignees();
-    const orig = all.find(a => a.name === oldName);
-    custom.push({ name: newName, colorIdx: orig ? orig.colorIdx : 0 });
+    // стандартный исполнитель — подавляем оригинал tombstone + добавляем переименованный
+    const orig = ASSIGNEE_DEFAULTS.find(d => d.name === oldName);
+    const tombIdx = custom.findIndex(a => a.name === oldName);
+    if (tombIdx !== -1) custom[tombIdx].colorIdx = -1;
+    else custom.push({ name: oldName, colorIdx: -1 });
+    if (!custom.find(a => a.name === newName && a.colorIdx !== -1)) {
+      custom.push({ name: newName, colorIdx: orig ? orig.colorIdx : 0 });
+    }
   }
   saveAssignees(custom);
   const _affectedIds = [];
@@ -1508,12 +1519,28 @@ function confirmEditAssignee(itemId, oldName) {
   closeAssigneeDrop();
   render();
 }
+function deleteAssignee(name) {
+  const custom = loadAssignees();
+  const isDefault = ASSIGNEE_DEFAULTS.some(d => d.name === name);
+  if (isDefault) {
+    const existing = custom.findIndex(a => a.name === name);
+    if (existing !== -1) custom[existing].colorIdx = -1;
+    else custom.push({ name, colorIdx: -1 });
+  } else {
+    const ci = custom.findIndex(a => a.name === name);
+    if (ci !== -1) custom.splice(ci, 1);
+  }
+  saveAssignees(custom);
+  closeAssigneeDrop();
+  render();
+}
 window.openAssigneeDrop      = openAssigneeDrop;
 window.setAssignee           = setAssignee;
 window.showAddAssigneeInput  = showAddAssigneeInput;
 window.confirmAddAssignee    = confirmAddAssignee;
 window.showEditAssigneeInput = showEditAssigneeInput;
 window.confirmEditAssignee   = confirmEditAssignee;
+window.deleteAssignee        = deleteAssignee;
 
 // =============================================================
 // NAME TOOLTIP

@@ -888,6 +888,14 @@ table.items-table { width: 100%; border-collapse: collapse; }
 }
 .adrop-item:hover .adrop-edit-btn { opacity: 1; color: var(--gray-500); }
 .adrop-edit-btn:hover { color: var(--gray-800) !important; }
+.adrop-delete-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--gray-300); padding: 2px 4px; border-radius: 4px;
+  opacity: 0; transition: opacity 0.15s;
+  display: flex; align-items: center; flex-shrink: 0;
+}
+.adrop-item:hover .adrop-delete-btn { opacity: 1; }
+.adrop-delete-btn:hover { color: #DC2626 !important; }
 
 .adrop-new-row {
   padding: 6px 8px;
