@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #056';
+const APP_BUILD = 'DEPLOY #057';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -1041,6 +1041,10 @@ function openUpdateModal(itemId) {
       ${div()}
       ${sec('Прогресс')}
       <div class="form-group">
+        <label class="form-label">Требуется <span style="color:var(--gray-400);font-weight:400">(${item.unit})</span></label>
+        <input type="number" class="form-input" id="modal-quantity" min="1" value="${item.quantity}" style="margin-top:4px">
+      </div>
+      <div class="form-group">
         <label class="form-label">Готово <span style="color:var(--gray-400);font-weight:400">(из ${item.quantity} ${item.unit})</span></label>
         <input type="number" class="form-input" id="modal-done-count" min="0" max="${item.quantity}" value="${item.doneCount || 0}" style="margin-top:4px">
       </div>
@@ -1114,6 +1118,10 @@ function openUpdateModal(itemId) {
       <button class="btn-primary" onclick="saveItemUpdate('${item.id}')"
         style="margin-top:18px;width:100%;display:flex;align-items:center;justify-content:center;gap:8px">
         ${iconSvg('save', 14)} Сохранить изменения
+      </button>
+      <button onclick="deleteItem('${item.id}')"
+        style="margin-top:8px;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:none;border:1px solid #FECACA;color:#EF4444;border-radius:8px;padding:10px;cursor:pointer;font-size:13px;font-weight:500">
+        ${iconSvg('trash', 13)} Удалить позицию
       </button>
     </div>`;
 
@@ -1193,6 +1201,13 @@ function saveItemUpdate(itemId) {
   item.nameFullOverride = nameFullTxt || item.name;
   localEdits[itemId].nameFullEnabled = nameFullEn;
   localEdits[itemId].nameFullOverride = item.nameFullOverride;
+
+  // Количество (все типы)
+  const newQty = parseInt(document.getElementById('modal-quantity')?.value, 10);
+  if (!isNaN(newQty) && newQty > 0 && newQty !== item.quantity) {
+    item.quantity = newQty;
+    localEdits[itemId].quantity = newQty;
+  }
 
   // Прогресс (только для own)
   if (item.type === 'own') {
@@ -1671,6 +1686,7 @@ function applyEdits() {
     const edit = localEdits[item.id];
     if (!edit) return;
     if (edit.nameShort        !== undefined)  item.nameShort        = edit.nameShort;
+    if (edit.quantity         !== undefined)  item.quantity         = edit.quantity;
     if (edit.doneCount        !== undefined)  item.doneCount        = edit.doneCount;
     if (edit.purchaseStatus   !== undefined)  item.purchaseStatus   = edit.purchaseStatus;
     if (edit.notes            !== undefined)  item.notes            = edit.notes;
@@ -1696,7 +1712,21 @@ function applyEdits() {
       });
     }
   });
+  // Удаляем помеченные как deleted
+  for (let i = VRH_ITEMS.length - 1; i >= 0; i--) {
+    if (localEdits[VRH_ITEMS[i].id]?.deleted) VRH_ITEMS.splice(i, 1);
+  }
 }
+
+function deleteItem(itemId) {
+  if (!confirm('Удалить позицию? Это действие нельзя отменить.')) return;
+  if (!localEdits[itemId]) localEdits[itemId] = {};
+  localEdits[itemId].deleted = true;
+  saveEditsToStorage(itemId);
+  closeModal();
+  navigate('project', state.projectId);
+}
+window.deleteItem = deleteItem;
 
 function saveHistoryEntry(itemId) {
   const text = document.getElementById('item-comment-input')?.value?.trim();
