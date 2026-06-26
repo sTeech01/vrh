@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #051';
+const APP_BUILD = 'DEPLOY #052';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -667,7 +667,7 @@ function renderItem(el, projectId, itemId) {
   const componentsHtml = (item.type === 'own' && item.components?.length)
     ? renderComponents(item)
     : item.type === 'own'
-      ? `<div style="margin-top:16px;padding:14px 16px;background:var(--gray-50);border-radius:4px;border:1px solid var(--gray-200);font-size:12px;color:var(--gray-400);display:flex;align-items:center;gap:6px">${iconSvg('document',12)} Состав по КД не внесён — «Требует уточнения»</div>`
+      ? ''
       : renderPurchaseBlock(item);
 
   // История
