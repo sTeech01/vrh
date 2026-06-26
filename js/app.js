@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #049';
+const APP_BUILD = 'DEPLOY #050';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -179,6 +179,12 @@ function render() {
     case 'problems':  renderProblems(content);  setBreadcrumb('Проблемы');   break;
     case 'ai':        renderAI(content);        setBreadcrumb('AI-помощник'); break;
     default: navigate('dashboard');
+  }
+  if (!state.filter.search) {
+    requestAnimationFrame(() => {
+      const inp = document.getElementById('filter-search-input');
+      if (inp) inp.value = '';
+    });
   }
 }
 
@@ -486,8 +492,9 @@ function renderProject(el, projectId) {
         <option value="blocked"     ${state.filter.status==='blocked'    ?'selected':''}>Заблокировано</option>
         <option value="done"        ${state.filter.status==='done'       ?'selected':''}>Готово</option>
       </select>
-      <input type="search" class="filter-select" placeholder="Поиск..." value="${state.filter.search||''}"
-        oninput="setFilter('search',this.value)" autocomplete="new-password" style="padding-right:10px;min-width:140px">
+      <input type="text" class="filter-select" placeholder="Поиск..." value="${state.filter.search||''}"
+        oninput="setFilter('search',this.value)" autocomplete="off" name="vrh-filter-q" id="filter-search-input"
+        style="padding-right:10px;min-width:140px">
       <span style="font-size:12px;color:var(--gray-400);margin-left:auto">${filtered.length} из ${items.length}</span>
     </div>
 
