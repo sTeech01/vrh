@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #050';
+const APP_BUILD = 'DEPLOY #051';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -167,6 +167,10 @@ window.toggleMobileSidebar = toggleMobileSidebar;
 function render() {
   const content = document.getElementById('content');
   if (!content) return;
+
+  const _prevFocusId = document.activeElement?.id;
+  const _prevSelStart = document.activeElement?.selectionStart ?? null;
+
   content.classList.remove('fade-in');
   void content.offsetWidth;
   content.classList.add('fade-in');
@@ -180,12 +184,18 @@ function render() {
     case 'ai':        renderAI(content);        setBreadcrumb('AI-помощник'); break;
     default: navigate('dashboard');
   }
-  if (!state.filter.search) {
-    requestAnimationFrame(() => {
+  requestAnimationFrame(() => {
+    if (_prevFocusId === 'filter-search-input') {
+      const inp = document.getElementById('filter-search-input');
+      if (inp) {
+        inp.focus();
+        if (_prevSelStart !== null) inp.setSelectionRange(_prevSelStart, _prevSelStart);
+      }
+    } else if (!state.filter.search) {
       const inp = document.getElementById('filter-search-input');
       if (inp) inp.value = '';
-    });
-  }
+    }
+  });
 }
 
 function setBreadcrumb(...parts) {
@@ -1745,9 +1755,15 @@ window.exportData = exportData;
 // =============================================================
 // FILTER
 // =============================================================
+let _searchTimer = null;
 function setFilter(key, value) {
   state.filter[key] = value;
-  render();
+  if (key === 'search') {
+    clearTimeout(_searchTimer);
+    _searchTimer = setTimeout(render, 250);
+  } else {
+    render();
+  }
 }
 window.setFilter = setFilter;
 
