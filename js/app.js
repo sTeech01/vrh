@@ -32,6 +32,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function initApp() {
+  state.filter = { complex: 'all', status: 'all', search: '' };
   try { await loadRemoteData(); } catch(e) { console.error('loadRemoteData failed:', e); }
   applyEdits();
   setupNavigation();
@@ -486,7 +487,7 @@ function renderProject(el, projectId) {
         <option value="done"        ${state.filter.status==='done'       ?'selected':''}>Готово</option>
       </select>
       <input type="search" class="filter-select" placeholder="Поиск..." value="${state.filter.search||''}"
-        oninput="setFilter('search',this.value)" style="padding-right:10px;min-width:140px">
+        oninput="setFilter('search',this.value)" autocomplete="off" style="padding-right:10px;min-width:140px">
       <span style="font-size:12px;color:var(--gray-400);margin-left:auto">${filtered.length} из ${items.length}</span>
     </div>
 
