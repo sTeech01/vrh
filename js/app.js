@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #047';
+const APP_BUILD = 'DEPLOY #048';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -487,7 +487,7 @@ function renderProject(el, projectId) {
         <option value="done"        ${state.filter.status==='done'       ?'selected':''}>Готово</option>
       </select>
       <input type="search" class="filter-select" placeholder="Поиск..." value="${state.filter.search||''}"
-        oninput="setFilter('search',this.value)" autocomplete="off" style="padding-right:10px;min-width:140px">
+        oninput="setFilter('search',this.value)" autocomplete="new-password" style="padding-right:10px;min-width:140px">
       <span style="font-size:12px;color:var(--gray-400);margin-left:auto">${filtered.length} из ${items.length}</span>
     </div>
 
@@ -1541,9 +1541,13 @@ function loadItemOrder() { return { ..._itemOrder }; }
 function saveItemOrder(o) {
   _itemOrder = { ...o };
   if (!_sb) return;
-  Object.entries(o).forEach(([complex_id, order_json]) => {
-    _sb.from('item_order').upsert({ complex_id, order_json }).catch(() => {});
-  });
+  (async () => {
+    try {
+      for (const [complex_id, order_json] of Object.entries(o)) {
+        await _sb.from('item_order').upsert({ complex_id, order_json });
+      }
+    } catch(e) { console.error('saveOrder error:', e); }
+  })();
 }
 function applyItemOrder(complexId, items) {
   const ids = loadItemOrder()[complexId];
@@ -1603,11 +1607,15 @@ function initGridDrag(grid, complexId, projectId) {
 function saveEditsToStorage(changedItemId) {
   if (!_sb || changedItemId === undefined) return;
   const data = localEdits[changedItemId];
-  if (data === undefined) {
-    _sb.from('item_overrides').delete().eq('item_id', changedItemId).catch(() => {});
-  } else {
-    _sb.from('item_overrides').upsert({ item_id: changedItemId, data, updated_at: new Date().toISOString() }).catch(() => {});
-  }
+  (async () => {
+    try {
+      if (data === undefined) {
+        await _sb.from('item_overrides').delete().eq('item_id', changedItemId);
+      } else {
+        await _sb.from('item_overrides').upsert({ item_id: changedItemId, data, updated_at: new Date().toISOString() });
+      }
+    } catch(e) { console.error('saveEdits error:', e); }
+  })();
 }
 
 function loadEditsFromStorage() { /* data loaded from Supabase via loadRemoteData() */ }
