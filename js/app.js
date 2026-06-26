@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function initApp() {
-  await loadRemoteData();
+  try { await loadRemoteData(); } catch(e) { console.error('loadRemoteData failed:', e); }
   applyEdits();
   setupNavigation();
   handleHash();
@@ -100,7 +100,7 @@ async function loadRemoteData() {
 
 window.doLogin  = doLogin;
 window.doLogout = doLogout;
-window.addEventListener('hashchange', handleHash);
+window.addEventListener('hashchange', () => { if (_sb) handleHash(); });
 
 // ── Router ──────────────────────────────────────────────────────
 function handleHash() {
