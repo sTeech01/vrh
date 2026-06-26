@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #055';
+const APP_BUILD = 'DEPLOY #056';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -1235,7 +1235,8 @@ function saveItemUpdate(itemId) {
   // Блокировка (все типы)
   const blockVal = (document.getElementById('modal-block-reason')?.value ?? '').trim();
   item.blockReason = blockVal || null;
-  localEdits[itemId].blockReason = blockVal || null;
+  if (blockVal) localEdits[itemId].blockReason = blockVal;
+  else if ('blockReason' in (localEdits[itemId] || {})) localEdits[itemId].blockReason = null;
 
   // Примечание (все типы)
   const notesVal = document.getElementById('modal-notes')?.value ?? '';
