@@ -4,11 +4,11 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #048';
+const APP_BUILD = 'DEPLOY #049';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
-const _SB_KEY = 'sb_publishable_r6GaseHA38EkvSNlnVEn2g_n6HX16Uw';
+const _SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwdWptdmZ6Ym9hdXRxZXN2d2liIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzODA2NTYsImV4cCI6MjA5Nzk1NjY1Nn0.S49aTm3RWhcbOsiE8-QYzFSaXTkafapXqbeds8P0TwE';
 let _sb = null;
 let _customAssignees = [];
 let _itemOrder = {};
