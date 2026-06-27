@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #064';
+const APP_BUILD = 'DEPLOY #065';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -13,6 +13,7 @@ let _sb = null;
 let _customAssignees = [];
 let _itemOrder = {};
 let _customProjects = [];
+let _workflowStages = {}; // { [item_id]: Stage[] }
 
 // Базовые длины массивов (зафиксированы при загрузке из data.js)
 const _VRH_ITEMS_BASE_LEN    = VRH_ITEMS.length;
@@ -124,7 +125,7 @@ async function doLogin() {
 
 async function doLogout() {
   await _sb.auth.signOut();
-  localEdits = {}; _customAssignees = []; _itemOrder = {}; _customProjects = [];
+  localEdits = {}; _customAssignees = []; _itemOrder = {}; _customProjects = []; _workflowStages = {};
   VRH_ITEMS.splice(_VRH_ITEMS_BASE_LEN);
   VRH_PROJECTS.splice(_VRH_PROJECTS_BASE_LEN);
   VRH_ITEMS.forEach(item => {
@@ -138,11 +139,12 @@ async function doLogout() {
 }
 
 async function loadRemoteData() {
-  const [ovRes, asRes, orRes, cpRes] = await Promise.all([
+  const [ovRes, asRes, orRes, cpRes, wsRes] = await Promise.all([
     _sb.from('item_overrides').select('*'),
     _sb.from('custom_assignees').select('*').order('id'),
     _sb.from('item_order').select('*'),
     _sb.from('custom_projects').select('*').order('created_at'),
+    _sb.from('workflow_stages').select('*').order('stage_order'),
   ]);
   if (ovRes.data) {
     localEdits = {};
@@ -160,13 +162,15 @@ async function loadRemoteData() {
   VRH_ITEMS.splice(_VRH_ITEMS_BASE_LEN);
   VRH_PROJECTS.splice(_VRH_PROJECTS_BASE_LEN);
   _customProjects = [];
+  _workflowStages = {};
 
   // Инжект пользовательских проектов
   if (cpRes.data) {
     cpRes.data.forEach(r => {
       const p = { id: r.id, name: r.name, client: r.client,
         location: r.location, description: r.description,
-        deadline: r.deadline, type: r.type, _isCustom: true };
+        deadline: r.deadline, type: r.type,
+        workflow_version: r.workflow_version ?? 2, _isCustom: true };
       VRH_PROJECTS.push(p);
       _customProjects.push(p);
     });
@@ -178,7 +182,74 @@ async function loadRemoteData() {
       VRH_ITEMS.push(_buildCustomItem(id, ed));
     }
   });
+
+  // Загрузка этапов маршрута (workflow v2)
+  if (wsRes.data) {
+    wsRes.data.forEach(r => {
+      if (!_workflowStages[r.item_id]) _workflowStages[r.item_id] = [];
+      _workflowStages[r.item_id].push({
+        id: r.id, item_id: r.item_id, project_id: r.project_id,
+        name: r.name, stage_order: r.stage_order,
+        planned_qty: r.planned_qty, done_qty: r.done_qty,
+        assignee: r.assignee, status: r.status, comment: r.comment,
+        start_date: r.start_date, end_date: r.end_date,
+        priority: r.priority, required: r.required,
+        depends_on: r.depends_on, history: r.history || [],
+        created_at: r.created_at,
+      });
+    });
+  }
+
+  // Синхронизируем doneCount v2-позиций из узкого места маршрута
+  VRH_ITEMS.forEach(item => {
+    if (isV2Project(item.projectId)) syncV2ItemDoneCount(item.id);
+  });
 }
+
+// =============================================================
+// WORKFLOW v2 — HELPERS
+// =============================================================
+function isV2Project(projectId) {
+  const p = VRH_PROJECTS.find(x => x.id === projectId);
+  return p?.workflow_version === 2;
+}
+
+function getItemStages(itemId) {
+  return (_workflowStages[itemId] || []).slice().sort((a, b) => a.stage_order - b.stage_order);
+}
+
+function getWorkflowBottleneck(itemId) {
+  const stages = getItemStages(itemId).filter(s => s.required);
+  if (!stages.length) return null;
+  return stages.reduce((min, s) => s.done_qty < min.done_qty ? s : min, stages[0]);
+}
+
+function syncV2ItemDoneCount(itemId) {
+  const item = VRH_ITEMS.find(i => i.id === itemId);
+  if (!item) return;
+  const stages = getItemStages(itemId).filter(s => s.required);
+  if (!stages.length) { item.doneCount = 0; return; }
+  item.doneCount = Math.min(...stages.map(s => s.done_qty));
+}
+
+function saveStageToStorage(stage) {
+  if (!_sb) return;
+  (async () => {
+    try {
+      await _sb.from('workflow_stages').upsert({
+        id: stage.id, item_id: stage.item_id, project_id: stage.project_id,
+        name: stage.name, stage_order: stage.stage_order,
+        planned_qty: stage.planned_qty, done_qty: stage.done_qty,
+        assignee: stage.assignee, status: stage.status, comment: stage.comment,
+        start_date: stage.start_date, end_date: stage.end_date,
+        priority: stage.priority, required: stage.required,
+        depends_on: stage.depends_on, history: stage.history,
+        created_at: stage.created_at || new Date().toISOString(),
+      });
+    } catch(e) { console.error('saveStage error:', e); }
+  })();
+}
+window.saveStageToStorage = saveStageToStorage;
 
 function _buildCustomItem(id, ed) {
   return {
@@ -1856,8 +1927,9 @@ function saveNewProject() {
     location:    document.getElementById('cp-location')?.value.trim()    || '',
     description: document.getElementById('cp-description')?.value.trim() || '',
     deadline,
-    type:        document.getElementById('cp-type')?.value               || 'uzv',
-    _isCustom:   true,
+    type:             document.getElementById('cp-type')?.value || 'uzv',
+    workflow_version: 2,
+    _isCustom:        true,
   };
   VRH_PROJECTS.push(project);
   _customProjects.push(project);
@@ -1868,6 +1940,7 @@ function saveNewProject() {
           id: project.id, name: project.name, client: project.client,
           location: project.location, description: project.description,
           deadline: project.deadline, type: project.type,
+          workflow_version: 2,
           created_at: new Date().toISOString(),
         });
       } catch(e) { console.error('saveNewProject error:', e); }
