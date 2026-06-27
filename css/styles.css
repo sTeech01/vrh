@@ -1297,14 +1297,15 @@ table.items-table { width: 100%; border-collapse: collapse; }
 .mn-hero-pill.danger { background:#FEE2E2; color:#991B1B; }
 .mn-hero-pill.good   { background:#F3F4F6; color:#6B7280; }
 .mn-hero-pill svg    { flex-shrink:0; }
-/* Ring — compact */
-.mn-ring-wrap { position:relative; width:64px; height:64px; flex-shrink:0; }
-.mn-ring-svg  { width:64px; height:64px; transform:rotate(-90deg); }
-.mn-ring-bg   { fill:none; stroke:#EBEBEB; stroke-width:6; }
-.mn-ring-fg   { fill:none; stroke:#1E6BFF; stroke-width:6; stroke-linecap:round; stroke-dasharray:238.76; transition:stroke-dashoffset 0.4s ease; }
-.mn-ring-text { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-.mn-ring-pct  { font-size:15px; font-weight:700; color:#111; line-height:1; }
-.mn-ring-sub  { font-size:8px; color:#9CA3AF; text-align:center; line-height:1.2; max-width:56px; margin-top:2px; }
+/* Ring */
+.mn-ring-wrap  { flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:5px; }
+.mn-ring-inner { position:relative; width:84px; height:84px; }
+.mn-ring-svg   { width:84px; height:84px; transform:rotate(-90deg); display:block; }
+.mn-ring-bg    { fill:none; stroke:#EDEDED; stroke-width:7; }
+.mn-ring-fg    { fill:none; stroke:#1E6BFF; stroke-width:7; stroke-linecap:round; stroke-dasharray:238.76; transition:stroke-dashoffset 0.4s ease; }
+.mn-ring-text  { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
+.mn-ring-pct   { font-size:22px; font-weight:800; color:#111; line-height:1; letter-spacing:-0.5px; }
+.mn-ring-sub   { font-size:10px; color:#9CA3AF; white-space:nowrap; text-align:center; }
 /* Close */
 .mn-close-btn {
   position:absolute; top:10px; right:12px;

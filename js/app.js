@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #060';
+const APP_BUILD = 'DEPLOY #061';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -1244,15 +1244,17 @@ function openUpdateModal(itemId) {
         </div>
       </div>
       <div class="mn-ring-wrap">
-        <svg class="mn-ring-svg" viewBox="0 0 100 100">
-          <circle class="mn-ring-bg" cx="50" cy="50" r="${R}"/>
-          <circle class="mn-ring-fg" id="mn-ring-fg" cx="50" cy="50" r="${R}"
-            style="stroke-dashoffset:${offset.toFixed(2)}"/>
-        </svg>
-        <div class="mn-ring-text">
-          <span class="mn-ring-pct" id="mn-ring-pct">${pct}%</span>
-          <span class="mn-ring-sub" id="mn-ring-qty">${done} из ${item.quantity} ${item.unit}</span>
+        <div class="mn-ring-inner">
+          <svg class="mn-ring-svg" viewBox="0 0 100 100">
+            <circle class="mn-ring-bg" cx="50" cy="50" r="${R}"/>
+            <circle class="mn-ring-fg" id="mn-ring-fg" cx="50" cy="50" r="${R}"
+              style="stroke-dashoffset:${offset.toFixed(2)}"/>
+          </svg>
+          <div class="mn-ring-text">
+            <span class="mn-ring-pct" id="mn-ring-pct">${pct}%</span>
+          </div>
         </div>
+        <span class="mn-ring-sub" id="mn-ring-qty">${done} из ${item.quantity} ${item.unit}</span>
       </div>
     </div>
 
