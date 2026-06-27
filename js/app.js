@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #062';
+const APP_BUILD = 'DEPLOY #063';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -508,6 +508,9 @@ function renderProjects(el) {
         <div class="section-title">Все проекты</div>
         <div class="section-sub">${VRH_PROJECTS.length} проектов в работе</div>
       </div>
+      <button class="btn-primary" onclick="openCreateProjectModal()" style="display:inline-flex;align-items:center;gap:6px">
+        ${iconSvg('plus', 13)} Новый проект
+      </button>
     </div>
     <div class="projects-grid">
       ${VRH_PROJECTS.map(p => projectCard(p)).join('')}
@@ -1604,7 +1607,8 @@ function deleteProject(projectId) {
     document.getElementById('modal-secret-input')?.focus();
     return;
   }
-  const idx = VRH_PROJECTS.findIndex(p => p.id === projectId);
+  const proj = VRH_PROJECTS.find(p => p.id === projectId);
+  const idx  = VRH_PROJECTS.findIndex(p => p.id === projectId);
   if (idx === -1) return;
   VRH_PROJECTS.splice(idx, 1);
   const itemIds = VRH_ITEMS.filter(i => i.projectId === projectId).map(i => i.id);
@@ -1614,12 +1618,123 @@ function deleteProject(projectId) {
     delete localEdits[id];
     if (_sb) _sb.from('item_overrides').delete().eq('item_id', id).catch(() => {});
   });
+  // Удаляем из Supabase если это пользовательский проект
+  if (proj?._isCustom && _sb) {
+    _sb.from('custom_projects').delete().eq('id', projectId).catch(() => {});
+    const ci = _customProjects.findIndex(p => p.id === projectId);
+    if (ci !== -1) _customProjects.splice(ci, 1);
+  }
   closeModal();
   updateProblemsBadge();
   navigate('projects');
   showToast('Проект удалён');
 }
 window.deleteProject = deleteProject;
+
+// =============================================================
+// CREATE PROJECT
+// =============================================================
+function openCreateProjectModal() {
+  const typeOptions = [
+    { val: 'uzv',   label: 'УЗВ (установка замкнутого водоснабжения)' },
+    { val: 'ras',   label: 'РАС (рыбоводный аквасистем)' },
+    { val: 'other', label: 'Другой тип' },
+  ];
+  document.getElementById('modal-box').innerHTML = `
+    <div class="modal-header">
+      <div class="modal-title" style="display:flex;align-items:center;gap:8px">
+        ${iconSvg('folder', 15)} Новый проект
+      </div>
+      <button class="modal-close" onclick="closeModal()">${iconSvg('x', 12)}</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px">
+      <div class="form-group">
+        <label class="form-label">Название <span style="color:#EF4444">*</span></label>
+        <input class="form-input" type="text" id="cp-name" placeholder="Калалахти-2" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Заказчик</label>
+        <input class="form-input" type="text" id="cp-client" placeholder="ООО «Наименование»" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Местоположение</label>
+        <input class="form-input" type="text" id="cp-location" placeholder="Город, регион" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Описание</label>
+        <input class="form-input" type="text" id="cp-description" placeholder="Краткое описание проекта" autocomplete="off">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">Дедлайн <span style="color:#EF4444">*</span></label>
+          <input class="form-input" type="date" id="cp-deadline">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Тип проекта</label>
+          <select class="form-input" id="cp-type">
+            ${typeOptions.map(o => `<option value="${o.val}">${o.label}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div id="cp-error" style="display:none;color:#EF4444;font-size:12px"></div>
+      <div style="display:flex;gap:10px;margin-top:4px">
+        <button class="btn-secondary" onclick="closeModal()" style="flex:1">Отмена</button>
+        <button class="btn-primary" onclick="saveNewProject()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px">
+          ${iconSvg('save', 13)} Создать проект
+        </button>
+      </div>
+    </div>`;
+  document.getElementById('modal-overlay').classList.add('open');
+  requestAnimationFrame(() => document.getElementById('cp-name')?.focus());
+}
+window.openCreateProjectModal = openCreateProjectModal;
+
+function saveNewProject() {
+  const name     = document.getElementById('cp-name')?.value.trim();
+  const deadline = document.getElementById('cp-deadline')?.value;
+  if (!name) {
+    const e = document.getElementById('cp-error');
+    if (e) { e.textContent = 'Введите название проекта'; e.style.display = 'block'; }
+    document.getElementById('cp-name')?.focus();
+    return;
+  }
+  if (!deadline) {
+    const e = document.getElementById('cp-error');
+    if (e) { e.textContent = 'Выберите дедлайн'; e.style.display = 'block'; }
+    document.getElementById('cp-deadline')?.focus();
+    return;
+  }
+  const id = 'custom_proj_' + Date.now();
+  const project = {
+    id,
+    name,
+    client:      document.getElementById('cp-client')?.value.trim()      || '',
+    location:    document.getElementById('cp-location')?.value.trim()    || '',
+    description: document.getElementById('cp-description')?.value.trim() || '',
+    deadline,
+    type:        document.getElementById('cp-type')?.value               || 'uzv',
+    _isCustom:   true,
+  };
+  VRH_PROJECTS.push(project);
+  _customProjects.push(project);
+  if (_sb) {
+    (async () => {
+      try {
+        await _sb.from('custom_projects').insert({
+          id: project.id, name: project.name, client: project.client,
+          location: project.location, description: project.description,
+          deadline: project.deadline, type: project.type,
+          created_at: new Date().toISOString(),
+        });
+      } catch(e) { console.error('saveNewProject error:', e); }
+    })();
+  }
+  closeModal();
+  updateProblemsBadge();
+  showToast('Проект создан');
+  navigate('project', id);
+}
+window.saveNewProject = saveNewProject;
 
 function closeModal(e) {
   if (e && e.target !== e.currentTarget) return;
