@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #061';
+const APP_BUILD = 'DEPLOY #062';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -12,6 +12,11 @@ const _SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 let _sb = null;
 let _customAssignees = [];
 let _itemOrder = {};
+let _customProjects = [];
+
+// Базовые длины массивов (зафиксированы при загрузке из data.js)
+const _VRH_ITEMS_BASE_LEN    = VRH_ITEMS.length;
+const _VRH_PROJECTS_BASE_LEN = VRH_PROJECTS.length;
 
 // ── State ──────────────────────────────────────────────────────
 const state = {
@@ -119,7 +124,9 @@ async function doLogin() {
 
 async function doLogout() {
   await _sb.auth.signOut();
-  localEdits = {}; _customAssignees = []; _itemOrder = {};
+  localEdits = {}; _customAssignees = []; _itemOrder = {}; _customProjects = [];
+  VRH_ITEMS.splice(_VRH_ITEMS_BASE_LEN);
+  VRH_PROJECTS.splice(_VRH_PROJECTS_BASE_LEN);
   VRH_ITEMS.forEach(item => {
     const orig = window._VRH_ORIG?.[item.id];
     if (orig) Object.assign(item, orig);
@@ -131,10 +138,11 @@ async function doLogout() {
 }
 
 async function loadRemoteData() {
-  const [ovRes, asRes, orRes] = await Promise.all([
+  const [ovRes, asRes, orRes, cpRes] = await Promise.all([
     _sb.from('item_overrides').select('*'),
     _sb.from('custom_assignees').select('*').order('id'),
     _sb.from('item_order').select('*'),
+    _sb.from('custom_projects').select('*').order('created_at'),
   ]);
   if (ovRes.data) {
     localEdits = {};
@@ -147,6 +155,53 @@ async function loadRemoteData() {
     _itemOrder = {};
     orRes.data.forEach(r => { _itemOrder[r.complex_id] = r.order_json; });
   }
+
+  // Сброс custom-хвоста массивов (идемпотентность при re-login)
+  VRH_ITEMS.splice(_VRH_ITEMS_BASE_LEN);
+  VRH_PROJECTS.splice(_VRH_PROJECTS_BASE_LEN);
+  _customProjects = [];
+
+  // Инжект пользовательских проектов
+  if (cpRes.data) {
+    cpRes.data.forEach(r => {
+      const p = { id: r.id, name: r.name, client: r.client,
+        location: r.location, description: r.description,
+        deadline: r.deadline, type: r.type, _isCustom: true };
+      VRH_PROJECTS.push(p);
+      _customProjects.push(p);
+    });
+  }
+
+  // Инжект пользовательских позиций из item_overrides (is_custom: true)
+  Object.entries(localEdits).forEach(([id, ed]) => {
+    if (ed && ed.is_custom && !ed.deleted) {
+      VRH_ITEMS.push(_buildCustomItem(id, ed));
+    }
+  });
+}
+
+function _buildCustomItem(id, ed) {
+  return {
+    id,
+    projectId:       ed.projectId       || '',
+    complexId:       ed.complexId       || '',
+    number:          ed.number          || '',
+    name:            ed.name            || ed.nameShort || '',
+    nameShort:       ed.nameShort       || ed.name      || '',
+    quantity:        ed.quantity        != null ? ed.quantity : 1,
+    unit:            ed.unit            || 'шт',
+    deadline:        ed.deadline        || '',
+    type:            ed.type            || 'purchased',
+    doneCount:       ed.doneCount       || 0,
+    materialsStatus: ed.materialsStatus || PUR.PENDING,
+    purchaseStatus:  ed.purchaseStatus  || PUR.PENDING,
+    blockReason:     ed.blockReason     || null,
+    assignee:        ed.assignee        || '',
+    notes:           ed.notes           || '',
+    components:      ed.components      || [],
+    history:         ed.history         || [],
+    _isCustom:       true,
+  };
 }
 
 window.doLogin  = doLogin;
