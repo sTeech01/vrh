@@ -2005,3 +2005,33 @@ details.mn-details[open] > summary::after { transform:rotate(90deg); }
 .wf-hist-date { color:var(--gray-400); font-weight:600; white-space:nowrap; }
 .wf-hist-text { color:var(--gray-700); flex:1; line-height:1.5; }
 .wf-hist-author { color:var(--gray-400); white-space:nowrap; font-style:italic; }
+
+/* Уровни маршрута */
+.wf-level-arrow {
+  display:flex; align-items:center; justify-content:center;
+  height:24px; color:var(--gray-300);
+}
+.wf-level-arrow svg { transform:rotate(90deg); }
+
+/* Параллельная группа */
+.wf-parallel-group { display:flex; flex-direction:column; gap:6px; }
+.wf-parallel-label {
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:10px; font-weight:700; color:var(--gray-400);
+  text-transform:uppercase; letter-spacing:.06em;
+  padding:0 2px;
+}
+.wf-parallel-cards {
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));
+  gap:8px;
+}
+.wf-parallel-cards .wf-stage-card { margin-bottom:0; }
+
+/* Предупреждение о незавершённой зависимости */
+.wf-dep-warning {
+  display:flex; align-items:flex-start; gap:6px;
+  background:#FFFBEB; border:1px solid #FDE68A; border-radius:6px;
+  padding:7px 10px; font-size:11px; font-weight:500; color:#92400E;
+  line-height:1.5;
+}

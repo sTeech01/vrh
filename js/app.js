@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #066';
+const APP_BUILD = 'DEPLOY #067';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -194,7 +194,7 @@ async function loadRemoteData() {
         assignee: r.assignee, status: r.status, comment: r.comment,
         start_date: r.start_date, end_date: r.end_date,
         priority: r.priority, required: r.required,
-        depends_on: r.depends_on, history: r.history || [],
+        depends_on: Array.isArray(r.depends_on) ? r.depends_on : [], history: r.history || [],
         created_at: r.created_at,
       });
     });
@@ -2420,41 +2420,82 @@ window.exportData = exportData;
 // WORKFLOW v2 — STAGE UI
 // =============================================================
 
+// Топологические уровни: level 0 = без зависимостей, level N = после уровня N-1
+function _wfComputeLevels(stages) {
+  const byId = {};
+  stages.forEach(s => byId[s.id] = s);
+  const levels = {};
+  const visiting = new Set();
+
+  function getLevel(s) {
+    if (s.id in levels) return levels[s.id];
+    if (visiting.has(s.id)) { levels[s.id] = 0; return 0; } // защита от циклов
+    visiting.add(s.id);
+    const deps = (s.depends_on || []).filter(id => id in byId);
+    levels[s.id] = deps.length
+      ? Math.max(...deps.map(id => getLevel(byId[id]))) + 1
+      : 0;
+    visiting.delete(s.id);
+    return levels[s.id];
+  }
+
+  stages.forEach(s => getLevel(s));
+  return levels;
+}
+
 function renderWorkflowDetail(item, project) {
   const stages = getItemStages(item.id);
   const bn     = getWorkflowBottleneck(item.id);
   const bnId   = bn?.id;
 
-  const stagesHtml = stages.length
-    ? stages.map((s, i) => {
-        const prev = stages[i - 1];
-        const depArrow = (s.depends_on && prev && s.depends_on === prev.id)
-          ? `<div class="wf-dep-line"></div><div class="wf-dep-arrow">${iconSvg('list',10)} зависит от «${prev.name}»</div>`
-          : '';
-        return depArrow + renderStageCard(s, item, bnId);
-      }).join('')
-    : `<div style="padding:24px;text-align:center;color:var(--gray-400);font-size:13px">Этапы не добавлены. Нажмите «Добавить этап».</div>`;
+  let stagesHtml = '';
+  if (!stages.length) {
+    stagesHtml = `<div style="padding:24px;text-align:center;color:var(--gray-400);font-size:13px">Этапы не добавлены. Нажмите «Добавить этап».</div>`;
+  } else {
+    const levels   = _wfComputeLevels(stages);
+    const byLevel  = {};
+    stages.forEach(s => {
+      const lv = levels[s.id] ?? 0;
+      if (!byLevel[lv]) byLevel[lv] = [];
+      byLevel[lv].push(s);
+    });
+    const sortedLvs = Object.keys(byLevel).map(Number).sort((a, b) => a - b);
+
+    sortedLvs.forEach((lv, idx) => {
+      if (idx > 0) stagesHtml += `<div class="wf-level-arrow">${iconSvg('chart', 10)}</div>`;
+      const group = byLevel[lv];
+      if (group.length === 1) {
+        stagesHtml += renderStageCard(group[0], item, bnId, stages);
+      } else {
+        stagesHtml += `
+          <div class="wf-parallel-group">
+            <div class="wf-parallel-label">${iconSvg('refresh', 10)} Параллельно</div>
+            <div class="wf-parallel-cards">
+              ${group.map(s => renderStageCard(s, item, bnId, stages)).join('')}
+            </div>
+          </div>`;
+      }
+    });
+  }
 
   const bottleneckTag = bn
-    ? `<span class="wf-bottleneck-tag">${iconSvg('warning',11)} Узкое место: ${bn.name} (${bn.done_qty}/${item.quantity} ${item.unit})</span>`
+    ? `<span class="wf-bottleneck-tag">${iconSvg('warning', 11)} Узкое место: ${bn.name} (${bn.done_qty}/${item.quantity} ${item.unit})</span>`
     : '';
 
   return `
     <div class="card" style="padding:20px 24px;margin-top:16px">
       <div class="wf-header">
-        <div class="wf-title">${iconSvg('list',13)} Маршрут производства</div>
+        <div class="wf-title">${iconSvg('list', 13)} Маршрут производства</div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           ${bottleneckTag}
-          <button class="wf-btn primary" onclick="openAddStageModal('${item.id}')">
-            ${iconSvg('plus',11)} Добавить этап
-          </button>
+          <button class="wf-btn primary" onclick="openAddStageModal('${item.id}')">${iconSvg('plus', 11)} Добавить этап</button>
         </div>
       </div>
       <div class="wf-stage-list">${stagesHtml}</div>
     </div>`;
 }
 
-function renderStageCard(stage, item, bnId) {
+function renderStageCard(stage, item, bnId, allStages) {
   const isBN  = stage.id === bnId && stage.required;
   const pct   = stage.planned_qty > 0 ? Math.min(100, Math.round(stage.done_qty / stage.planned_qty * 100)) : 0;
   const pillMap = {
@@ -2465,10 +2506,23 @@ function renderStageCard(stage, item, bnId) {
   };
   const [pillCls, pillLabel] = pillMap[stage.status] || pillMap.pending;
 
+  // Зависимости: имена и предупреждение
+  const deps = (stage.depends_on || []);
+  let depWarningHtml = '';
+  if (deps.length && allStages) {
+    const depStages = deps.map(id => allStages.find(s => s.id === id)).filter(Boolean);
+    const incomplete = depStages.filter(s => s.done_qty < s.planned_qty);
+    if (incomplete.length) {
+      depWarningHtml = `<div class="wf-dep-warning">
+        ${iconSvg('warning', 11)} Ожидает завершения: ${incomplete.map(s => `«${s.name}»`).join(', ')}
+      </div>`;
+    }
+  }
+
   const assigneeHtml = stage.assignee
-    ? `<span class="wf-meta-chip">${iconSvg('user',10)} ${stage.assignee}</span>` : '';
+    ? `<span class="wf-meta-chip">${iconSvg('user', 10)} ${stage.assignee}</span>` : '';
   const dateHtml = stage.end_date
-    ? `<span class="wf-meta-chip">${iconSvg('calendar',10)} до ${formatDate(new Date(stage.end_date))}</span>` : '';
+    ? `<span class="wf-meta-chip">${iconSvg('calendar', 10)} до ${formatDate(new Date(stage.end_date))}</span>` : '';
   const reqHtml = stage.required
     ? `<span class="wf-meta-chip" style="color:var(--gray-600)">Обязательный</span>`
     : `<span class="wf-meta-chip" style="color:var(--gray-400)">Доп.</span>`;
@@ -2476,7 +2530,7 @@ function renderStageCard(stage, item, bnId) {
     ? `<div class="wf-comment">${stage.comment}</div>` : '';
 
   return `
-    <div class="wf-stage-card ${isBN ? 'is-bottleneck' : ''}" style="margin-bottom:8px">
+    <div class="wf-stage-card ${isBN ? 'is-bottleneck' : ''}">
       <div class="wf-stage-head">
         <div class="wf-stage-order">${stage.stage_order}</div>
         <div class="wf-stage-name">${stage.name}</div>
@@ -2484,6 +2538,7 @@ function renderStageCard(stage, item, bnId) {
         <span class="wf-stage-pill ${pillCls}">${pillLabel}</span>
       </div>
       <div class="wf-stage-body">
+        ${depWarningHtml}
         <div class="wf-stage-meta">${assigneeHtml}${dateHtml}${reqHtml}</div>
         <div class="wf-progress-row">
           <input class="wf-done-input" type="number" min="0" max="${stage.planned_qty}"
@@ -2497,12 +2552,8 @@ function renderStageCard(stage, item, bnId) {
         </div>
         ${commentHtml}
         <div class="wf-stage-actions">
-          <button class="wf-btn" onclick="openEditStageModal('${stage.id}','${item.id}')">
-            ${iconSvg('edit',11)} Изменить
-          </button>
-          <button class="wf-btn danger" onclick="deleteStage('${stage.id}','${item.id}')">
-            ${iconSvg('trash',11)} Удалить
-          </button>
+          <button class="wf-btn" onclick="openEditStageModal('${stage.id}','${item.id}')">${iconSvg('edit', 11)} Изменить</button>
+          <button class="wf-btn danger" onclick="deleteStage('${stage.id}','${item.id}')">${iconSvg('trash', 11)} Удалить</button>
         </div>
       </div>
     </div>`;
@@ -2514,16 +2565,24 @@ function _wfAssigneeOpts(selected) {
   ).join('');
 }
 
+function _wfDepsOpts(stages, selectedId, excludeId) {
+  return stages
+    .filter(s => s.id !== excludeId)
+    .map(s => `<option value="${s.id}" ${selectedId === s.id ? 'selected' : ''}>${s.stage_order}. ${s.name}</option>`)
+    .join('');
+}
+
 function openAddStageModal(itemId) {
-  const item = VRH_ITEMS.find(i => i.id === itemId);
+  const item   = VRH_ITEMS.find(i => i.id === itemId);
   if (!item) return;
-  const nextOrder = (getItemStages(itemId).length || 0) + 1;
+  const stages    = getItemStages(itemId);
+  const nextOrder = stages.length + 1;
 
   document.getElementById('modal-box').innerHTML = `
     <div style="padding:24px;overflow-y:auto;max-height:80vh">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
         <div style="font-size:15px;font-weight:700">Добавить этап</div>
-        <button class="mn-close-btn" onclick="closeModal()" style="position:static">${iconSvg('x',13)}</button>
+        <button class="mn-close-btn" onclick="closeModal()" style="position:static">${iconSvg('x', 13)}</button>
       </div>
       <div class="form-group">
         <label class="form-label">Название этапа *</label>
@@ -2538,6 +2597,13 @@ function openAddStageModal(itemId) {
           <label class="form-label">Плановое кол-во</label>
           <input id="wf-stage-planned" class="form-input" type="number" min="1" value="${item.quantity}">
         </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Выполняется после</label>
+        <select id="wf-stage-depends" class="form-input">
+          <option value="">— без зависимости (параллельно) —</option>
+          ${_wfDepsOpts(stages, '', '')}
+        </select>
       </div>
       <div class="form-group">
         <label class="form-label">Исполнитель</label>
@@ -2566,7 +2632,7 @@ function openAddStageModal(itemId) {
       </div>
       <div style="display:flex;gap:8px;justify-content:flex-end">
         <button class="btn-secondary" onclick="closeModal()">Отмена</button>
-        <button class="btn-primary" onclick="saveStage('${itemId}',null)">${iconSvg('plus',12)} Добавить</button>
+        <button class="btn-primary" onclick="saveStage('${itemId}',null)">${iconSvg('plus', 12)} Добавить</button>
       </div>
     </div>`;
   document.getElementById('modal-overlay').classList.add('open');
@@ -2580,6 +2646,7 @@ function openEditStageModal(stageId, itemId) {
   const stage  = stages.find(s => s.id === stageId);
   if (!stage) return;
 
+  const currentDep = (stage.depends_on || [])[0] || '';
   const statusOpts = [
     ['pending',     'Ожидает'],
     ['in_progress', 'В работе'],
@@ -2591,11 +2658,11 @@ function openEditStageModal(stageId, itemId) {
     <div style="padding:24px;overflow-y:auto;max-height:80vh">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
         <div style="font-size:15px;font-weight:700">Редактировать этап</div>
-        <button class="mn-close-btn" onclick="closeModal()" style="position:static">${iconSvg('x',13)}</button>
+        <button class="mn-close-btn" onclick="closeModal()" style="position:static">${iconSvg('x', 13)}</button>
       </div>
       <div class="form-group">
         <label class="form-label">Название этапа *</label>
-        <input id="wf-stage-name" class="form-input" type="text" value="${stage.name.replace(/"/g,'&quot;')}">
+        <input id="wf-stage-name" class="form-input" type="text" value="${stage.name.replace(/"/g, '&quot;')}">
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
         <div class="form-group">
@@ -2610,6 +2677,13 @@ function openEditStageModal(stageId, itemId) {
           <label class="form-label">Статус</label>
           <select id="wf-stage-status" class="form-input">${statusOpts}</select>
         </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Выполняется после</label>
+        <select id="wf-stage-depends" class="form-input">
+          <option value="">— без зависимости (параллельно) —</option>
+          ${_wfDepsOpts(getItemStages(itemId), currentDep, stageId)}
+        </select>
       </div>
       <div class="form-group">
         <label class="form-label">Исполнитель</label>
@@ -2638,7 +2712,7 @@ function openEditStageModal(stageId, itemId) {
       </div>
       <div style="display:flex;gap:8px;justify-content:flex-end">
         <button class="btn-secondary" onclick="closeModal()">Отмена</button>
-        <button class="btn-primary" onclick="saveStage('${itemId}','${stageId}')">${iconSvg('save',12)} Сохранить</button>
+        <button class="btn-primary" onclick="saveStage('${itemId}','${stageId}')">${iconSvg('save', 12)} Сохранить</button>
       </div>
     </div>`;
   document.getElementById('modal-overlay').classList.add('open');
@@ -2654,6 +2728,8 @@ function saveStage(itemId, stageId) {
 
   const order    = parseInt(document.getElementById('wf-stage-order')?.value)   || 1;
   const planned  = parseInt(document.getElementById('wf-stage-planned')?.value) || item.quantity;
+  const depVal   = document.getElementById('wf-stage-depends')?.value || '';
+  const dependsOn = depVal ? [depVal] : [];
   const assignee = document.getElementById('wf-stage-assignee')?.value || '';
   const start    = document.getElementById('wf-stage-start')?.value   || null;
   const endDate  = document.getElementById('wf-stage-end')?.value     || null;
@@ -2668,18 +2744,19 @@ function saveStage(itemId, stageId) {
     const s = stages.find(x => x.id === stageId);
     if (!s) return;
     s.name = name; s.stage_order = order; s.planned_qty = planned;
+    s.depends_on = dependsOn;
     s.assignee = assignee; s.start_date = start; s.end_date = endDate;
     s.comment = comment; s.required = required; s.status = status;
     saveStageToStorage(s);
   } else {
     const newStage = {
-      id:          `stage_${itemId}_${Date.now()}`,
-      item_id:     itemId,
-      project_id:  item.projectId,
+      id:         `stage_${itemId}_${Date.now()}`,
+      item_id:    itemId,
+      project_id: item.projectId,
       name, stage_order: order, planned_qty: planned, done_qty: 0,
       assignee, status: 'pending',
       comment, start_date: start, end_date: endDate,
-      priority: 2, required, depends_on: null, history: [],
+      priority: 2, required, depends_on: dependsOn, history: [],
       created_at: new Date().toISOString(),
     };
     stages.push(newStage);
