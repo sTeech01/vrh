@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #067';
+const APP_BUILD = 'DEPLOY #068';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -1657,9 +1657,9 @@ function confirmDeleteProject(projectId) {
         Это действие нельзя отменить.
       </div>
       <div class="form-group" style="margin-bottom:16px">
-        <label class="form-label">Введите секретное слово для подтверждения</label>
+        <label class="form-label">Введите <strong>vrh</strong> для подтверждения</label>
         <input type="text" class="form-input" id="modal-secret-input"
-          placeholder="секретное слово..." autocomplete="off" style="margin-top:6px">
+          placeholder="vrh" autocomplete="off" spellcheck="false" style="margin-top:6px">
         <div id="modal-secret-error"
           style="display:none;color:#EF4444;font-size:12px;margin-top:6px">
           Неверное слово. Попробуйте ещё раз.
@@ -1680,7 +1680,7 @@ window.confirmDeleteProject = confirmDeleteProject;
 
 function deleteProject(projectId) {
   const input = document.getElementById('modal-secret-input')?.value?.trim().toLowerCase();
-  if (input !== 'секрет') {
+  if (input !== 'vrh') {
     const err = document.getElementById('modal-secret-error');
     if (err) err.style.display = 'block';
     document.getElementById('modal-secret-input')?.focus();
