@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #058';
+const APP_BUILD = 'DEPLOY #059';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -1056,128 +1056,285 @@ function aiCard(rec) {
 }
 
 // =============================================================
-// MODAL: Edit Item (все поля в одном месте)
+// MODAL: Edit Item — redesigned card UI
 // =============================================================
+function _mnStatusLabel(st) {
+  return { done:'Готово', in_progress:'В работе', pending:'Ожидает', blocked:'Заблокировано', overdue:'Просрочено' }[st] || st;
+}
+function _mnDeadlineInfo(deadline) {
+  const d = new Date(deadline); d.setHours(0,0,0,0);
+  const now = new Date(); now.setHours(0,0,0,0);
+  const diff = Math.round((d - now) / 86400000);
+  if (diff < 0)  return { cls:'danger', text:`Просрочено на ${Math.abs(diff)} дн.` };
+  if (diff === 0) return { cls:'warn',   text:'Срок истекает сегодня' };
+  if (diff <= 7)  return { cls:'warn',   text:`Осталось ${diff} дн.` };
+  return { cls:'good', text:`Осталось ${diff} дн.` };
+}
+function _mnFormatDate(s) {
+  const d = new Date(s);
+  return d.toLocaleDateString('ru-RU', { day:'numeric', month:'long', year:'numeric' });
+}
+
 function openUpdateModal(itemId) {
   const item = VRH_ITEMS.find(i => i.id === itemId);
   if (!item) return;
 
-  const purOpts = [
-    { val: '',            label: '— не указано —' },
-    { val: PUR.PENDING,  label: 'Не заказано' },
-    { val: PUR.ORDERED,  label: 'Заказано / счёт выставлен' },
-    { val: PUR.PARTIAL,  label: 'Получено частично' },
-    { val: PUR.RECEIVED, label: 'Получено полностью' },
-  ];
-  const curPur = item.purchaseStatus || item.materialsStatus || '';
-  const nameFull = item.nameFullOverride !== undefined ? item.nameFullOverride : item.name;
+  const pct     = calcProgress(item);
+  const status  = getItemStatus(item);
+  const done    = getItemDone(item);
+  const R = 38, circ = 2 * Math.PI * R;
+  const offset  = circ * (1 - pct / 100);
+  const dl      = _mnDeadlineInfo(item.deadline);
+  const curPur  = item.purchaseStatus || item.materialsStatus || '';
+  const nameFull   = item.nameFullOverride !== undefined ? item.nameFullOverride : item.name;
   const nameFullOn = item.nameFullEnabled !== false;
 
-  const sec = (label) =>
-    `<div style="font-size:11px;font-weight:700;color:var(--gray-800);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">${label}</div>`;
-  const div = () =>
-    `<div style="height:1px;background:var(--gray-100);margin:18px 0"></div>`;
+  // ── Assignee badge ──
+  const assigneeHtml = item.assignee
+    ? `<span class="mn-hero-pill">${iconSvg('user',11)} ${item.assignee}</span>`
+    : '';
 
-  // Прогресс — только для 'own'
-  let progressSection = '';
-  if (item.type === 'own') {
-    const hasComp = item.components?.length > 0;
-    const compRows = hasComp ? item.components.map(c => `
-      <div class="form-group">
-        <label class="form-label">${c.name} <span style="color:var(--gray-400);font-weight:400">(из ${c.quantity})</span></label>
-        <input type="number" class="form-input" id="comp-${c.id}" min="0" max="${c.quantity}" value="${c.done}" style="margin-top:4px">
-      </div>`).join('') : '';
-    progressSection = `
-      ${div()}
-      ${sec('Прогресс')}
-      <div class="form-group">
-        <label class="form-label">Требуется <span style="color:var(--gray-400);font-weight:400">(${item.unit})</span></label>
-        <input type="number" class="form-input" id="modal-quantity" min="1" value="${item.quantity}" style="margin-top:4px">
+  // ── Progress section (own) ──
+  const progSection = item.type === 'own' ? `
+    <div class="mn-sec">
+      <div class="mn-sec-title">Производство</div>
+      <div class="mn-stat-row">
+        <div class="mn-stat-box">
+          <span class="mn-stat-label">Требуется (${item.unit})</span>
+          <input class="mn-stat-input" type="number" id="modal-quantity" min="1"
+            value="${item.quantity}" oninput="updateModalProgress()">
+        </div>
+        <div class="mn-stat-box">
+          <span class="mn-stat-label">Готово</span>
+          <input class="mn-stat-input" type="number" id="modal-done-count" min="0"
+            max="${item.quantity}" value="${done}" oninput="updateModalProgress()">
+        </div>
+        <div class="mn-stat-box">
+          <span class="mn-stat-label">Осталось</span>
+          <span class="mn-stat-val" id="mn-remaining">${Math.max(0, item.quantity - done)}</span>
+        </div>
+        <div class="mn-stat-bar-wrap">
+          <div class="mn-bar-row">
+            <div class="mn-bar-track"><div class="mn-bar-fill" id="mn-bar-fill" style="width:${pct}%"></div></div>
+            <span class="mn-bar-pct" id="mn-bar-pct">${pct}%</span>
+          </div>
+        </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Готово <span style="color:var(--gray-400);font-weight:400">(из ${item.quantity} ${item.unit})</span></label>
-        <input type="number" class="form-input" id="modal-done-count" min="0" max="${item.quantity}" value="${item.doneCount || 0}" style="margin-top:4px">
+      ${item.components?.length ? `
+        <div style="margin-top:16px">
+          <div class="mn-stat-label" style="margin-bottom:10px">Компоненты</div>
+          <div class="mn-comp-grid">
+            ${item.components.map(c => `
+              <div class="mn-comp-item">
+                <div class="mn-comp-label">${c.name} (из ${c.quantity})</div>
+                <input class="mn-comp-input" type="number" id="comp-${c.id}" min="0" max="${c.quantity}" value="${c.done}">
+              </div>`).join('')}
+          </div>
+        </div>` : ''}
+    </div>` : `<input type="hidden" id="modal-quantity" value="${item.quantity}">
+               <input type="hidden" id="modal-done-count" value="${done}">`;
+
+  // ── Purchase chips ──
+  const purChips = [
+    { val: PUR.PENDING,  label:'Не заказано',        dot:'#D1D5DB', active:'background:#F3F4F6;color:#374151;border-color:#D1D5DB' },
+    { val: PUR.ORDERED,  label:'Заказано',            dot:'#60A5FA', active:'background:#DBEAFE;color:#1D4ED8;border-color:#93C5FD' },
+    { val: PUR.PARTIAL,  label:'Частично получено',   dot:'#FCD34D', active:'background:#FEF3C7;color:#92400E;border-color:#FDE68A' },
+    { val: PUR.RECEIVED, label:'Получено полностью',  dot:'#34D399', active:'background:#DCFCE7;color:#166534;border-color:#6EE7B7' },
+  ];
+  const purSection = `
+    <div class="mn-sec">
+      <div class="mn-sec-title">Статус закупки / материалов</div>
+      <div class="mn-chips" id="mn-chips-pur">
+        ${purChips.map(c => {
+          const isActive = curPur === c.val;
+          return `<button type="button" class="mn-chip${isActive ? ' mn-chip-active' : ''}"
+            data-val="${c.val}" data-active="${c.active}"
+            style="${isActive ? c.active : ''}"
+            onclick="mnSelectChip('modal-pur-status','mn-chips-pur',this)">
+            <span class="mn-chip-dot" style="background:${c.dot}"></span>${c.label}
+          </button>`;
+        }).join('')}
       </div>
-      ${hasComp ? `<div style="background:var(--gray-50);border-radius:8px;padding:12px;margin-top:4px">${compRows}</div>` : ''}`;
-  }
+      <input type="hidden" id="modal-pur-status" value="${curPur}">
+    </div>`;
+
+  // ── Deadline ──
+  const dlSection = `
+    <div class="mn-sec">
+      <div class="mn-sec-title">Дедлайн</div>
+      <div class="mn-deadline-row">
+        <input type="date" class="mn-date-input" id="modal-deadline"
+          value="${item.deadline}" oninput="mnUpdateDeadline(this.value)">
+        <span class="mn-deadline-info ${dl.cls}" id="mn-deadline-info">${dl.text}</span>
+      </div>
+    </div>`;
+
+  // ── Block reason ──
+  const hasBlock = !!item.blockReason;
+  const blockSection = `
+    <div class="mn-sec">
+      <div class="mn-sec-title">Блокировка</div>
+      <button class="mn-block-add" id="mn-block-add" onclick="mnShowBlock()"
+        style="${hasBlock ? 'display:none' : ''}">
+        ${iconSvg('plus',12)} Добавить причину блокировки
+      </button>
+      <div class="mn-block-card${hasBlock ? ' active-danger' : ''}" id="mn-block-card"
+        style="${hasBlock ? '' : 'display:none'}">
+        <div class="mn-block-icon">${hasBlock ? '🚫' : '⚠️'}</div>
+        <div class="mn-block-content">
+          <div class="mn-block-title">Производство остановлено</div>
+          <input class="mn-block-input" type="text" id="modal-block-reason"
+            value="${(item.blockReason || '').replace(/"/g,'&quot;')}"
+            placeholder="Причина блокировки...">
+        </div>
+        <button class="mn-block-clear" onclick="mnClearBlock()" title="Снять блокировку">
+          ${iconSvg('x', 12)}
+        </button>
+      </div>
+    </div>`;
+
+  // ── Notes ──
+  const notesSection = `
+    <div class="mn-sec">
+      <div class="mn-sec-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Примечание</span>
+        <label class="mn-toggle" style="margin-bottom:0">
+          <input type="checkbox" id="modal-note-tip-enabled" ${item.noteTipEnabled !== false ? 'checked' : ''}>
+          <span class="mn-toggle-track"><span class="mn-toggle-thumb"></span></span>
+          <span class="mn-toggle-label">Показывать иконку</span>
+        </label>
+      </div>
+      <textarea class="mn-notes-textarea" id="modal-notes"
+        placeholder="Добавьте примечание..."
+        oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+        >${item.notes || ''}</textarea>
+    </div>`;
+
+  // ── Name ──
+  const nameSection = `
+    <div class="mn-sec">
+      <div class="mn-sec-title">Наименование</div>
+      <div class="mn-stat-label" style="margin-bottom:6px">Короткое (в таблице)</div>
+      <input class="mn-name-short" type="text" id="modal-name-short"
+        value="${item.nameShort.replace(/"/g,'&quot;')}">
+      <div class="mn-name-full-wrap">
+        <label class="mn-toggle">
+          <input type="checkbox" id="modal-name-full-enabled" ${nameFullOn ? 'checked' : ''}>
+          <span class="mn-toggle-track"><span class="mn-toggle-thumb"></span></span>
+          <span class="mn-toggle-label">Показывать подсказку с полным наименованием</span>
+        </label>
+        <textarea class="mn-name-full-textarea" id="modal-name-full-text"
+          placeholder="Полное наименование..."
+          oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+          >${nameFull.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+      </div>
+    </div>`;
 
   document.getElementById('modal-box').innerHTML = `
-    <div class="modal-header">
-      <div class="modal-title" style="display:flex;align-items:center;gap:6px;font-weight:700">${iconSvg('edit',14)} Редактировать позицию</div>
-      <button class="modal-close" onclick="closeModal()">${iconSvg('x', 12)}</button>
+    <button class="mn-close-btn" onclick="closeModal()">${iconSvg('x',13)}</button>
+
+    <div class="mn-hero">
+      <div class="mn-hero-info">
+        <div class="mn-hero-name">${item.nameShort}</div>
+        <div class="mn-hero-meta">
+          <span class="mn-hero-badge mn-badge-${status}">${_mnStatusLabel(status)}</span>
+          ${assigneeHtml}
+          <span class="mn-hero-pill ${dl.cls}">${iconSvg('calendar',11)} ${_mnFormatDate(item.deadline)}</span>
+          <span class="mn-hero-pill ${dl.cls}">${dl.text}</span>
+        </div>
+      </div>
+      <div class="mn-ring-wrap">
+        <svg class="mn-ring-svg" viewBox="0 0 100 100">
+          <circle class="mn-ring-bg" cx="50" cy="50" r="${R}"/>
+          <circle class="mn-ring-fg" id="mn-ring-fg" cx="50" cy="50" r="${R}"
+            style="stroke-dashoffset:${offset.toFixed(2)}"/>
+        </svg>
+        <div class="mn-ring-text">
+          <span class="mn-ring-pct" id="mn-ring-pct">${pct}%</span>
+          <span class="mn-ring-sub" id="mn-ring-qty">${done} из ${item.quantity} ${item.unit}</span>
+        </div>
+      </div>
     </div>
-    <div class="modal-body">
 
-      ${sec('Наименование')}
-      <div class="form-group">
-        <label class="form-label">Короткое имя <span style="color:var(--gray-400);font-weight:400">(отображается в таблице)</span></label>
-        <input type="text" class="form-input" id="modal-name-short"
-          value="${item.nameShort.replace(/"/g,'&quot;')}" style="margin-top:4px">
-      </div>
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label" style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          <svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2.5a.75.75 0 110 1.5.75.75 0 010-1.5zM7 7h2v4H7V7z"/></svg>
-          Подсказка с полным наименованием
-        </label>
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;margin-bottom:10px">
-          <input type="checkbox" id="modal-name-full-enabled" ${nameFullOn ? 'checked' : ''} style="width:15px;height:15px;accent-color:#0EA5E9;cursor:pointer;flex-shrink:0">
-          <span style="font-size:13px;color:var(--gray-700)">Показывать иконку подсказки</span>
-        </label>
-        <textarea class="form-textarea" id="modal-name-full-text" style="min-height:52px;resize:vertical"
-          placeholder="Полное наименование для подсказки...">${nameFull.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
-      </div>
+    <div class="mn-body" data-unit="${item.unit}">
+      ${progSection}
+      ${purSection}
+      ${dlSection}
+      ${blockSection}
+      ${notesSection}
+      ${nameSection}
+    </div>
 
-      ${progressSection}
-
-      ${div()}
-      ${sec('Статус')}
-      <div class="form-group">
-        <label class="form-label">Статус закупки / материалов</label>
-        <select class="form-select" id="modal-pur-status" style="margin-top:4px">
-          ${purOpts.map(o => `<option value="${o.val}" ${curPur===o.val?'selected':''}>${o.label}</option>`).join('')}
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Дедлайн</label>
-        <input type="date" class="form-input" id="modal-deadline" value="${item.deadline}" style="margin-top:4px">
-      </div>
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label" style="display:flex;align-items:center;gap:6px">
-          Блокировка
-          ${item.blockReason ? `<span class="block-badge-active">АКТИВНА</span>` : ''}
-        </label>
-        <input type="text" class="form-input" id="modal-block-reason"
-          value="${(item.blockReason || '').replace(/"/g,'&quot;')}"
-          placeholder="Нет (оставьте пустым чтобы снять блокировку)"
-          style="margin-top:4px">
-        ${item.blockReason ? `<div style="margin-top:5px;font-size:11px;color:var(--gray-400)">Очистите поле и сохраните — блокировка будет снята</div>` : ''}
-      </div>
-
-      ${div()}
-      ${sec('Примечание')}
-      <div class="form-group">
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;margin-bottom:10px">
-          <input type="checkbox" id="modal-note-tip-enabled" ${item.noteTipEnabled !== false ? 'checked' : ''} style="width:15px;height:15px;accent-color:#0EA5E9;cursor:pointer;flex-shrink:0">
-          <span style="font-size:13px;color:var(--gray-700)">Показывать иконку примечания в таблице</span>
-        </label>
-      </div>
-      <div class="form-group" style="margin-bottom:0">
-        <textarea class="form-textarea" id="modal-notes" style="min-height:68px">${item.notes || ''}</textarea>
-      </div>
-
-      <button class="btn-primary" onclick="saveItemUpdate('${item.id}')"
-        style="margin-top:18px;width:100%;display:flex;align-items:center;justify-content:center;gap:8px">
-        ${iconSvg('save', 14)} Сохранить изменения
+    <div class="mn-footer">
+      <button class="mn-btn-danger" onclick="deleteItem('${item.id}')">
+        ${iconSvg('trash',13)} Удалить позицию
       </button>
-      <button onclick="deleteItem('${item.id}')"
-        style="margin-top:8px;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:none;border:1px solid #FECACA;color:#EF4444;border-radius:8px;padding:10px;cursor:pointer;font-size:13px;font-weight:500">
-        ${iconSvg('trash', 13)} Удалить позицию
+      <button class="mn-btn-save" onclick="saveItemUpdate('${item.id}')">
+        ${iconSvg('save',14)} Сохранить изменения
       </button>
     </div>`;
 
   document.getElementById('modal-overlay').classList.add('open');
+
+  // Auto-resize textareas
+  ['modal-notes','modal-name-full-text'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+  });
 }
 window.openUpdateModal = openUpdateModal;
+
+function updateModalProgress() {
+  const qty  = Math.max(1, parseInt(document.getElementById('modal-quantity')?.value, 10) || 1);
+  const done = Math.min(qty, Math.max(0, parseInt(document.getElementById('modal-done-count')?.value, 10) || 0));
+  const pct  = Math.min(100, Math.round(done / qty * 100));
+  const unit = document.querySelector('.mn-body')?.dataset?.unit || '';
+  const R = 38, circ = 2 * Math.PI * R;
+  const el = (id) => document.getElementById(id);
+  if (el('mn-remaining'))       el('mn-remaining').textContent   = Math.max(0, qty - done);
+  if (el('mn-bar-fill'))        el('mn-bar-fill').style.width    = pct + '%';
+  if (el('mn-bar-pct'))         el('mn-bar-pct').textContent     = pct + '%';
+  if (el('mn-ring-fg'))         el('mn-ring-fg').style.strokeDashoffset = (circ*(1-pct/100)).toFixed(2);
+  if (el('mn-ring-pct'))        el('mn-ring-pct').textContent    = pct + '%';
+  if (el('mn-ring-qty'))        el('mn-ring-qty').textContent    = done + ' из ' + qty + ' ' + unit;
+}
+window.updateModalProgress = updateModalProgress;
+
+function mnSelectChip(inputId, groupId, btn) {
+  const val = btn.dataset.val;
+  document.getElementById(inputId).value = val;
+  document.getElementById(groupId).querySelectorAll('.mn-chip').forEach(c => {
+    const active = c.dataset.val === val;
+    c.classList.toggle('mn-chip-active', active);
+    c.style.cssText = active ? (c.dataset.active || '') : '';
+  });
+}
+window.mnSelectChip = mnSelectChip;
+
+function mnUpdateDeadline(val) {
+  if (!val) return;
+  const info = _mnDeadlineInfo(val);
+  const el = document.getElementById('mn-deadline-info');
+  if (!el) return;
+  el.textContent = info.text;
+  el.className = 'mn-deadline-info ' + info.cls;
+}
+window.mnUpdateDeadline = mnUpdateDeadline;
+
+function mnShowBlock() {
+  document.getElementById('mn-block-add').style.display  = 'none';
+  document.getElementById('mn-block-card').style.display = 'flex';
+  document.getElementById('modal-block-reason')?.focus();
+}
+window.mnShowBlock = mnShowBlock;
+
+function mnClearBlock() {
+  const inp = document.getElementById('modal-block-reason');
+  if (inp) inp.value = '';
+  document.getElementById('mn-block-card').style.display = 'none';
+  document.getElementById('mn-block-add').style.display  = '';
+}
+window.mnClearBlock = mnClearBlock;
 
 function saveProgressUpdate(itemId) {
   const item = VRH_ITEMS.find(i => i.id === itemId);
