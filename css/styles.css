@@ -1564,6 +1564,74 @@ table.items-table { width: 100%; border-collapse: collapse; }
 ::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: var(--radius-full); }
 ::-webkit-scrollbar-thumb:hover { background: var(--gray-300); }
 
+/* ── Splash Screen ─────────────────────────────────────────── */
+#splash-screen {
+  position: fixed; inset: 0; z-index: 9999;
+  background: #fff;
+  display: flex; align-items: center; justify-content: center;
+}
+.splash-inner {
+  display: flex; flex-direction: column; align-items: center;
+  width: 100%; max-width: 560px; padding: 0 32px;
+  animation: splashFadeIn 0.5s ease forwards;
+}
+@keyframes splashFadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+@keyframes splashFadeOut { to { opacity:0; } }
+.splash-logo {
+  height: 72px; width: auto; object-fit: contain;
+  animation: splashFadeIn 0.5s ease forwards;
+}
+.splash-steps {
+  display: flex; align-items: center; margin-top: 52px;
+  animation: splashFadeIn 0.5s ease 0.3s both;
+}
+.splash-step {
+  display: flex; flex-direction: column; align-items: center; gap: 9px;
+}
+.splash-icon {
+  width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+  color: #C8C8C8; transition: color 0.4s ease, transform 0.4s ease;
+}
+.splash-icon svg { width: 26px; height: 26px; }
+.splash-step-label {
+  font-size: 11px; font-weight: 500; letter-spacing: 0.04em;
+  color: #C8C8C8; transition: color 0.4s ease; white-space: nowrap;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+.splash-step-active .splash-icon { color: #1E6BFF; transform: scale(1.08); }
+.splash-step-active .splash-step-label { color: #1E6BFF; }
+.splash-dots {
+  display: flex; gap: 4px; align-items: center; padding: 0 14px; padding-bottom: 20px;
+}
+.splash-dots span { width: 3px; height: 3px; border-radius: 50%; background: #D8D8D8; }
+.splash-progress-wrap {
+  width: 100%; margin-top: 48px;
+  animation: splashFadeIn 0.5s ease 0.55s both;
+}
+.splash-progress-header {
+  display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px;
+}
+.splash-title {
+  font-size: 18px; font-weight: 500; color: #222; letter-spacing: -0.2px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+.splash-pct {
+  font-size: 13px; font-weight: 500; color: #1E6BFF;
+  font-variant-numeric: tabular-nums; min-width: 36px; text-align: right;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+.splash-track {
+  width: 100%; height: 6px; background: #F0F0F0; border-radius: 999px; overflow: hidden;
+}
+.splash-fill {
+  height: 100%; width: 0%; background: #1E6BFF; border-radius: 999px; transition: width 0.1s linear;
+}
+.splash-tagline {
+  margin-top: 24px; font-size: 13px; color: #8A8A8A; letter-spacing: 0.02em;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  animation: splashFadeIn 0.5s ease 0.7s both;
+}
+
 /* ── Login Screen ──────────────────────────────────────────── */
 #login-screen {
   display: none;

@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #057';
+const APP_BUILD = 'DEPLOY #058';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -24,11 +24,61 @@ const state = {
 let localEdits = {};
 
 // ── Init ────────────────────────────────────────────────────────
+// ── Splash ──────────────────────────────────────────────────
+let _splashRaf = null;
+let _splashPct = 0;
+
+function _setSplashPct(pct) {
+  _splashPct = pct;
+  const fill = document.getElementById('splash-fill');
+  const pctEl = document.getElementById('splash-pct');
+  if (fill)  fill.style.width = pct + '%';
+  if (pctEl) pctEl.textContent = pct + '%';
+  const idx = pct < 25 ? 0 : pct < 50 ? 1 : pct < 75 ? 2 : 3;
+  for (let i = 0; i < 4; i++) {
+    const el = document.getElementById('splash-step-' + i);
+    if (el) el.classList.toggle('splash-step-active', i === idx);
+  }
+}
+
+function _startSplash() {
+  const start = performance.now();
+  const TARGET = 82;
+  function tick(ts) {
+    const t = Math.min((ts - start) / 2200, 1);
+    const e = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+    _setSplashPct(Math.round(e * TARGET));
+    if (_splashPct < TARGET) _splashRaf = requestAnimationFrame(tick);
+  }
+  _splashRaf = requestAnimationFrame(tick);
+}
+
+function _hideSplash(onDone) {
+  if (_splashRaf) { cancelAnimationFrame(_splashRaf); _splashRaf = null; }
+  const from = _splashPct;
+  const start = performance.now();
+  function finish(ts) {
+    const t = Math.min((ts - start) / 350, 1);
+    _setSplashPct(Math.round(from + (100 - from) * t));
+    if (t < 1) { requestAnimationFrame(finish); return; }
+    setTimeout(() => {
+      const el = document.getElementById('splash-screen');
+      if (!el) { if (onDone) onDone(); return; }
+      el.style.transition = 'opacity 0.35s ease';
+      el.style.opacity = '0';
+      setTimeout(() => { el.remove(); if (onDone) onDone(); }, 360);
+    }, 180);
+  }
+  requestAnimationFrame(finish);
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
+  _startSplash();
   _sb = supabase.createClient(_SB_URL, _SB_KEY);
   const { data: { session } } = await _sb.auth.getSession();
-  if (!session) { showLoginScreen(); return; }
+  if (!session) { _hideSplash(() => showLoginScreen()); return; }
   await initApp();
+  _hideSplash();
 });
 
 async function initApp() {
