@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #063';
+const APP_BUILD = 'DEPLOY #064';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -616,6 +616,9 @@ function renderProject(el, projectId) {
         oninput="setFilter('search',this.value)" autocomplete="off" name="vrh-filter-q" id="filter-search-input"
         style="padding-right:10px;min-width:140px">
       <span style="font-size:12px;color:var(--gray-400);margin-left:auto">${filtered.length} из ${items.length}</span>
+      <button class="btn-primary" onclick="openCreateItemModal('${projectId}')" style="display:inline-flex;align-items:center;gap:6px;flex-shrink:0">
+        ${iconSvg('plus', 12)} Добавить позицию
+      </button>
     </div>
 
     ${complexIds
@@ -1630,6 +1633,147 @@ function deleteProject(projectId) {
   showToast('Проект удалён');
 }
 window.deleteProject = deleteProject;
+
+// =============================================================
+// CREATE ITEM
+// =============================================================
+function openCreateItemModal(projectId) {
+  const project = VRH_PROJECTS.find(p => p.id === projectId);
+  const assignees = getAllAssignees();
+  const today = new Date().toISOString().slice(0, 10);
+  const projectDeadline = project?.deadline || today;
+
+  document.getElementById('modal-box').innerHTML = `
+    <div class="modal-header">
+      <div class="modal-title" style="display:flex;align-items:center;gap:8px">
+        ${iconSvg('plus', 15)} Новая позиция
+      </div>
+      <button class="modal-close" onclick="closeModal()">${iconSvg('x', 12)}</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">Комплекс <span style="color:#EF4444">*</span></label>
+          <select class="form-input" id="ci-complex">
+            ${COMPLEXES.map(c => `<option value="${c.id}">${c.abbr} — ${c.name}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Тип <span style="color:#EF4444">*</span></label>
+          <select class="form-input" id="ci-type">
+            <option value="own">Производство (изготавливаем)</option>
+            <option value="purchased">Закупка (покупаем)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Полное наименование <span style="color:#EF4444">*</span></label>
+        <input class="form-input" type="text" id="ci-name" placeholder="Полное техническое название" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Короткое название <span style="color:#EF4444">*</span></label>
+        <input class="form-input" type="text" id="ci-name-short" placeholder="Для таблицы (до 40 символов)" autocomplete="off">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">Количество <span style="color:#EF4444">*</span></label>
+          <input class="form-input" type="number" id="ci-quantity" min="1" value="1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Единица</label>
+          <select class="form-input" id="ci-unit">
+            <option value="шт">шт</option>
+            <option value="м³">м³</option>
+            <option value="м²">м²</option>
+            <option value="м">м</option>
+            <option value="кг">кг</option>
+            <option value="компл.">компл.</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Дедлайн</label>
+          <input class="form-input" type="date" id="ci-deadline" value="${projectDeadline}">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ответственный</label>
+        <select class="form-input" id="ci-assignee">
+          <option value="">— не назначен —</option>
+          ${assignees.map(a => `<option value="${a.name}">${a.name}</option>`).join('')}
+        </select>
+      </div>
+      <div id="ci-error" style="display:none;color:#EF4444;font-size:12px"></div>
+      <div style="display:flex;gap:10px;margin-top:4px">
+        <button class="btn-secondary" onclick="closeModal()" style="flex:1">Отмена</button>
+        <button class="btn-primary" onclick="saveNewItem('${projectId}')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px">
+          ${iconSvg('save', 13)} Добавить позицию
+        </button>
+      </div>
+    </div>`;
+  document.getElementById('modal-overlay').classList.add('open');
+  requestAnimationFrame(() => document.getElementById('ci-name')?.focus());
+}
+window.openCreateItemModal = openCreateItemModal;
+
+function saveNewItem(projectId) {
+  const name      = document.getElementById('ci-name')?.value.trim();
+  const nameShort = document.getElementById('ci-name-short')?.value.trim();
+  const qtyRaw    = parseInt(document.getElementById('ci-quantity')?.value, 10);
+
+  const showErr = (msg) => {
+    const e = document.getElementById('ci-error');
+    if (e) { e.textContent = msg; e.style.display = 'block'; }
+  };
+  if (!name)                 { showErr('Введите полное наименование'); document.getElementById('ci-name')?.focus(); return; }
+  if (!nameShort)            { showErr('Введите короткое название');   document.getElementById('ci-name-short')?.focus(); return; }
+  if (!qtyRaw || qtyRaw < 1){ showErr('Количество должно быть ≥ 1');  document.getElementById('ci-quantity')?.focus(); return; }
+
+  const type     = document.getElementById('ci-type')?.value     || 'purchased';
+  const complexId= document.getElementById('ci-complex')?.value  || COMPLEXES[0]?.id;
+  const unit     = document.getElementById('ci-unit')?.value     || 'шт';
+  const deadline = document.getElementById('ci-deadline')?.value  || '';
+  const assignee = document.getElementById('ci-assignee')?.value || '';
+
+  // Порядковый номер: макс существующий + 1 в этом комплексе
+  const existingNums = VRH_ITEMS
+    .filter(i => i.projectId === projectId && i.complexId === complexId)
+    .map(i => parseInt(i.number, 10))
+    .filter(n => !isNaN(n));
+  const number = existingNums.length ? String(Math.max(...existingNums) + 1) : '1';
+
+  const id = 'custom_item_' + Date.now();
+  const ed = {
+    is_custom:       true,
+    projectId,
+    complexId,
+    number,
+    name,
+    nameShort,
+    quantity:        qtyRaw,
+    unit,
+    deadline,
+    type,
+    doneCount:       0,
+    materialsStatus: PUR.PENDING,
+    purchaseStatus:  PUR.PENDING,
+    assignee,
+    blockReason:     null,
+    notes:           '',
+    components:      [],
+    history:         [],
+    parent_id:       null,
+  };
+
+  localEdits[id] = ed;
+  VRH_ITEMS.push(_buildCustomItem(id, ed));
+  saveEditsToStorage(id);
+  applyEdits();
+  closeModal();
+  updateProblemsBadge();
+  showToast('Позиция добавлена');
+  render();
+}
+window.saveNewItem = saveNewItem;
 
 // =============================================================
 // CREATE PROJECT
