@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #069';
+const APP_BUILD = 'DEPLOY #070';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -1695,11 +1695,11 @@ function deleteProject(projectId) {
     const i = VRH_ITEMS.findIndex(x => x.id === id);
     if (i !== -1) VRH_ITEMS.splice(i, 1);
     delete localEdits[id];
-    if (_sb) _sb.from('item_overrides').delete().eq('item_id', id).catch(() => {});
+    if (_sb) (async () => { try { await _sb.from('item_overrides').delete().eq('item_id', id); } catch(e) {} })();
   });
   // Удаляем из Supabase если это пользовательский проект
   if (proj?._isCustom && _sb) {
-    _sb.from('custom_projects').delete().eq('id', projectId).catch(() => {});
+    (async () => { try { await _sb.from('custom_projects').delete().eq('id', projectId); } catch(e) {} })();
     const ci = _customProjects.findIndex(p => p.id === projectId);
     if (ci !== -1) _customProjects.splice(ci, 1);
   }
