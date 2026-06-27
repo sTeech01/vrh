@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #070';
+const APP_BUILD = 'DEPLOY #071';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -1705,8 +1705,11 @@ function deleteProject(projectId) {
   }
   closeModal();
   updateProblemsBadge();
-  navigate('projects');
   showToast('Проект удалён');
+  // Явный переход + render на случай если hash уже #projects (hashchange не сработает)
+  state.view = 'projects'; state.projectId = null; state.itemId = null;
+  window.location.hash = 'projects';
+  render();
 }
 window.deleteProject = deleteProject;
 
@@ -2328,6 +2331,9 @@ function deleteItem(itemId) {
   if (!localEdits[itemId]) localEdits[itemId] = {};
   localEdits[itemId].deleted = true;
   saveEditsToStorage(itemId);
+  // Убираем из памяти сразу, не ждём перезагрузки
+  const _di = VRH_ITEMS.findIndex(i => i.id === itemId);
+  if (_di !== -1) VRH_ITEMS.splice(_di, 1);
   closeModal();
   navigate('project', state.projectId);
 }
