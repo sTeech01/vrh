@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #059';
+const APP_BUILD = 'DEPLOY #060';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -1180,7 +1180,7 @@ function openUpdateModal(itemId) {
       </button>
       <div class="mn-block-card${hasBlock ? ' active-danger' : ''}" id="mn-block-card"
         style="${hasBlock ? '' : 'display:none'}">
-        <div class="mn-block-icon">${hasBlock ? '🚫' : '⚠️'}</div>
+        <div class="mn-block-icon">${iconSvg('x', 13)}</div>
         <div class="mn-block-content">
           <div class="mn-block-title">Производство остановлено</div>
           <input class="mn-block-input" type="text" id="modal-block-reason"
@@ -1257,12 +1257,16 @@ function openUpdateModal(itemId) {
     </div>
 
     <div class="mn-body" data-unit="${item.unit}">
-      ${progSection}
-      ${purSection}
-      ${dlSection}
-      ${blockSection}
-      ${notesSection}
-      ${nameSection}
+      <div class="mn-col mn-col-left">
+        ${progSection}
+        ${purSection}
+        ${blockSection}
+      </div>
+      <div class="mn-col mn-col-right">
+        ${dlSection}
+        ${notesSection}
+        ${nameSection}
+      </div>
     </div>
 
     <div class="mn-footer">
