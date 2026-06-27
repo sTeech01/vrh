@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #065';
+const APP_BUILD = 'DEPLOY #066';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -847,15 +847,17 @@ function renderItem(el, projectId, itemId) {
     item.nameShort
   );
 
-  // Компоненты (только для 'own' изделий с данными)
-  const componentsHtml = (item.type === 'own' && item.components?.length)
+  const isV2 = isV2Project(item.projectId);
+
+  // Компоненты (только для v1 'own' изделий с данными)
+  const componentsHtml = isV2 ? '' : (item.type === 'own' && item.components?.length)
     ? renderComponents(item)
     : item.type === 'own'
       ? ''
       : renderPurchaseBlock(item);
 
-  // История
-  const historyHtml = (item.history?.length)
+  // История (только для v1)
+  const historyHtml = isV2 ? '' : (item.history?.length)
     ? renderHistory(item)
     : '';
 
@@ -906,6 +908,9 @@ function renderItem(el, projectId, itemId) {
       </div>
     </div>
 
+    ${isV2
+      ? renderWorkflowDetail(item, project)
+      : `
     ${componentsHtml}
     ${historyHtml}
 
@@ -919,7 +924,7 @@ function renderItem(el, projectId, itemId) {
           ${iconSvg('plus',13)} Добавить запись
         </button>
       </div>
-    </div>
+    </div>`}
   `;
 }
 
@@ -2410,6 +2415,317 @@ function exportData() {
   showToast('Данные экспортированы');
 }
 window.exportData = exportData;
+
+// =============================================================
+// WORKFLOW v2 — STAGE UI
+// =============================================================
+
+function renderWorkflowDetail(item, project) {
+  const stages = getItemStages(item.id);
+  const bn     = getWorkflowBottleneck(item.id);
+  const bnId   = bn?.id;
+
+  const stagesHtml = stages.length
+    ? stages.map((s, i) => {
+        const prev = stages[i - 1];
+        const depArrow = (s.depends_on && prev && s.depends_on === prev.id)
+          ? `<div class="wf-dep-line"></div><div class="wf-dep-arrow">${iconSvg('list',10)} зависит от «${prev.name}»</div>`
+          : '';
+        return depArrow + renderStageCard(s, item, bnId);
+      }).join('')
+    : `<div style="padding:24px;text-align:center;color:var(--gray-400);font-size:13px">Этапы не добавлены. Нажмите «Добавить этап».</div>`;
+
+  const bottleneckTag = bn
+    ? `<span class="wf-bottleneck-tag">${iconSvg('warning',11)} Узкое место: ${bn.name} (${bn.done_qty}/${item.quantity} ${item.unit})</span>`
+    : '';
+
+  return `
+    <div class="card" style="padding:20px 24px;margin-top:16px">
+      <div class="wf-header">
+        <div class="wf-title">${iconSvg('list',13)} Маршрут производства</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          ${bottleneckTag}
+          <button class="wf-btn primary" onclick="openAddStageModal('${item.id}')">
+            ${iconSvg('plus',11)} Добавить этап
+          </button>
+        </div>
+      </div>
+      <div class="wf-stage-list">${stagesHtml}</div>
+    </div>`;
+}
+
+function renderStageCard(stage, item, bnId) {
+  const isBN  = stage.id === bnId && stage.required;
+  const pct   = stage.planned_qty > 0 ? Math.min(100, Math.round(stage.done_qty / stage.planned_qty * 100)) : 0;
+  const pillMap = {
+    done:        ['wf-pill-done',     'Готово'],
+    in_progress: ['wf-pill-progress', 'В работе'],
+    pending:     ['wf-pill-pending',  'Ожидает'],
+    blocked:     ['wf-pill-blocked',  'Заблок.'],
+  };
+  const [pillCls, pillLabel] = pillMap[stage.status] || pillMap.pending;
+
+  const assigneeHtml = stage.assignee
+    ? `<span class="wf-meta-chip">${iconSvg('user',10)} ${stage.assignee}</span>` : '';
+  const dateHtml = stage.end_date
+    ? `<span class="wf-meta-chip">${iconSvg('calendar',10)} до ${formatDate(new Date(stage.end_date))}</span>` : '';
+  const reqHtml = stage.required
+    ? `<span class="wf-meta-chip" style="color:var(--gray-600)">Обязательный</span>`
+    : `<span class="wf-meta-chip" style="color:var(--gray-400)">Доп.</span>`;
+  const commentHtml = stage.comment
+    ? `<div class="wf-comment">${stage.comment}</div>` : '';
+
+  return `
+    <div class="wf-stage-card ${isBN ? 'is-bottleneck' : ''}" style="margin-bottom:8px">
+      <div class="wf-stage-head">
+        <div class="wf-stage-order">${stage.stage_order}</div>
+        <div class="wf-stage-name">${stage.name}</div>
+        ${isBN ? `<span class="wf-bottleneck-star">★ УЗКОЕ МЕСТО</span>` : ''}
+        <span class="wf-stage-pill ${pillCls}">${pillLabel}</span>
+      </div>
+      <div class="wf-stage-body">
+        <div class="wf-stage-meta">${assigneeHtml}${dateHtml}${reqHtml}</div>
+        <div class="wf-progress-row">
+          <input class="wf-done-input" type="number" min="0" max="${stage.planned_qty}"
+            value="${stage.done_qty}"
+            onchange="updateStageDone('${stage.id}','${item.id}',this.value)">
+          <span style="font-size:12px;color:var(--gray-400);white-space:nowrap">/ ${stage.planned_qty} ${item.unit}</span>
+          <div class="wf-progress-track">
+            <div class="wf-progress-fill" style="width:${pct}%"></div>
+          </div>
+          <span class="wf-progress-pct">${pct}%</span>
+        </div>
+        ${commentHtml}
+        <div class="wf-stage-actions">
+          <button class="wf-btn" onclick="openEditStageModal('${stage.id}','${item.id}')">
+            ${iconSvg('edit',11)} Изменить
+          </button>
+          <button class="wf-btn danger" onclick="deleteStage('${stage.id}','${item.id}')">
+            ${iconSvg('trash',11)} Удалить
+          </button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function _wfAssigneeOpts(selected) {
+  return getAllAssignees().map(a =>
+    `<option value="${a.name}" ${selected === a.name ? 'selected' : ''}>${a.name}</option>`
+  ).join('');
+}
+
+function openAddStageModal(itemId) {
+  const item = VRH_ITEMS.find(i => i.id === itemId);
+  if (!item) return;
+  const nextOrder = (getItemStages(itemId).length || 0) + 1;
+
+  document.getElementById('modal-box').innerHTML = `
+    <div style="padding:24px;overflow-y:auto;max-height:80vh">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div style="font-size:15px;font-weight:700">Добавить этап</div>
+        <button class="mn-close-btn" onclick="closeModal()" style="position:static">${iconSvg('x',13)}</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Название этапа *</label>
+        <input id="wf-stage-name" class="form-input" type="text" placeholder="Напр.: Сварка рамы, Покраска...">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">Порядок</label>
+          <input id="wf-stage-order" class="form-input" type="number" min="1" value="${nextOrder}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Плановое кол-во</label>
+          <input id="wf-stage-planned" class="form-input" type="number" min="1" value="${item.quantity}">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Исполнитель</label>
+        <select id="wf-stage-assignee" class="form-input">
+          <option value="">— не задан —</option>
+          ${_wfAssigneeOpts('')}
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">Начало</label>
+          <input id="wf-stage-start" class="form-input" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Окончание</label>
+          <input id="wf-stage-end" class="form-input" type="date" value="${item.deadline || ''}">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Комментарий</label>
+        <textarea id="wf-stage-comment" class="form-textarea" placeholder="Необязательно..."></textarea>
+      </div>
+      <div style="margin-bottom:16px;display:flex;align-items:center;gap:8px">
+        <input type="checkbox" id="wf-stage-required" checked style="width:16px;height:16px;cursor:pointer">
+        <label for="wf-stage-required" style="font-size:13px;cursor:pointer">Обязательный этап (влияет на прогресс)</label>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+        <button class="btn-primary" onclick="saveStage('${itemId}',null)">${iconSvg('plus',12)} Добавить</button>
+      </div>
+    </div>`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+window.openAddStageModal = openAddStageModal;
+
+function openEditStageModal(stageId, itemId) {
+  const item   = VRH_ITEMS.find(i => i.id === itemId);
+  if (!item) return;
+  const stages = _workflowStages[itemId] || [];
+  const stage  = stages.find(s => s.id === stageId);
+  if (!stage) return;
+
+  const statusOpts = [
+    ['pending',     'Ожидает'],
+    ['in_progress', 'В работе'],
+    ['done',        'Готово'],
+    ['blocked',     'Заблокировано'],
+  ].map(([v, l]) => `<option value="${v}" ${stage.status === v ? 'selected' : ''}>${l}</option>`).join('');
+
+  document.getElementById('modal-box').innerHTML = `
+    <div style="padding:24px;overflow-y:auto;max-height:80vh">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div style="font-size:15px;font-weight:700">Редактировать этап</div>
+        <button class="mn-close-btn" onclick="closeModal()" style="position:static">${iconSvg('x',13)}</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Название этапа *</label>
+        <input id="wf-stage-name" class="form-input" type="text" value="${stage.name.replace(/"/g,'&quot;')}">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">Порядок</label>
+          <input id="wf-stage-order" class="form-input" type="number" min="1" value="${stage.stage_order}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Плановое кол-во</label>
+          <input id="wf-stage-planned" class="form-input" type="number" min="1" value="${stage.planned_qty}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Статус</label>
+          <select id="wf-stage-status" class="form-input">${statusOpts}</select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Исполнитель</label>
+        <select id="wf-stage-assignee" class="form-input">
+          <option value="">— не задан —</option>
+          ${_wfAssigneeOpts(stage.assignee || '')}
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">Начало</label>
+          <input id="wf-stage-start" class="form-input" type="date" value="${stage.start_date || ''}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Окончание</label>
+          <input id="wf-stage-end" class="form-input" type="date" value="${stage.end_date || ''}">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Комментарий</label>
+        <textarea id="wf-stage-comment" class="form-textarea">${stage.comment || ''}</textarea>
+      </div>
+      <div style="margin-bottom:16px;display:flex;align-items:center;gap:8px">
+        <input type="checkbox" id="wf-stage-required" ${stage.required ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer">
+        <label for="wf-stage-required" style="font-size:13px;cursor:pointer">Обязательный этап (влияет на прогресс)</label>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+        <button class="btn-primary" onclick="saveStage('${itemId}','${stageId}')">${iconSvg('save',12)} Сохранить</button>
+      </div>
+    </div>`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+window.openEditStageModal = openEditStageModal;
+
+function saveStage(itemId, stageId) {
+  const item = VRH_ITEMS.find(i => i.id === itemId);
+  if (!item) return;
+
+  const name     = document.getElementById('wf-stage-name')?.value?.trim();
+  if (!name) { showToast('Введите название этапа'); return; }
+
+  const order    = parseInt(document.getElementById('wf-stage-order')?.value)   || 1;
+  const planned  = parseInt(document.getElementById('wf-stage-planned')?.value) || item.quantity;
+  const assignee = document.getElementById('wf-stage-assignee')?.value || '';
+  const start    = document.getElementById('wf-stage-start')?.value   || null;
+  const endDate  = document.getElementById('wf-stage-end')?.value     || null;
+  const comment  = document.getElementById('wf-stage-comment')?.value?.trim() || '';
+  const required = document.getElementById('wf-stage-required')?.checked ?? true;
+  const status   = document.getElementById('wf-stage-status')?.value  || 'pending';
+
+  if (!_workflowStages[itemId]) _workflowStages[itemId] = [];
+  const stages = _workflowStages[itemId];
+
+  if (stageId) {
+    const s = stages.find(x => x.id === stageId);
+    if (!s) return;
+    s.name = name; s.stage_order = order; s.planned_qty = planned;
+    s.assignee = assignee; s.start_date = start; s.end_date = endDate;
+    s.comment = comment; s.required = required; s.status = status;
+    saveStageToStorage(s);
+  } else {
+    const newStage = {
+      id:          `stage_${itemId}_${Date.now()}`,
+      item_id:     itemId,
+      project_id:  item.projectId,
+      name, stage_order: order, planned_qty: planned, done_qty: 0,
+      assignee, status: 'pending',
+      comment, start_date: start, end_date: endDate,
+      priority: 2, required, depends_on: null, history: [],
+      created_at: new Date().toISOString(),
+    };
+    stages.push(newStage);
+    saveStageToStorage(newStage);
+  }
+
+  syncV2ItemDoneCount(itemId);
+  closeModal();
+  showToast(stageId ? 'Этап обновлён' : 'Этап добавлен');
+  render();
+}
+window.saveStage = saveStage;
+
+function deleteStage(stageId, itemId) {
+  if (!confirm('Удалить этот этап?')) return;
+  const stages = _workflowStages[itemId];
+  if (!stages) return;
+  const idx = stages.findIndex(s => s.id === stageId);
+  if (idx < 0) return;
+  stages.splice(idx, 1);
+  if (_sb) {
+    (async () => {
+      try { await _sb.from('workflow_stages').delete().eq('id', stageId); } catch(e) { console.error(e); }
+    })();
+  }
+  syncV2ItemDoneCount(itemId);
+  showToast('Этап удалён');
+  render();
+}
+window.deleteStage = deleteStage;
+
+function updateStageDone(stageId, itemId, value) {
+  const stages = _workflowStages[itemId];
+  if (!stages) return;
+  const stage = stages.find(s => s.id === stageId);
+  if (!stage) return;
+  const val = Math.max(0, Math.min(stage.planned_qty, parseInt(value) || 0));
+  stage.done_qty = val;
+  if (val >= stage.planned_qty && stage.planned_qty > 0) stage.status = 'done';
+  else if (val > 0) stage.status = 'in_progress';
+  else if (stage.status === 'done') stage.status = 'pending';
+  saveStageToStorage(stage);
+  syncV2ItemDoneCount(itemId);
+  render();
+}
+window.updateStageDone = updateStageDone;
 
 // =============================================================
 // FILTER

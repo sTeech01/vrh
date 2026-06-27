@@ -1905,3 +1905,103 @@ details.mn-details[open] > summary::after { transform:rotate(90deg); }
 }
 .login-btn:hover { opacity: 0.88; }
 .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ════════════════════════════════════════════════════════════
+   WORKFLOW v2 — PRODUCTION STAGES (wf-*)
+   ════════════════════════════════════════════════════════════ */
+.wf-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:16px; flex-wrap:wrap; gap:10px;
+}
+.wf-title {
+  font-size:13px; font-weight:700; color:var(--gray-800);
+  display:flex; align-items:center; gap:8px;
+}
+.wf-bottleneck-tag {
+  display:inline-flex; align-items:center; gap:6px;
+  background:#FEF3C7; color:#92400E; border:1px solid #FDE68A;
+  border-radius:6px; padding:4px 10px; font-size:11px; font-weight:600;
+}
+.wf-stage-list { display:flex; flex-direction:column; gap:0; }
+.wf-dep-arrow {
+  display:flex; align-items:center; gap:8px;
+  padding:4px 0 4px 20px; color:var(--gray-400); font-size:11px;
+}
+.wf-dep-line { width:1px; height:20px; background:var(--gray-200); margin-left:19px; }
+.wf-stage-card {
+  border:1px solid var(--gray-200); border-radius:10px;
+  background:var(--white); overflow:hidden;
+  transition:box-shadow 0.15s;
+}
+.wf-stage-card:hover { box-shadow:0 2px 8px rgba(0,0,0,0.07); }
+.wf-stage-card.is-bottleneck { border-color:#FCD34D; }
+.wf-stage-head {
+  display:flex; align-items:center; gap:10px;
+  padding:11px 14px; cursor:pointer; user-select:none;
+}
+.wf-stage-order {
+  width:22px; height:22px; border-radius:50%;
+  background:var(--gray-100); color:var(--gray-500);
+  font-size:11px; font-weight:700; display:flex;
+  align-items:center; justify-content:center; flex-shrink:0;
+}
+.wf-stage-card.is-bottleneck .wf-stage-order { background:#FEF3C7; color:#92400E; }
+.wf-stage-name { font-size:13px; font-weight:600; color:var(--gray-900); flex:1; min-width:0; }
+.wf-stage-pill {
+  display:inline-flex; align-items:center; gap:4px;
+  font-size:10px; font-weight:600; padding:2px 7px; border-radius:99px;
+}
+.wf-pill-done     { background:#DCFCE7; color:#166534; }
+.wf-pill-progress { background:#DBEAFE; color:#1D4ED8; }
+.wf-pill-pending  { background:#F3F4F6; color:#6B7280; }
+.wf-pill-blocked  { background:#FEF3C7; color:#92400E; }
+.wf-stage-body {
+  padding:0 14px 12px 14px; border-top:1px solid var(--gray-100);
+  display:grid; gap:10px;
+}
+.wf-stage-meta {
+  display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+  padding-top:10px;
+}
+.wf-meta-chip {
+  display:inline-flex; align-items:center; gap:4px;
+  font-size:11px; color:var(--gray-500); font-weight:500;
+}
+.wf-progress-row { display:flex; align-items:center; gap:10px; }
+.wf-progress-nums { font-size:13px; font-weight:700; color:var(--gray-800); white-space:nowrap; }
+.wf-progress-track { flex:1; height:6px; background:var(--gray-100); border-radius:99px; overflow:hidden; }
+.wf-progress-fill  { height:100%; background:#1E6BFF; border-radius:99px; transition:width 0.3s; }
+.wf-progress-pct { font-size:12px; font-weight:600; color:#1E6BFF; min-width:34px; text-align:right; }
+.wf-done-input {
+  width:64px; border:1.5px solid var(--gray-200); border-radius:7px;
+  padding:4px 6px; font-size:14px; font-weight:700; text-align:center;
+  font-family:inherit; color:var(--gray-900); background:var(--gray-50);
+  transition:border-color 0.15s;
+}
+.wf-done-input:focus { outline:none; border-color:#1E6BFF; background:#fff; }
+.wf-stage-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.wf-btn {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:5px 10px; border-radius:7px; font-size:11px; font-weight:600;
+  border:1px solid var(--gray-200); background:var(--white);
+  color:var(--gray-600); cursor:pointer; transition:all 0.15s;
+  font-family:inherit;
+}
+.wf-btn:hover { background:var(--gray-50); border-color:var(--gray-300); color:var(--gray-900); }
+.wf-btn.danger:hover { background:#FEF2F2; border-color:#FECACA; color:#EF4444; }
+.wf-btn.primary { background:#111; border-color:#111; color:#fff; }
+.wf-btn.primary:hover { background:#1E6BFF; border-color:#1E6BFF; }
+.wf-bottleneck-star {
+  font-size:10px; font-weight:700; color:#92400E;
+  background:#FEF3C7; border:1px solid #FDE68A;
+  padding:1px 6px; border-radius:4px; flex-shrink:0;
+}
+.wf-comment { font-size:12px; color:var(--gray-500); line-height:1.5; font-style:italic; }
+.wf-hist-list { display:flex; flex-direction:column; gap:6px; margin-top:4px; }
+.wf-hist-item {
+  display:flex; gap:10px; font-size:12px; padding:6px 10px;
+  background:var(--gray-50); border-radius:6px;
+}
+.wf-hist-date { color:var(--gray-400); font-weight:600; white-space:nowrap; }
+.wf-hist-text { color:var(--gray-700); flex:1; line-height:1.5; }
+.wf-hist-author { color:var(--gray-400); white-space:nowrap; font-style:italic; }
