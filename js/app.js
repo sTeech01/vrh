@@ -427,31 +427,46 @@ function renderDashboard(el) {
     ? Math.round((stats.done / stats.total) * 100) : 0;
 
   el.innerHTML = `
-    <div class="section-header">
-      <div>
-        <div class="section-title">Обзор производства</div>
-        <div class="section-sub">ООО «ВРХ Инжиниринг» · ${formatDate(TODAY)}</div>
+    <div class="dashboard-shell">
+      <div class="dashboard-heading">
+        <div>
+          <div class="dashboard-eyebrow">Производство · ${formatDate(TODAY)}</div>
+          <h1 class="dashboard-title">Обзор производства</h1>
+          <p class="dashboard-subtitle">Сводное состояние проектов и позиций ВРХ Инжиниринг</p>
+        </div>
+        <button class="dashboard-all-projects" onclick="navigate('projects')">
+          Все проекты ${iconSvg('list', 13)}
+        </button>
+      </div>
+
+      <div class="dashboard-metrics">
+        ${statCard(stats.overdue, 'Просрочено', stats.overdue > 0 ? 'Требует внимания' : 'Отклонений нет', stats.overdue > 0 ? 'red' : 'green', 'warning')}
+        ${statCard(stats.inProg, 'В работе', 'Активных позиций', '', 'refresh')}
+        ${statCard(stats.done, 'Готово', `Из ${stats.total} позиций`, 'green', 'check')}
+        ${statCard(pct + '%', 'Изготовлено', 'Общая готовность', 'blue', 'chart')}
+        ${statCard(VRH_PROJECTS.length, 'Проектов', 'В производственном контуре', '', 'folder')}
+        ${statCard(stats.total, 'Позиций', 'Всего оборудования', '', 'list')}
+      </div>
+
+      <div class="dashboard-workspace">
+        <section class="dashboard-projects-panel">
+          <div class="dashboard-panel-heading">
+            <div>
+              <div class="dashboard-panel-title">Проекты</div>
+              <div class="dashboard-panel-subtitle">Текущий производственный портфель</div>
+            </div>
+            <span class="dashboard-panel-count">${VRH_PROJECTS.length}</span>
+          </div>
+          <div class="projects-grid dashboard-projects-grid">
+            ${VRH_PROJECTS.map(p => projectCard(p)).join('')}
+          </div>
+        </section>
+
+        <aside class="dashboard-attention-panel">
+          ${renderQuickProblems()}
+        </aside>
       </div>
     </div>
-
-    <div class="stats-grid">
-      ${statCard(VRH_PROJECTS.length, 'Проектов', 'Активных проектов', 'blue', 'folder')}
-      ${statCard(stats.total, 'Позиций', 'Единиц оборудования', '', 'list')}
-      ${statCard(stats.inProg, 'В работе', 'Активных позиций', '', 'refresh')}
-      ${statCard(stats.overdue, 'Просрочено', stats.overdue > 0 ? 'Требует внимания' : 'Всё в норме', stats.overdue > 0 ? 'red' : 'green', 'warning')}
-      ${statCard(stats.done, 'Готово', 'Завершённых позиций', 'green', 'check')}
-      ${statCard(pct + '%', 'Изготовлено', 'По количеству единиц', 'blue', 'chart')}
-    </div>
-
-    <div class="section-header" style="margin-bottom:14px">
-      <div class="section-title">Проекты</div>
-      <button class="btn-secondary" onclick="navigate('projects')">Все проекты →</button>
-    </div>
-    <div class="projects-grid">
-      ${VRH_PROJECTS.map(p => projectCard(p)).join('')}
-    </div>
-
-    ${renderQuickProblems()}
   `;
 }
 
@@ -462,8 +477,8 @@ function statCard(value, label, sub, variant, icon) {
   return `
     <div class="kpi-card ${variant}">
       <div class="kpi-header">
-        <span class="kpi-label">${label}</span>
         ${iconHtml}
+        <span class="kpi-label">${label}</span>
       </div>
       <div class="kpi-value">${value}</div>
       <div class="kpi-sub">${sub}</div>
@@ -529,25 +544,33 @@ function renderQuickProblems() {
   const problems = getAllProblems();
   const total = problems.overdue.length + problems.noKd.length + problems.blocked.length;
   if (!total) return `
-    <div style="margin-top:24px;padding:20px 24px;background:rgba(0,179,126,0.07);border:1px solid rgba(0,179,126,0.2);border-radius:6px;display:flex;align-items:center;gap:12px">
-      <div style="width:32px;height:32px;border-radius:50%;background:#10B981;display:flex;align-items:center;justify-content:center;flex-shrink:0">${iconSvg('check',16)}</div>
+    <div class="dashboard-panel-heading">
       <div>
-        <div style="font-size:13px;font-weight:700;color:#10B981">Критических проблем не обнаружено</div>
-        <div style="font-size:11px;color:#A8A8A8;margin-top:2px">Все позиции в штатном режиме</div>
+        <div class="dashboard-panel-title">Требует внимания</div>
+        <div class="dashboard-panel-subtitle">Отклонения и блокировки</div>
+      </div>
+    </div>
+    <div class="dashboard-clear-state">
+      <div class="dashboard-clear-icon">${iconSvg('check',16)}</div>
+      <div>
+        <div class="dashboard-clear-title">Критических проблем нет</div>
+        <div class="dashboard-clear-text">Все позиции работают в штатном режиме</div>
       </div>
     </div>`;
 
   return `
-    <div style="margin-top:24px">
-      <div class="section-header" style="margin-bottom:12px">
-        <div class="section-title" style="color:#EF4444;display:flex;align-items:center;gap:8px">${iconSvg('warning',18)} Требует внимания</div>
-        <button class="btn-secondary" onclick="navigate('problems')">Все проблемы →</button>
+    <div class="dashboard-panel-heading">
+      <div>
+        <div class="dashboard-panel-title">Требует внимания</div>
+        <div class="dashboard-panel-subtitle">${total} отклонений в работе</div>
       </div>
-      <div style="display:grid;gap:8px">
+      <button class="dashboard-panel-link" onclick="navigate('problems')">Все проблемы</button>
+    </div>
+      <div class="dashboard-problem-list">
         ${problems.overdue.slice(0,3).map(item => {
           const days = daysOverdue(item.deadline);
           return `
-          <div class="problem-item" onclick="navigate('item','${item.projectId}','${item.id}')">
+          <div class="problem-item dashboard-problem-row" onclick="navigate('item','${item.projectId}','${item.id}')">
             <div class="problem-item-icon red">${iconSvg('alert',13)}</div>
             <div style="flex:1">
               <div class="problem-item-name">${item.nameShort}</div>
@@ -557,7 +580,7 @@ function renderQuickProblems() {
           </div>`;
         }).join('')}
         ${problems.noKd.slice(0,2).map(item => `
-          <div class="problem-item" onclick="navigate('item','${item.projectId}','${item.id}')">
+          <div class="problem-item dashboard-problem-row" onclick="navigate('item','${item.projectId}','${item.id}')">
             <div class="problem-item-icon amber">${iconSvg('document',13)}</div>
             <div style="flex:1">
               <div class="problem-item-name">${item.nameShort}</div>
@@ -566,7 +589,9 @@ function renderQuickProblems() {
             <span class="badge badge-blocked">Нет КД</span>
           </div>`).join('')}
       </div>
-    </div>`;
+      <button class="dashboard-attention-footer" onclick="navigate('problems')">
+        Открыть панель проблем ${iconSvg('list', 12)}
+      </button>`;
 }
 
 // =============================================================
