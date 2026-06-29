@@ -384,7 +384,7 @@ body::before {
 .project-card {
   background: var(--white);
   border-radius: var(--radius-md);
-  padding: 20px;
+  padding: 0;
   border: 1px solid var(--gray-200);
   box-shadow: var(--shadow-sm);
   cursor: pointer;
@@ -405,6 +405,22 @@ body::before {
   box-shadow: var(--shadow-md);
 }
 .project-card:hover::before { background: var(--cyan); }
+
+.project-card-cover {
+  height: 120px;
+  overflow: hidden;
+  position: relative;
+  background: var(--gray-100);
+}
+.project-card-cover img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+.project-card:hover .project-card-cover img { transform: scale(1.04); }
+.project-card-body { padding: 20px; }
 
 .project-card-header {
   display: flex; justify-content: space-between;
@@ -440,6 +456,58 @@ body::before {
 .project-warn-tag.red   { background: rgba(239,68,68,0.07);   color: #DC2626; }
 .project-warn-tag.amber { background: rgba(245,158,11,0.08);  color: #B45309; }
 .project-warn-tag.blue  { background: rgba(14,165,233,0.08);  color: #0284C7; }
+
+/* ── Illustrated empty states ────────────────────────────── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 40px 24px;
+  gap: 12px;
+}
+.empty-state--compact { padding: 24px 16px; }
+.empty-state-img {
+  width: 180px;
+  height: auto;
+  opacity: 0.9;
+  margin-bottom: 4px;
+  mix-blend-mode: multiply;
+}
+.empty-state--compact .empty-state-img { width: 120px; }
+.empty-state-title { font-size: 15px; font-weight: 700; color: var(--gray-800); }
+.empty-state-text {
+  font-size: 13px;
+  color: var(--gray-400);
+  max-width: 320px;
+  line-height: 1.6;
+}
+.empty-state-btn {
+  margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Project cover picker ────────────────────────────────── */
+.cover-picker { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.cover-option {
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 9px;
+  overflow: hidden;
+  background: var(--gray-100);
+  cursor: pointer;
+  aspect-ratio: 3 / 1;
+  transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+}
+.cover-option:hover { transform: translateY(-1px); }
+.cover-option.is-selected {
+  border-color: #1E6BFF;
+  box-shadow: 0 0 0 2px rgba(30,107,255,0.16);
+}
+.cover-option:focus-visible { outline: 2px solid #1E6BFF; outline-offset: 2px; }
+.cover-option img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
 /* ── Progress Bars ────────────────────────────────────────── */
 .pbar-wrap {
@@ -1582,7 +1650,6 @@ details.mn-details[open] > summary::after { transform:rotate(90deg); }
 .fade-in { animation: fadeIn 0.15s ease-out; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
-.empty-state { text-align: center; padding: 60px 20px; color: var(--gray-400); }
 .empty-state svg { width: 32px; height: 32px; margin: 0 auto 12px; opacity: 0.3; display: block; }
 .empty-state p { font-size: 13px; font-weight: 400; }
 
@@ -2205,12 +2272,14 @@ details.mn-details[open] > summary::after { transform:rotate(90deg); }
   gap: 0;
 }
 .dashboard-projects-grid .project-card {
-  padding: 17px 18px;
+  padding: 0;
   border: 0;
   border-bottom: 1px solid var(--gray-100);
   border-radius: 0;
   box-shadow: none;
 }
+.dashboard-projects-grid .project-card-body { padding: 17px 18px; }
+.dashboard-projects-grid .project-card-cover { height: 86px; }
 .dashboard-projects-grid .project-card:last-child { border-bottom: 0; }
 .dashboard-projects-grid .project-card::before { display: none; }
 .dashboard-projects-grid .project-card:hover {
@@ -2285,6 +2354,6 @@ details.mn-details[open] > summary::after { transform:rotate(90deg); }
   .dashboard-metrics .kpi-value { font-size: 22px; }
   .dashboard-workspace { gap: 12px; }
   .dashboard-panel-heading { min-height: 58px; padding: 11px 13px; }
-  .dashboard-projects-grid .project-card { padding: 14px; }
+  .dashboard-projects-grid .project-card-body { padding: 14px; }
   .dashboard-projects-grid .project-delete-btn { opacity: 1; }
 }

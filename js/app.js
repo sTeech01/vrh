@@ -170,6 +170,7 @@ async function loadRemoteData() {
       const p = { id: r.id, name: r.name, client: r.client,
         location: r.location, description: r.description,
         deadline: r.deadline, type: r.type,
+        cover: Number.isInteger(r.cover) ? r.cover : undefined,
         workflow_version: r.workflow_version ?? 2, _isCustom: true };
       VRH_PROJECTS.push(p);
       _customProjects.push(p);
@@ -485,6 +486,15 @@ function statCard(value, label, sub, variant, icon) {
     </div>`;
 }
 
+function getProjectCover(project) {
+  if (typeof project.cover === 'number' && project.cover >= 0 && project.cover <= 5) {
+    return Math.trunc(project.cover);
+  }
+  let h = 0;
+  for (const c of (project.id || '')) h = (h * 31 + c.charCodeAt(0)) & 0xFFFF;
+  return Math.abs(h) % 6;
+}
+
 function projectCard(project) {
   const pct      = getProjectProgress(project.id);
   const problems = getAllProblems(project.id);
@@ -501,6 +511,10 @@ function projectCard(project) {
 
   return `
     <div class="project-card" onclick="navigate('project','${project.id}')">
+      <div class="project-card-cover">
+        <img src="assets/covers/cover-${getProjectCover(project)}.jpg" alt="" loading="lazy">
+      </div>
+      <div class="project-card-body">
       <div class="project-card-header">
         <div style="flex:1;min-width:0">
           <div class="project-name">${project.name}</div>
@@ -537,6 +551,7 @@ function projectCard(project) {
         </div>
       </div>
       ${warnings.length ? `<div class="project-warnings">${warnings.join('')}</div>` : ''}
+      </div>
     </div>`;
 }
 
@@ -550,12 +565,10 @@ function renderQuickProblems() {
         <div class="dashboard-panel-subtitle">Отклонения и блокировки</div>
       </div>
     </div>
-    <div class="dashboard-clear-state">
-      <div class="dashboard-clear-icon">${iconSvg('check',16)}</div>
-      <div>
-        <div class="dashboard-clear-title">Критических проблем нет</div>
-        <div class="dashboard-clear-text">Все позиции работают в штатном режиме</div>
-      </div>
+    <div class="empty-state empty-state--compact">
+      <img src="assets/empty/empty-ok.png" class="empty-state-img" alt="">
+      <div class="empty-state-title">Отклонений не обнаружено</div>
+      <div class="empty-state-text">Все позиции работают в штатном режиме</div>
     </div>`;
 
   return `
@@ -608,9 +621,18 @@ function renderProjects(el) {
         ${iconSvg('plus', 13)} Новый проект
       </button>
     </div>
-    <div class="projects-grid">
-      ${VRH_PROJECTS.map(p => projectCard(p)).join('')}
-    </div>`;
+    ${VRH_PROJECTS.length ? `
+      <div class="projects-grid">
+        ${VRH_PROJECTS.map(p => projectCard(p)).join('')}
+      </div>` : `
+      <div class="empty-state">
+        <img src="assets/empty/empty-projects.png" class="empty-state-img" alt="">
+        <div class="empty-state-title">Нет активных проектов</div>
+        <div class="empty-state-text">Создайте первый проект, чтобы начать управление производством</div>
+        <button class="btn-primary empty-state-btn" onclick="openCreateProjectModal()">
+          ${iconSvg('plus', 12)} Создать проект
+        </button>
+      </div>`}`;
 }
 
 // =============================================================
@@ -1924,6 +1946,18 @@ function openCreateProjectModal() {
           </select>
         </div>
       </div>
+      <div class="form-group">
+        <label class="form-label">Обложка проекта</label>
+        <div class="cover-picker" role="radiogroup" aria-label="Обложка проекта">
+          ${Array.from({ length: 6 }, (_, i) => `
+            <button type="button" class="cover-option ${i === 0 ? 'is-selected' : ''}"
+              data-cover="${i}" role="radio" aria-checked="${i === 0}"
+              onclick="selectProjectCover(${i})" aria-label="Обложка ${i + 1}">
+              <img src="assets/covers/cover-${i}.jpg" alt="">
+            </button>`).join('')}
+        </div>
+        <input type="hidden" id="cp-cover" value="0">
+      </div>
       <div id="cp-error" style="display:none;color:#EF4444;font-size:12px"></div>
       <div style="display:flex;gap:10px;margin-top:4px">
         <button class="btn-secondary" onclick="closeModal()" style="flex:1">Отмена</button>
@@ -1936,6 +1970,18 @@ function openCreateProjectModal() {
   requestAnimationFrame(() => document.getElementById('cp-name')?.focus());
 }
 window.openCreateProjectModal = openCreateProjectModal;
+
+function selectProjectCover(index) {
+  const safeIndex = Math.max(0, Math.min(5, Number(index) || 0));
+  const input = document.getElementById('cp-cover');
+  if (input) input.value = String(safeIndex);
+  document.querySelectorAll('.cover-option').forEach(option => {
+    const selected = Number(option.dataset.cover) === safeIndex;
+    option.classList.toggle('is-selected', selected);
+    option.setAttribute('aria-checked', String(selected));
+  });
+}
+window.selectProjectCover = selectProjectCover;
 
 function saveNewProject() {
   const name     = document.getElementById('cp-name')?.value.trim();
@@ -1961,6 +2007,7 @@ function saveNewProject() {
     description: document.getElementById('cp-description')?.value.trim() || '',
     deadline,
     type:             document.getElementById('cp-type')?.value || 'uzv',
+    cover:            Number(document.getElementById('cp-cover')?.value || 0),
     workflow_version: 2,
     _isCustom:        true,
   };
@@ -1972,7 +2019,7 @@ function saveNewProject() {
         await _sb.from('custom_projects').insert({
           id: project.id, name: project.name, client: project.client,
           location: project.location, description: project.description,
-          deadline: project.deadline, type: project.type,
+          deadline: project.deadline, type: project.type, cover: project.cover,
           workflow_version: 2,
           created_at: new Date().toISOString(),
         });
@@ -2481,7 +2528,15 @@ function renderWorkflowDetail(item, project) {
 
   let stagesHtml = '';
   if (!stages.length) {
-    stagesHtml = `<div style="padding:24px;text-align:center;color:var(--gray-400);font-size:13px">Этапы не добавлены. Нажмите «Добавить этап».</div>`;
+    stagesHtml = `
+      <div class="empty-state">
+        <img src="assets/empty/empty-workflow.png" class="empty-state-img" alt="">
+        <div class="empty-state-title">Маршрут не настроен</div>
+        <div class="empty-state-text">Добавьте первый этап производства, чтобы отслеживать прогресс и узкие места</div>
+        <button class="btn-primary empty-state-btn" onclick="openAddStageModal('${item.id}')">
+          ${iconSvg('plus', 12)} Добавить этап
+        </button>
+      </div>`;
   } else {
     const levels   = _wfComputeLevels(stages);
     const byLevel  = {};
