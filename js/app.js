@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #071';
+const APP_BUILD = 'DEPLOY #074';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -674,11 +674,18 @@ function renderProject(el, projectId) {
         <div class="proj-header-body">
           <div class="proj-header-title-row">
             <div class="proj-header-name">${project.name}</div>
-            <button class="btn-secondary proj-delete-btn" onclick="confirmDeleteProject('${project.id}')"
-              onmouseover="this.style.background='rgba(227,6,19,0.06)';this.style.borderColor='#EF4444'"
-              onmouseout="this.style.background='var(--white)';this.style.borderColor='rgba(227,6,19,0.3)'">
-              ${iconSvg('x', 11)} Удалить проект
-            </button>
+            <div style="display:flex;gap:8px;align-items:center">
+              ${project._isCustom ? `
+              <button class="btn-secondary" onclick="openChangeCoverModal('${project.id}')"
+                style="display:inline-flex;align-items:center;gap:6px">
+                ${iconSvg('edit', 11)} Обложка
+              </button>` : ''}
+              <button class="btn-secondary proj-delete-btn" onclick="confirmDeleteProject('${project.id}')"
+                onmouseover="this.style.background='rgba(227,6,19,0.06)';this.style.borderColor='#EF4444'"
+                onmouseout="this.style.background='var(--white)';this.style.borderColor='rgba(227,6,19,0.3)'">
+                ${iconSvg('x', 11)} Удалить проект
+              </button>
+            </div>
           </div>
           <div class="proj-header-desc">${project.description}</div>
           <div class="proj-stat-tiles">
@@ -1724,6 +1731,46 @@ function confirmDeleteProject(projectId) {
   document.getElementById('modal-overlay').classList.add('open');
 }
 window.confirmDeleteProject = confirmDeleteProject;
+
+function openChangeCoverModal(projectId) {
+  const project = VRH_PROJECTS.find(p => p.id === projectId);
+  if (!project) return;
+  const current = getProjectCover(project);
+
+  document.getElementById('modal-box').innerHTML = `
+    <div style="padding:24px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div style="font-size:15px;font-weight:700">Выбрать обложку</div>
+        <button class="mn-close-btn" onclick="closeModal()" style="position:static">${iconSvg('x', 13)}</button>
+      </div>
+      <div class="cover-picker" role="radiogroup">
+        ${[0,1,2,3,4,5].map(i => `
+          <button type="button" class="cover-option ${i === current ? 'is-selected' : ''}"
+            data-cover="${i}" onclick="saveProjectCover('${projectId}', ${i})">
+            <img src="assets/covers/cover-${i}.jpg" alt="Обложка ${i+1}">
+          </button>`).join('')}
+      </div>
+    </div>`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+window.openChangeCoverModal = openChangeCoverModal;
+
+function saveProjectCover(projectId, coverIdx) {
+  const project = VRH_PROJECTS.find(p => p.id === projectId);
+  if (!project) return;
+  project.cover = coverIdx;
+  const cp = _customProjects.find(p => p.id === projectId);
+  if (cp) cp.cover = coverIdx;
+  if (_sb) {
+    (async () => {
+      try { await _sb.from('custom_projects').update({ cover: coverIdx }).eq('id', projectId); } catch(e) { console.error(e); }
+    })();
+  }
+  closeModal();
+  showToast('Обложка обновлена');
+  render();
+}
+window.saveProjectCover = saveProjectCover;
 
 function deleteProject(projectId) {
   const input = document.getElementById('modal-secret-input')?.value?.trim().toLowerCase();
