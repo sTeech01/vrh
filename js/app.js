@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #074';
+const APP_BUILD = 'DEPLOY #075';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -487,6 +487,13 @@ function statCard(value, label, sub, variant, icon) {
 }
 
 function getProjectCover(project) {
+  // Для legacy-проектов — localStorage override
+  if (!project._isCustom) {
+    try {
+      const ls = JSON.parse(localStorage.getItem('vrh_project_covers') || '{}');
+      if (typeof ls[project.id] === 'number') return ls[project.id];
+    } catch(e) {}
+  }
   if (typeof project.cover === 'number' && project.cover >= 0 && project.cover <= 5) {
     return Math.trunc(project.cover);
   }
@@ -675,11 +682,10 @@ function renderProject(el, projectId) {
           <div class="proj-header-title-row">
             <div class="proj-header-name">${project.name}</div>
             <div style="display:flex;gap:8px;align-items:center">
-              ${project._isCustom ? `
               <button class="btn-secondary" onclick="openChangeCoverModal('${project.id}')"
                 style="display:inline-flex;align-items:center;gap:6px">
                 ${iconSvg('edit', 11)} Обложка
-              </button>` : ''}
+              </button>
               <button class="btn-secondary proj-delete-btn" onclick="confirmDeleteProject('${project.id}')"
                 onmouseover="this.style.background='rgba(227,6,19,0.06)';this.style.borderColor='#EF4444'"
                 onmouseout="this.style.background='var(--white)';this.style.borderColor='rgba(227,6,19,0.3)'">
@@ -1759,12 +1765,20 @@ function saveProjectCover(projectId, coverIdx) {
   const project = VRH_PROJECTS.find(p => p.id === projectId);
   if (!project) return;
   project.cover = coverIdx;
-  const cp = _customProjects.find(p => p.id === projectId);
-  if (cp) cp.cover = coverIdx;
-  if (_sb) {
-    (async () => {
-      try { await _sb.from('custom_projects').update({ cover: coverIdx }).eq('id', projectId); } catch(e) { console.error(e); }
-    })();
+  if (project._isCustom) {
+    const cp = _customProjects.find(p => p.id === projectId);
+    if (cp) cp.cover = coverIdx;
+    if (_sb) {
+      (async () => {
+        try { await _sb.from('custom_projects').update({ cover: coverIdx }).eq('id', projectId); } catch(e) { console.error(e); }
+      })();
+    }
+  } else {
+    try {
+      const ls = JSON.parse(localStorage.getItem('vrh_project_covers') || '{}');
+      ls[projectId] = coverIdx;
+      localStorage.setItem('vrh_project_covers', JSON.stringify(ls));
+    } catch(e) {}
   }
   closeModal();
   showToast('Обложка обновлена');
