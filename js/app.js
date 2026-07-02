@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #079';
+const APP_BUILD = 'DEPLOY #080';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -275,6 +275,7 @@ function _buildCustomItem(id, ed) {
     payment_date:        ed.payment_date        || '',
     payment_amount:      ed.payment_amount      || 0,
     expected_delivery:   ed.expected_delivery   || '',
+    shipping_status:     ed.shipping_status     || '',
     components:          ed.components          || [],
     history:             ed.history             || [],
     _isCustom:           true,
@@ -796,6 +797,7 @@ function renderProject(el, projectId) {
                   <div class="ig-cell ig-status">Статус</div>
                   <div class="ig-cell ig-progress">Прогресс</div>
                   <div class="ig-cell ig-deadline">Дедлайн</div>
+                  <div class="ig-cell ig-shipping">Отгрузка</div>
                 </div>
                 ${cItems.map(item => itemTableRow(item, projectId)).join('')}
               </div>
@@ -901,6 +903,9 @@ function itemTableRow(item, projectId) {
             : '';
         })()}
       </div>
+      <div class="ig-cell ig-shipping" onclick="event.stopPropagation()">
+        ${_shippingChip(item)}
+      </div>
     </div>`;
 }
 
@@ -966,6 +971,12 @@ function renderItem(el, projectId, itemId) {
             </div>
             ${item.blockReason ? `<div class="item-meta-pair"><label>Блокировка</label><span style="color:#F59E0B">${item.blockReason}</span></div>` : ''}
             ${bn ? `<div class="item-meta-pair"><label>Узкое место</label><span style="color:#F59E0B">${bn.name} (${bn.done}/${item.quantity})</span></div>` : ''}
+            ${(()=>{
+              const ss = item.shipping_status || '';
+              if (!ss) return '';
+              const cls = ss === 'shipped' ? 'color:#166534;font-weight:600' : 'color:#92400E;font-weight:600';
+              return `<div class="item-meta-pair"><label>Отгрузка</label><span style="${cls}">${SHIP_LABELS[ss]}</span></div>`;
+            })()}
             ${item.supplier ? `<div class="item-meta-pair"><label>Поставщик</label><span>${item.supplier}</span></div>` : ''}
             ${(()=>{
               const ps = item.payment_status;
@@ -1120,6 +1131,35 @@ function renderHistory(item) {
 // =============================================================
 // VIEW: PROBLEMS
 // =============================================================
+// =============================================================
+// СТАТУС ОТГРУЗКИ
+// =============================================================
+const SHIP_STATES = ['', 'packed', 'shipped'];
+const SHIP_LABELS = { '': '—', packed: 'Упаковано', shipped: 'Отгружено' };
+const SHIP_ICONS  = { '': 'minus', packed: 'clipboard', shipped: 'check' };
+
+function _shippingChip(item) {
+  const s = item.shipping_status || '';
+  const cls = s === 'shipped' ? 'ship-chip-shipped' : s === 'packed' ? 'ship-chip-packed' : 'ship-chip-none';
+  return `<span class="ship-chip ${cls}" onclick="cycleShipping('${item.id}',event)" title="Нажмите для смены статуса">
+    ${iconSvg(SHIP_ICONS[s], 10)} ${SHIP_LABELS[s]}
+  </span>`;
+}
+
+function cycleShipping(itemId, e) {
+  if (e) e.stopPropagation();
+  const item = VRH_ITEMS.find(i => i.id === itemId);
+  if (!item) return;
+  const cur = item.shipping_status || '';
+  const next = SHIP_STATES[(SHIP_STATES.indexOf(cur) + 1) % SHIP_STATES.length];
+  item.shipping_status = next;
+  if (!localEdits[itemId]) localEdits[itemId] = {};
+  localEdits[itemId].shipping_status = next;
+  saveEditsToStorage(itemId);
+  render();
+}
+window.cycleShipping = cycleShipping;
+
 // =============================================================
 // ОТЧЁТ ЗАКУПОК
 // =============================================================
@@ -1652,6 +1692,30 @@ function openUpdateModal(itemId) {
       </div>
     </div>`;
 
+  // ── Shipping status ──
+  const curShip = item.shipping_status || '';
+  const shipChips = [
+    { val: '',         label:'—',          dot:'#D1D5DB', active:'background:#F3F4F6;color:#374151;border-color:#D1D5DB' },
+    { val: 'packed',   label:'Упаковано',  dot:'#FCD34D', active:'background:#FEF3C7;color:#92400E;border-color:#FDE68A' },
+    { val: 'shipped',  label:'Отгружено',  dot:'#34D399', active:'background:#DCFCE7;color:#166534;border-color:#6EE7B7' },
+  ];
+  const shippingSection = `
+    <div class="mn-sec">
+      <div class="mn-sec-title">Отгрузка</div>
+      <div class="mn-chips" id="mn-chips-ship">
+        ${shipChips.map(c => {
+          const isActive = curShip === c.val;
+          return `<button type="button" class="mn-chip${isActive ? ' mn-chip-active' : ''}"
+            data-val="${c.val}" data-active="${c.active}"
+            style="${isActive ? c.active : ''}"
+            onclick="mnSelectChip('modal-ship-status','mn-chips-ship',this)">
+            <span class="mn-chip-dot" style="background:${c.dot}"></span>${c.label}
+          </button>`;
+        }).join('')}
+      </div>
+      <input type="hidden" id="modal-ship-status" value="${curShip}">
+    </div>`;
+
   // ── Block reason ──
   const hasBlock = !!item.blockReason;
   const blockSection = `
@@ -1746,6 +1810,7 @@ function openUpdateModal(itemId) {
         ${progSection}
         ${purSection}
         ${paySection}
+        ${shippingSection}
         ${blockSection}
       </div>
       <div class="mn-col mn-col-right">
@@ -1989,6 +2054,11 @@ function saveItemUpdate(itemId) {
   const expDelVal = document.getElementById('modal-expected-delivery')?.value || '';
   item.expected_delivery = expDelVal;
   localEdits[itemId].expected_delivery = expDelVal;
+
+  // Отгрузка
+  const shipVal = document.getElementById('modal-ship-status')?.value ?? '';
+  item.shipping_status = shipVal;
+  localEdits[itemId].shipping_status = shipVal;
 
   saveEditsToStorage(itemId);
   closeModal();
@@ -2761,6 +2831,7 @@ function applyEdits() {
     if (edit.payment_date       !== undefined)  item.payment_date       = edit.payment_date;
     if (edit.payment_amount     !== undefined)  item.payment_amount     = edit.payment_amount;
     if (edit.expected_delivery  !== undefined)  item.expected_delivery  = edit.expected_delivery;
+    if (edit.shipping_status    !== undefined)  item.shipping_status    = edit.shipping_status;
     if (edit.components) {
       edit.components.forEach(ec => {
         const c = item.components?.find(x => x.id === ec.id);
