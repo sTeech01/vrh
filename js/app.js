@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #078';
+const APP_BUILD = 'DEPLOY #079';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -1144,24 +1144,57 @@ function renderReport(el, projectId) {
     });
   });
 
+  // Группировка по комплексу
+  function groupByComplex(rows) {
+    const map = {};
+    rows.forEach(i => {
+      const k = i.complexId || 'other';
+      if (!map[k]) map[k] = [];
+      map[k].push(i);
+    });
+    return map;
+  }
+
   function purchaseTable(rows, emptyText) {
     if (!rows.length) return `<div class="pr-empty">${emptyText}</div>`;
-    return `
-      <table class="pr-table">
-        <thead><tr>
-          <th>Наименование</th><th>Кол-во</th><th>Ед.</th><th>Дедлайн</th><th>Исполнитель</th><th>Примечание</th>
-        </tr></thead>
-        <tbody>
-          ${rows.map(i => `<tr>
-            <td>${i.name}</td>
-            <td style="font-weight:700">${i.quantity}</td>
-            <td>${i.unit}</td>
-            <td style="${daysOverdue(i.deadline) > 0 ? 'color:#EF4444;font-weight:600' : ''}">${formatDate(new Date(i.deadline))}</td>
-            <td>${i.assignee || '—'}</td>
-            <td style="color:var(--gray-500)">${i.notes || ''}</td>
-          </tr>`).join('')}
-        </tbody>
-      </table>`;
+    const groups = groupByComplex(rows);
+    const complexKeys = Object.keys(groups);
+    const multiGroup  = complexKeys.length > 1;
+
+    return complexKeys.map(cid => {
+      const cRows = groups[cid];
+      const cName = multiGroup ? (getComplexName ? getComplexName(cid) : cid) : null;
+      return `
+        ${cName ? `<div class="pr-complex-label complex-${cid}">${cName}</div>` : ''}
+        <table class="pr-table" style="${multiGroup ? 'margin-bottom:10px' : ''}">
+          <thead><tr>
+            <th>Наименование</th><th>Кол-во</th><th>Ед.</th><th>Поставщик</th><th>Оплата</th><th>Ожид. поставка</th><th>Примечание</th>
+          </tr></thead>
+          <tbody>
+            ${cRows.map(i => {
+              const payLabel = i.payment_status === 'paid' ? '<span style="color:#166534;font-weight:600">Оплачено</span>'
+                             : i.payment_status === 'invoiced' ? '<span style="color:#92400E">Счёт выставлен</span>'
+                             : '—';
+              const expDel   = i.expected_delivery || '';
+              const delayD   = expDel ? daysOverdue(expDel) : 0;
+              const expDelTxt = expDel
+                ? (delayD > 0
+                    ? `<span style="color:#EF4444;font-weight:600">${formatDateShort(expDel)} +${delayD}дн.</span>`
+                    : formatDateShort(expDel))
+                : '—';
+              return `<tr>
+                <td>${i.name}</td>
+                <td style="font-weight:700">${i.quantity} ${i.unit}</td>
+                <td>${i.unit}</td>
+                <td>${i.supplier || '—'}</td>
+                <td>${payLabel}${i.payment_amount ? `<br><span style="font-size:11px;color:var(--gray-500)">${Number(i.payment_amount).toLocaleString('ru-RU')} руб.</span>` : ''}</td>
+                <td>${expDelTxt}</td>
+                <td style="color:var(--gray-500)">${i.notes || ''}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>`;
+    }).join('');
   }
 
   function materialsTable(rows) {
@@ -1250,20 +1283,24 @@ function exportReportCSV(projectId) {
   if (!project) return;
   const items = getProjectItems(projectId);
 
-  const rows = [['Тип','Раздел','Наименование','Родительская позиция','Требуется','Есть','Докупить','Ед.изм.','Дедлайн','Исполнитель','Примечание']];
+  const rows = [['Тип','Раздел','Комплекс','Наименование','Родительская позиция','Кол-во','Ед.изм.','Поставщик','Статус оплаты','Сумма (руб.)','Дата оплаты','Ожид. поставка','Примечание']];
 
   // Закупки
   const statusLabel = { [PUR.PENDING]:'Не заказано', [PUR.ORDERED]:'Заказано', [PUR.PARTIAL]:'Частично' };
+  const payLabel    = { '':'Не оплачено', 'invoiced':'Счёт выставлен', 'paid':'Оплачено' };
   items.filter(i => i.type === 'purchased' && i.purchaseStatus !== PUR.RECEIVED).forEach(i => {
     const st = statusLabel[i.purchaseStatus] || 'Не заказано';
-    rows.push(['Закупка', st, i.name, '', i.quantity, '', '', i.unit, i.deadline, i.assignee || '', i.notes || '']);
+    rows.push(['Закупка', st, i.complexId || '', i.name, '', i.quantity, i.unit,
+      i.supplier || '', payLabel[i.payment_status || ''] || '',
+      i.payment_amount || '', i.payment_date || '', i.expected_delivery || '', i.notes || '']);
   });
 
   // Материалы
   items.filter(i => i.type === 'own' && i.components?.length).forEach(i => {
     i.components.filter(c => (c.done || 0) < c.quantity).forEach(c => {
       const need = c.quantity - (c.done || 0);
-      rows.push(['Материал', 'Производство', c.name, i.nameShort || i.name, c.quantity, c.done || 0, need, c.unit || 'шт.', i.deadline, '', '']);
+      rows.push(['Материал', 'Производство', i.complexId || '', c.name, i.nameShort || i.name,
+        c.quantity, c.unit || 'шт.', '', '', '', '', '', '']);
     });
   });
 
@@ -1866,8 +1903,16 @@ function saveItemUpdate(itemId) {
   // Количество (все типы)
   const newQty = parseInt(document.getElementById('modal-quantity')?.value, 10);
   if (!isNaN(newQty) && newQty > 0 && newQty !== item.quantity) {
+    const oldQty = item.quantity;
     item.quantity = newQty;
     localEdits[itemId].quantity = newQty;
+    // Логируем изменение количества в историю
+    const today = new Date().toISOString().split('T')[0];
+    const qtyEntry = { date: today, text: `Количество изменено: ${oldQty} → ${newQty} ${item.unit}` };
+    if (!item.history) item.history = [];
+    item.history.push(qtyEntry);
+    if (!localEdits[itemId].historyFull) localEdits[itemId].historyFull = [...item.history];
+    else localEdits[itemId].historyFull.push(qtyEntry);
   }
 
   // Прогресс (только для own)
