@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #076';
+const APP_BUILD = 'DEPLOY #078';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -266,13 +266,18 @@ function _buildCustomItem(id, ed) {
     type:            ed.type            || 'purchased',
     doneCount:       ed.doneCount       || 0,
     materialsStatus: ed.materialsStatus || PUR.PENDING,
-    purchaseStatus:  ed.purchaseStatus  || PUR.PENDING,
-    blockReason:     ed.blockReason     || null,
-    assignee:        ed.assignee        || '',
-    notes:           ed.notes           || '',
-    components:      ed.components      || [],
-    history:         ed.history         || [],
-    _isCustom:       true,
+    purchaseStatus:      ed.purchaseStatus      || PUR.PENDING,
+    blockReason:         ed.blockReason         || null,
+    assignee:            ed.assignee            || '',
+    notes:               ed.notes               || '',
+    supplier:            ed.supplier            || '',
+    payment_status:      ed.payment_status      || '',
+    payment_date:        ed.payment_date        || '',
+    payment_amount:      ed.payment_amount      || 0,
+    expected_delivery:   ed.expected_delivery   || '',
+    components:          ed.components          || [],
+    history:             ed.history             || [],
+    _isCustom:           true,
   };
 }
 
@@ -888,6 +893,13 @@ function itemTableRow(item, projectId) {
         <div class="ig-deadline-text ${deadlineClass}">
           ${formatDate(new Date(item.deadline))}${overdueNote}
         </div>
+        ${(()=>{
+          if (!item.expected_delivery) return '';
+          const d = daysOverdue(item.expected_delivery);
+          return d > 0
+            ? `<div style="font-size:10px;color:#EF4444;font-weight:600;margin-top:2px">Поставка просрочена ${d} дн.</div>`
+            : '';
+        })()}
       </div>
     </div>`;
 }
@@ -954,6 +966,25 @@ function renderItem(el, projectId, itemId) {
             </div>
             ${item.blockReason ? `<div class="item-meta-pair"><label>Блокировка</label><span style="color:#F59E0B">${item.blockReason}</span></div>` : ''}
             ${bn ? `<div class="item-meta-pair"><label>Узкое место</label><span style="color:#F59E0B">${bn.name} (${bn.done}/${item.quantity})</span></div>` : ''}
+            ${item.supplier ? `<div class="item-meta-pair"><label>Поставщик</label><span>${item.supplier}</span></div>` : ''}
+            ${(()=>{
+              const ps = item.payment_status;
+              if (!ps && !item.payment_amount && !item.payment_date) return '';
+              const psLabel = ps === 'paid' ? '<span style="color:#166534;font-weight:600">Оплачено</span>'
+                            : ps === 'invoiced' ? '<span style="color:#92400E;font-weight:600">Счёт выставлен</span>'
+                            : '<span style="color:#6B7280">Не оплачено</span>';
+              const amtPart = item.payment_amount ? ` · ${Number(item.payment_amount).toLocaleString('ru-RU')} руб.` : '';
+              const datePart = item.payment_date ? ` · ${formatDate(new Date(item.payment_date))}` : '';
+              return `<div class="item-meta-pair"><label>Оплата</label><span>${psLabel}${amtPart}${datePart}</span></div>`;
+            })()}
+            ${(()=>{
+              if (!item.expected_delivery) return '';
+              const dly = daysOverdue(item.expected_delivery);
+              const txt = dly > 0
+                ? `<span style="color:#EF4444;font-weight:600">${formatDate(new Date(item.expected_delivery))} — Задержка ${dly} дн.</span>`
+                : `<span>${formatDate(new Date(item.expected_delivery))}</span>`;
+              return `<div class="item-meta-pair"><label>Ожид. поставка</label>${txt}</div>`;
+            })()}
           </div>
         </div>
         <div style="text-align:center">
@@ -1521,11 +1552,66 @@ function openUpdateModal(itemId) {
   // ── Deadline ──
   const dlSection = `
     <div class="mn-sec">
-      <div class="mn-sec-title">Дедлайн</div>
+      <div class="mn-sec-title">Дедлайн проекта</div>
       <div class="mn-deadline-row">
         <input type="date" class="mn-date-input" id="modal-deadline"
           value="${item.deadline}" oninput="mnUpdateDeadline(this.value)">
         <span class="mn-deadline-info ${dl.cls}" id="mn-deadline-info">${dl.text}</span>
+      </div>
+    </div>`;
+
+  // ── Expected delivery ──
+  const expDel      = item.expected_delivery || '';
+  const expDelDelay = expDel ? daysOverdue(expDel) : 0;
+  const expDelSection = `
+    <div class="mn-sec">
+      <div class="mn-sec-title">Ожидаемая дата поставки</div>
+      <div class="mn-deadline-row">
+        <input type="date" class="mn-date-input" id="modal-expected-delivery" value="${expDel}">
+        ${expDelDelay > 0
+          ? `<span class="mn-deadline-info mn-deadline-over">Задержка ${expDelDelay} дн.</span>`
+          : expDel ? `<span class="mn-deadline-info mn-deadline-ok">Ожидается</span>` : ''}
+      </div>
+    </div>`;
+
+  // ── Payment ──
+  const payStatus = item.payment_status || '';
+  const payChips  = [
+    { val: '',          label:'Не оплачено',    dot:'#D1D5DB', active:'background:#F3F4F6;color:#374151;border-color:#D1D5DB' },
+    { val: 'invoiced',  label:'Счёт выставлен', dot:'#FCD34D', active:'background:#FEF3C7;color:#92400E;border-color:#FDE68A' },
+    { val: 'paid',      label:'Оплачено',       dot:'#34D399', active:'background:#DCFCE7;color:#166534;border-color:#6EE7B7' },
+  ];
+  const paySection = `
+    <div class="mn-sec">
+      <div class="mn-sec-title">Оплата</div>
+      <div class="mn-chips" id="mn-chips-pay">
+        ${payChips.map(c => {
+          const isActive = payStatus === c.val;
+          return `<button type="button" class="mn-chip${isActive ? ' mn-chip-active' : ''}"
+            data-val="${c.val}" data-active="${c.active}"
+            style="${isActive ? c.active : ''}"
+            onclick="mnSelectChip('modal-pay-status','mn-chips-pay',this)">
+            <span class="mn-chip-dot" style="background:${c.dot}"></span>${c.label}
+          </button>`;
+        }).join('')}
+      </div>
+      <input type="hidden" id="modal-pay-status" value="${payStatus}">
+      <div class="mn-pay-row">
+        <div class="mn-pay-field">
+          <div class="mn-stat-label" style="margin-bottom:4px">Поставщик</div>
+          <input class="mn-text-input" type="text" id="modal-supplier"
+            value="${(item.supplier || '').replace(/"/g,'&quot;')}" placeholder="Название поставщика">
+        </div>
+        <div class="mn-pay-field">
+          <div class="mn-stat-label" style="margin-bottom:4px">Сумма (руб.)</div>
+          <input class="mn-text-input" type="number" id="modal-pay-amount" min="0"
+            value="${item.payment_amount || ''}">
+        </div>
+        <div class="mn-pay-field">
+          <div class="mn-stat-label" style="margin-bottom:4px">Дата оплаты</div>
+          <input class="mn-date-input" type="date" id="modal-pay-date"
+            value="${item.payment_date || ''}">
+        </div>
       </div>
     </div>`;
 
@@ -1622,10 +1708,12 @@ function openUpdateModal(itemId) {
       <div class="mn-col mn-col-left">
         ${progSection}
         ${purSection}
+        ${paySection}
         ${blockSection}
       </div>
       <div class="mn-col mn-col-right">
         ${dlSection}
+        ${expDelSection}
         ${notesSection}
         ${nameSection}
       </div>
@@ -1833,6 +1921,29 @@ function saveItemUpdate(itemId) {
   const noteTipEn = document.getElementById('modal-note-tip-enabled')?.checked ?? true;
   item.noteTipEnabled = noteTipEn;
   localEdits[itemId].noteTipEnabled = noteTipEn;
+
+  // Оплата
+  const payStatusVal = document.getElementById('modal-pay-status')?.value ?? '';
+  item.payment_status = payStatusVal;
+  localEdits[itemId].payment_status = payStatusVal;
+
+  const supplierVal = (document.getElementById('modal-supplier')?.value ?? '').trim();
+  item.supplier = supplierVal;
+  localEdits[itemId].supplier = supplierVal;
+
+  const payAmountRaw = document.getElementById('modal-pay-amount')?.value;
+  const payAmountVal = payAmountRaw ? parseFloat(payAmountRaw) : 0;
+  item.payment_amount = payAmountVal;
+  localEdits[itemId].payment_amount = payAmountVal;
+
+  const payDateVal = document.getElementById('modal-pay-date')?.value || '';
+  item.payment_date = payDateVal;
+  localEdits[itemId].payment_date = payDateVal;
+
+  // Ожидаемая дата поставки
+  const expDelVal = document.getElementById('modal-expected-delivery')?.value || '';
+  item.expected_delivery = expDelVal;
+  localEdits[itemId].expected_delivery = expDelVal;
 
   saveEditsToStorage(itemId);
   closeModal();
@@ -2597,9 +2708,14 @@ function applyEdits() {
     if (edit.deadline         !== undefined)  item.deadline         = edit.deadline;
     if (edit.assignee         !== undefined)  item.assignee         = edit.assignee;
     if (edit.blockReason      !== undefined)  item.blockReason      = edit.blockReason;
-    if (edit.nameFullEnabled  !== undefined)  item.nameFullEnabled  = edit.nameFullEnabled;
-    if (edit.nameFullOverride !== undefined)  item.nameFullOverride = edit.nameFullOverride;
-    if (edit.noteTipEnabled   !== undefined)  item.noteTipEnabled   = edit.noteTipEnabled;
+    if (edit.nameFullEnabled    !== undefined)  item.nameFullEnabled    = edit.nameFullEnabled;
+    if (edit.nameFullOverride   !== undefined)  item.nameFullOverride   = edit.nameFullOverride;
+    if (edit.noteTipEnabled     !== undefined)  item.noteTipEnabled     = edit.noteTipEnabled;
+    if (edit.supplier           !== undefined)  item.supplier           = edit.supplier;
+    if (edit.payment_status     !== undefined)  item.payment_status     = edit.payment_status;
+    if (edit.payment_date       !== undefined)  item.payment_date       = edit.payment_date;
+    if (edit.payment_amount     !== undefined)  item.payment_amount     = edit.payment_amount;
+    if (edit.expected_delivery  !== undefined)  item.expected_delivery  = edit.expected_delivery;
     if (edit.components) {
       edit.components.forEach(ec => {
         const c = item.components?.find(x => x.id === ec.id);

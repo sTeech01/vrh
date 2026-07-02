@@ -2365,6 +2365,17 @@ details.mn-details[open] > summary::after { transform:rotate(90deg); }
   .dashboard-projects-grid .project-delete-btn { opacity: 1; }
 }
 
+/* ── Модалка: оплата и поставщик ───────────────────────────── */
+.mn-pay-row { display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; }
+.mn-pay-field { flex:1; min-width:120px; }
+.mn-text-input {
+  width:100%; padding:7px 10px; font-size:12px;
+  border:1px solid var(--border); border-radius:var(--radius-md);
+  background:var(--surface); color:var(--gray-800);
+  outline:none; box-sizing:border-box;
+}
+.mn-text-input:focus { border-color:#6366F1; box-shadow:0 0 0 2px rgba(99,102,241,.12); }
+
 /* ── Отчёт закупок (pr-*) ──────────────────────────────────── */
 .pr-wrap { max-width: 960px; margin: 0 auto; padding: 0 0 40px; }
 .pr-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 8px; }
