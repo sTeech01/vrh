@@ -1862,6 +1862,13 @@ details.mn-details[open] > summary::after { transform:rotate(90deg); }
   #sidebar, #mobile-nav, #topbar, .no-print, button { display: none !important; }
   body { background: white; }
   body::before { display: none; }
+
+  /* Сброс overflow у всех скролл-контейнеров — иначе браузер печатает только видимую часть */
+  #app, .main-wrap, #view, .view-inner, #content {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+  }
 }
 
 ::-webkit-scrollbar { width: 4px; height: 4px; }
