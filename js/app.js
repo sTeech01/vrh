@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #075';
+const APP_BUILD = 'DEPLOY #076';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -360,6 +360,7 @@ function render() {
     case 'item':      renderItem(content, state.projectId, state.itemId);    break;
     case 'problems':  renderProblems(content);  setBreadcrumb('Проблемы');   break;
     case 'ai':        renderAI(content);        setBreadcrumb('AI-помощник'); break;
+    case 'report':    renderReport(content, state.projectId);                  break;
     default: navigate('dashboard');
   }
   requestAnimationFrame(() => {
@@ -682,6 +683,10 @@ function renderProject(el, projectId) {
           <div class="proj-header-title-row">
             <div class="proj-header-name">${project.name}</div>
             <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn-secondary" onclick="navigate('report','${project.id}')"
+                style="display:inline-flex;align-items:center;gap:6px">
+                ${iconSvg('document', 11)} Отчёт закупок
+              </button>
               <button class="btn-secondary" onclick="openChangeCoverModal('${project.id}')"
                 style="display:inline-flex;align-items:center;gap:6px">
                 ${iconSvg('edit', 11)} Обложка
@@ -1084,6 +1089,164 @@ function renderHistory(item) {
 // =============================================================
 // VIEW: PROBLEMS
 // =============================================================
+// =============================================================
+// ОТЧЁТ ЗАКУПОК
+// =============================================================
+function renderReport(el, projectId) {
+  const project = VRH_PROJECTS.find(p => p.id === projectId);
+  if (!project) { navigate('projects'); return; }
+
+  const items   = getProjectItems(projectId);
+  const dateStr = formatDate(new Date());
+
+  // Раздел 1: позиции типа «Закупка» (не полностью получены)
+  const purchased = items.filter(i => i.type === 'purchased' && i.purchaseStatus !== PUR.RECEIVED);
+  const pPending  = purchased.filter(i => !i.purchaseStatus || i.purchaseStatus === PUR.PENDING);
+  const pOrdered  = purchased.filter(i => i.purchaseStatus === PUR.ORDERED);
+  const pPartial  = purchased.filter(i => i.purchaseStatus === PUR.PARTIAL);
+
+  // Раздел 2: компоненты позиций «Производство» где done < quantity
+  const materialRows = [];
+  items.filter(i => i.type === 'own' && i.components?.length).forEach(i => {
+    i.components.filter(c => (c.done || 0) < c.quantity).forEach(c => {
+      materialRows.push({ parentName: i.nameShort || i.name, component: c, item: i });
+    });
+  });
+
+  function purchaseTable(rows, emptyText) {
+    if (!rows.length) return `<div class="pr-empty">${emptyText}</div>`;
+    return `
+      <table class="pr-table">
+        <thead><tr>
+          <th>Наименование</th><th>Кол-во</th><th>Ед.</th><th>Дедлайн</th><th>Исполнитель</th><th>Примечание</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map(i => `<tr>
+            <td>${i.name}</td>
+            <td style="font-weight:700">${i.quantity}</td>
+            <td>${i.unit}</td>
+            <td style="${daysOverdue(i.deadline) > 0 ? 'color:#EF4444;font-weight:600' : ''}">${formatDate(new Date(i.deadline))}</td>
+            <td>${i.assignee || '—'}</td>
+            <td style="color:var(--gray-500)">${i.notes || ''}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  function materialsTable(rows) {
+    if (!rows.length) return `<div class="pr-empty">Все материалы в наличии</div>`;
+    return `
+      <table class="pr-table">
+        <thead><tr>
+          <th>Изделие</th><th>Материал / компонент</th><th>Требуется</th><th>Есть</th><th>Докупить</th><th>Ед.</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map(({ parentName, component: c }) => `<tr>
+            <td style="color:var(--gray-500)">${parentName}</td>
+            <td style="font-weight:600">${c.name}</td>
+            <td>${c.quantity}</td>
+            <td>${c.done || 0}</td>
+            <td style="font-weight:700;color:#EF4444">${c.quantity - (c.done || 0)}</td>
+            <td>${c.unit || 'шт.'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  setBreadcrumb(
+    { label: 'Проекты', link: 'projects' },
+    { label: project.name, link: `project/${projectId}` },
+    'Отчёт закупок'
+  );
+
+  el.innerHTML = `
+    <div class="pr-wrap">
+      <div class="pr-topbar no-print">
+        <button class="btn-secondary" onclick="navigate('project','${projectId}')" style="display:inline-flex;align-items:center;gap:6px">
+          ${iconSvg('list', 12)} Назад к проекту
+        </button>
+        <div style="display:flex;gap:8px">
+          <button class="btn-secondary" onclick="exportReportCSV('${projectId}')" style="display:inline-flex;align-items:center;gap:6px">
+            ${iconSvg('save', 12)} Скачать CSV
+          </button>
+          <button class="btn-primary" onclick="window.print()" style="display:inline-flex;align-items:center;gap:6px">
+            ${iconSvg('document', 12)} Печать / PDF
+          </button>
+        </div>
+      </div>
+
+      <div class="pr-header">
+        <div class="pr-header-title">Отчёт по закупкам</div>
+        <div class="pr-header-meta">
+          <span>${project.name}</span>
+          <span>·</span>
+          <span>Дедлайн проекта: ${formatDate(new Date(project.deadline))}</span>
+          <span>·</span>
+          <span>Сформировано: ${dateStr}</span>
+        </div>
+        <div class="pr-summary">
+          <div class="pr-summary-chip pr-chip-red">${iconSvg('cart', 11)} Не заказано: ${pPending.length}</div>
+          <div class="pr-summary-chip pr-chip-amber">${iconSvg('clock', 11)} Ожидаем: ${pOrdered.length}</div>
+          <div class="pr-summary-chip pr-chip-blue">${iconSvg('minus', 11)} Частично: ${pPartial.length}</div>
+          <div class="pr-summary-chip pr-chip-gray">${iconSvg('list', 11)} Материалов: ${materialRows.length}</div>
+        </div>
+      </div>
+
+      <div class="pr-section">
+        <div class="pr-section-title pr-title-red">${iconSvg('warning', 13)} Не заказано — требует немедленного действия</div>
+        ${purchaseTable(pPending, 'Все позиции заказаны')}
+      </div>
+
+      <div class="pr-section">
+        <div class="pr-section-title pr-title-amber">${iconSvg('clock', 13)} Заказано, ожидаем поставки</div>
+        ${purchaseTable(pOrdered, 'Нет позиций в ожидании')}
+      </div>
+
+      <div class="pr-section">
+        <div class="pr-section-title pr-title-blue">${iconSvg('minus', 13)} Частично получено — докупить остаток</div>
+        ${purchaseTable(pPartial, 'Нет частично полученных позиций')}
+      </div>
+
+      <div class="pr-section">
+        <div class="pr-section-title pr-title-gray">${iconSvg('clipboard', 13)} Материалы для производства</div>
+        ${materialsTable(materialRows)}
+      </div>
+    </div>`;
+}
+
+function exportReportCSV(projectId) {
+  const project = VRH_PROJECTS.find(p => p.id === projectId);
+  if (!project) return;
+  const items = getProjectItems(projectId);
+
+  const rows = [['Тип','Раздел','Наименование','Родительская позиция','Требуется','Есть','Докупить','Ед.изм.','Дедлайн','Исполнитель','Примечание']];
+
+  // Закупки
+  const statusLabel = { [PUR.PENDING]:'Не заказано', [PUR.ORDERED]:'Заказано', [PUR.PARTIAL]:'Частично' };
+  items.filter(i => i.type === 'purchased' && i.purchaseStatus !== PUR.RECEIVED).forEach(i => {
+    const st = statusLabel[i.purchaseStatus] || 'Не заказано';
+    rows.push(['Закупка', st, i.name, '', i.quantity, '', '', i.unit, i.deadline, i.assignee || '', i.notes || '']);
+  });
+
+  // Материалы
+  items.filter(i => i.type === 'own' && i.components?.length).forEach(i => {
+    i.components.filter(c => (c.done || 0) < c.quantity).forEach(c => {
+      const need = c.quantity - (c.done || 0);
+      rows.push(['Материал', 'Производство', c.name, i.nameShort || i.name, c.quantity, c.done || 0, need, c.unit || 'шт.', i.deadline, '', '']);
+    });
+  });
+
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(';')).join('\n');
+  const bom  = '﻿';
+  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = `zakupki_${project.id}_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  showToast('CSV скачан');
+}
+window.exportReportCSV = exportReportCSV;
+
 function renderProblems(el) {
   const allProbs = getAllProblems();
   const total = allProbs.overdue.length + allProbs.noKd.length +
