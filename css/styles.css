@@ -2478,6 +2478,7 @@ details.mn-details[open] > summary::after { transform:rotate(90deg); }
 
 .ev-body { flex: 1; min-width: 0; }
 .ev-title { font-size: 14px; font-weight: 600; color: var(--gray-900); margin-bottom: 4px; }
+.ev-comment { font-size: 12px; color: var(--gray-500); margin-bottom: 5px; line-height: 1.5; }
 .ev-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .ev-type-chip { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; letter-spacing: .05em; }
 .ev-link { font-size: 11px; color: var(--accent); cursor: pointer; display: inline-flex; align-items: center; gap: 3px; }

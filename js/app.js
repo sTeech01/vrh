@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #084';
+const APP_BUILD = 'DEPLOY #085';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -3406,31 +3406,33 @@ window.updateStageDone = updateStageDone;
 // =============================================================
 function _compModalHtml(title, saveCall, c) {
   return `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
-      <div style="font-size:16px;font-weight:700;color:var(--gray-900)">${title}</div>
-      <button class="modal-close" onclick="closeModal()">${iconSvg('x',14)}</button>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:16px">
-      <div>
-        <label class="mn-label">Наименование *</label>
-        <input id="comp-name" class="mn-input" type="text" value="${c.name || ''}" placeholder="Узел, деталь, материал..." autocomplete="off">
+    <div style="padding:24px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
+        <div style="font-size:16px;font-weight:700;color:var(--gray-900)">${title}</div>
+        <button class="modal-close" onclick="closeModal()">${iconSvg('x',14)}</button>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="display:flex;flex-direction:column;gap:16px">
         <div>
-          <label class="mn-label">Количество *</label>
-          <input id="comp-qty" class="mn-input" type="number" min="0" step="0.001" value="${c.quantity ?? ''}">
+          <label class="mn-label">Наименование *</label>
+          <input id="comp-name" class="mn-input" type="text" value="${c.name || ''}" placeholder="Узел, деталь, материал..." autocomplete="off">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <label class="mn-label">Количество *</label>
+            <input id="comp-qty" class="mn-input" type="number" min="0" step="0.001" value="${c.quantity ?? ''}">
+          </div>
+          <div>
+            <label class="mn-label">Единица</label>
+            <input id="comp-unit" class="mn-input" type="text" value="${c.unit || ''}" placeholder="шт, м, кг...">
+          </div>
         </div>
         <div>
-          <label class="mn-label">Единица</label>
-          <input id="comp-unit" class="mn-input" type="text" value="${c.unit || ''}" placeholder="шт, м, кг...">
+          <label class="mn-label">Примечание</label>
+          <input id="comp-notes" class="mn-input" type="text" value="${c.notes || ''}" placeholder="Необязательно">
         </div>
       </div>
-      <div>
-        <label class="mn-label">Примечание</label>
-        <input id="comp-notes" class="mn-input" type="text" value="${c.notes || ''}" placeholder="Необязательно">
-      </div>
+      <div style="margin-top:22px;padding-top:14px;border-top:1px solid var(--border)">${saveCall}</div>
     </div>
-    <div style="margin-top:22px;padding-top:14px;border-top:1px solid var(--border)">${saveCall}</div>
   `;
 }
 
@@ -3886,42 +3888,51 @@ function _evModalHtml(title, evId, prefill) {
        </div>`;
 
   return `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
-      <div style="font-size:16px;font-weight:700;color:var(--gray-900)">${title}</div>
-      <button class="modal-close" onclick="closeModal()">${iconSvg('x',14)}</button>
+    <div style="padding:24px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
+        <div style="font-size:16px;font-weight:700;color:var(--gray-900)">${title}</div>
+        <button class="modal-close" onclick="closeModal()">${iconSvg('x',14)}</button>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:18px">
+        <div>
+          <label class="mn-label">Название *</label>
+          <input id="ev-title" class="mn-input" type="text"
+            value="${prefill.title || ''}"
+            placeholder="Напр.: Забор груза поляки, оплата счёта, встреча..."
+            autocomplete="off">
+        </div>
+
+        <div>
+          <label class="mn-label">Дата *</label>
+          <input id="ev-date" class="mn-input" type="date"
+            value="${prefill.event_date || todayStr}"
+            style="max-width:200px">
+        </div>
+
+        <div>
+          <label class="mn-label">Тип события</label>
+          <div class="ev-type-chips" id="ev-type-chips">${typeChips}</div>
+        </div>
+
+        <div>
+          <label class="mn-label">Связать с позицией <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--gray-400)">(необязательно)</span></label>
+          <select id="ev-item-id" class="mn-input">
+            <option value="">— не привязано —</option>
+            ${itemOptions}
+          </select>
+        </div>
+
+        <div>
+          <label class="mn-label">Комментарий <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--gray-400)">(необязательно)</span></label>
+          <textarea id="ev-comment" class="mn-input" rows="2"
+            placeholder="Дополнительные сведения..."
+            style="resize:vertical;min-height:60px">${prefill.comment || ''}</textarea>
+        </div>
+      </div>
+
+      <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border)">${footer}</div>
     </div>
-
-    <div style="display:flex;flex-direction:column;gap:18px">
-      <div>
-        <label class="mn-label">Название *</label>
-        <input id="ev-title" class="mn-input" type="text"
-          value="${prefill.title || ''}"
-          placeholder="Напр.: Забор груза поляки, оплата счёта, встреча..."
-          autocomplete="off">
-      </div>
-
-      <div>
-        <label class="mn-label">Дата *</label>
-        <input id="ev-date" class="mn-input" type="date"
-          value="${prefill.event_date || todayStr}"
-          style="max-width:200px">
-      </div>
-
-      <div>
-        <label class="mn-label">Тип события</label>
-        <div class="ev-type-chips" id="ev-type-chips">${typeChips}</div>
-      </div>
-
-      <div>
-        <label class="mn-label">Связать с позицией <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--gray-400)">(необязательно)</span></label>
-        <select id="ev-item-id" class="mn-input">
-          <option value="">— не привязано —</option>
-          ${itemOptions}
-        </select>
-      </div>
-    </div>
-
-    <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border)">${footer}</div>
   `;
 }
 
@@ -3952,6 +3963,7 @@ function saveEvent(evId) {
   if (!date)  { alert('Укажите дату'); return; }
   const type    = document.querySelector('input[name="ev-type-radio"]:checked')?.value || 'custom';
   const itemId  = document.getElementById('ev-item-id')?.value || null;
+  const comment = document.getElementById('ev-comment')?.value.trim() || null;
   const item    = itemId ? VRH_ITEMS.find(i => i.id === itemId) : null;
   const projId  = item ? item.projectId : null;
 
@@ -3959,12 +3971,12 @@ function saveEvent(evId) {
     const ev = _events.find(e => e.id === evId);
     if (!ev) return;
     ev.title = title; ev.event_date = date; ev.type = type;
-    ev.item_id = itemId; ev.project_id = projId;
+    ev.item_id = itemId; ev.project_id = projId; ev.comment = comment;
     saveEventToStorage(ev);
   } else {
     const newEv = {
       id: `ev_${Date.now()}`, title, event_date: date, type,
-      item_id: itemId, project_id: projId, done: false,
+      item_id: itemId, project_id: projId, comment, done: false,
       created_at: new Date().toISOString(),
     };
     _events.push(newEv);
@@ -4008,6 +4020,7 @@ function renderEvents(el) {
         </div>
         <div class="ev-body">
           <div class="ev-title">${ev.title}</div>
+          ${ev.comment ? `<div class="ev-comment">${ev.comment}</div>` : ''}
           <div class="ev-meta">
             <span class="ev-type-chip" style="color:${t.color};background:${t.bg}">${t.label}</span>
             ${linkPart}
