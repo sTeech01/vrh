@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #081';
+const APP_BUILD = 'DEPLOY #082';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -15,6 +15,7 @@ let _itemOrder = {};
 let _customProjects = [];
 let _workflowStages = {}; // { [item_id]: Stage[] }
 let _itemMaterials  = {}; // { [item_id]: Material[] }
+let _events         = []; // Event[] из Supabase
 
 // Базовые длины массивов (зафиксированы при загрузке из data.js)
 const _VRH_ITEMS_BASE_LEN    = VRH_ITEMS.length;
@@ -140,13 +141,14 @@ async function doLogout() {
 }
 
 async function loadRemoteData() {
-  const [ovRes, asRes, orRes, cpRes, wsRes, imRes] = await Promise.all([
+  const [ovRes, asRes, orRes, cpRes, wsRes, imRes, evRes] = await Promise.all([
     _sb.from('item_overrides').select('*'),
     _sb.from('custom_assignees').select('*').order('id'),
     _sb.from('item_order').select('*'),
     _sb.from('custom_projects').select('*').order('created_at'),
     _sb.from('workflow_stages').select('*').order('stage_order'),
     _sb.from('item_materials').select('*').order('sort_order'),
+    _sb.from('events').select('*').order('event_date'),
   ]);
   if (ovRes.data) {
     localEdits = {};
@@ -166,6 +168,7 @@ async function loadRemoteData() {
   _customProjects = [];
   _workflowStages = {};
   _itemMaterials  = {};
+  _events         = [];
 
   // Инжект пользовательских проектов
   if (cpRes.data) {
@@ -208,6 +211,15 @@ async function loadRemoteData() {
   VRH_ITEMS.forEach(item => {
     if (isV2Project(item.projectId)) syncV2ItemDoneCount(item.id);
   });
+
+  // Загрузка событий
+  if (evRes.data) {
+    _events = evRes.data.map(r => ({
+      id: r.id, item_id: r.item_id, project_id: r.project_id,
+      title: r.title, event_date: r.event_date,
+      type: r.type || 'custom', done: r.done, created_at: r.created_at,
+    }));
+  }
 
   // Загрузка спецификаций материалов
   if (imRes.data) {
@@ -382,8 +394,11 @@ function render() {
     case 'problems':  renderProblems(content);  setBreadcrumb('Проблемы');   break;
     case 'ai':        renderAI(content);        setBreadcrumb('AI-помощник'); break;
     case 'report':    renderReport(content, state.projectId);                  break;
+    case 'events':    renderEvents(content);    setBreadcrumb('События');      break;
     default: navigate('dashboard');
   }
+  _updateEventsBadge();
+
   requestAnimationFrame(() => {
     if (_prevFocusId === 'filter-search-input') {
       const inp = document.getElementById('filter-search-input');
@@ -3613,6 +3628,308 @@ function renderMaterialsSection(item) {
         </div>
       `}
     </div>`;
+}
+
+// =============================================================
+// EVENTS — СТРАНИЦА СОБЫТИЙ
+// =============================================================
+const EV_TYPES = {
+  custom:   { label: 'Событие',  color: '#6366F1', bg: '#EEF2FF' },
+  deadline: { label: 'Дедлайн',  color: '#EF4444', bg: '#FEF2F2' },
+  delivery: { label: 'Поставка', color: '#3B82F6', bg: '#EFF6FF' },
+  payment:  { label: 'Оплата',   color: '#F59E0B', bg: '#FFFBEB' },
+  shipment: { label: 'Отгрузка', color: '#10B981', bg: '#ECFDF5' },
+};
+
+function _getAutoEvents() {
+  const evs = [];
+  // Дедлайны проектов
+  VRH_PROJECTS.forEach(p => {
+    if (!p.deadline) return;
+    evs.push({ id: `auto_proj_${p.id}`, title: `Дедлайн проекта: ${p.name}`,
+      event_date: p.deadline, type: 'deadline', auto: true,
+      item_id: null, project_id: p.id, done: false });
+  });
+  // Ожидаемые поставки
+  VRH_ITEMS.forEach(item => {
+    if (!item.expected_delivery) return;
+    const isDone = item.purchaseStatus === PUR.RECEIVED || item.materialsStatus === PUR.RECEIVED;
+    evs.push({ id: `auto_del_${item.id}`, title: `${item.nameShort} — поставка`,
+      event_date: item.expected_delivery, type: 'delivery', auto: true,
+      item_id: item.id, project_id: item.projectId, done: isDone });
+  });
+  // Даты оплаты
+  VRH_ITEMS.forEach(item => {
+    if (!item.payment_date) return;
+    evs.push({ id: `auto_pay_${item.id}`, title: `${item.nameShort} — оплата`,
+      event_date: item.payment_date, type: 'payment', auto: true,
+      item_id: item.id, project_id: item.projectId, done: item.payment_status === 'paid' });
+  });
+  return evs;
+}
+
+function _getAllEvents() {
+  return [..._getAutoEvents(), ..._events]
+    .sort((a, b) => a.event_date.localeCompare(b.event_date));
+}
+
+function _updateEventsBadge() {
+  const badge = document.getElementById('events-badge');
+  if (!badge) return;
+  const urgent = _getAllEvents().filter(e => !e.done && daysOverdue(e.event_date) >= -7).length;
+  badge.textContent = urgent;
+  badge.style.display = urgent > 0 ? '' : 'none';
+}
+
+function saveEventToStorage(ev) {
+  if (!_sb || ev.auto) return;
+  (async () => {
+    try {
+      await _sb.from('events').upsert({
+        id: ev.id, item_id: ev.item_id || null, project_id: ev.project_id || null,
+        title: ev.title, event_date: ev.event_date, type: ev.type, done: ev.done,
+      });
+    } catch(e) { console.error('saveEventToStorage error:', e); }
+  })();
+}
+
+function deleteEventFromStorage(evId) {
+  if (!_sb) return;
+  (async () => {
+    try { await _sb.from('events').delete().eq('id', evId); }
+    catch(e) { console.error('deleteEventFromStorage error:', e); }
+  })();
+}
+
+function toggleEventDone(evId) {
+  const ev = _events.find(e => e.id === evId);
+  if (!ev) return;
+  ev.done = !ev.done;
+  saveEventToStorage(ev);
+  render();
+}
+window.toggleEventDone = toggleEventDone;
+
+function deleteEvent(evId) {
+  _events = _events.filter(e => e.id !== evId);
+  deleteEventFromStorage(evId);
+  closeModal();
+  render();
+}
+window.deleteEvent = deleteEvent;
+
+function openAddEventModal(prefillDate) {
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const itemOptions = VRH_ITEMS.map(i =>
+    `<option value="${i.id}">[${getComplexAbbr(i.complexId)}] ${i.nameShort}</option>`
+  ).join('');
+
+  document.getElementById('modal-box').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="font-size:15px;font-weight:700">Добавить событие</div>
+      <button class="modal-close-btn" onclick="closeModal()">${iconSvg('x',14)}</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div>
+        <label class="mn-label">Название *</label>
+        <input id="ev-title" class="mn-input" type="text" placeholder="Забор груза, встреча, оплата счёта..." autocomplete="off">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label class="mn-label">Дата *</label>
+          <input id="ev-date" class="mn-input" type="date" value="${prefillDate || todayStr}">
+        </div>
+        <div>
+          <label class="mn-label">Тип</label>
+          <select id="ev-type" class="mn-input">
+            ${Object.entries(EV_TYPES).map(([k,v]) =>
+              `<option value="${k}">${v.label}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="mn-label">Связать с позицией (необязательно)</label>
+        <select id="ev-item-id" class="mn-input">
+          <option value="">— не привязано —</option>
+          ${itemOptions}
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:20px">
+      <button class="btn-primary" onclick="saveEvent(null)">Добавить</button>
+      <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+    </div>
+  `;
+  document.getElementById('modal-overlay').classList.add('open');
+  requestAnimationFrame(() => document.getElementById('ev-title')?.focus());
+}
+window.openAddEventModal = openAddEventModal;
+
+function openEditEventModal(evId) {
+  const ev = _events.find(e => e.id === evId);
+  if (!ev) return;
+  const itemOptions = VRH_ITEMS.map(i =>
+    `<option value="${i.id}" ${i.id === ev.item_id ? 'selected' : ''}>[${getComplexAbbr(i.complexId)}] ${i.nameShort}</option>`
+  ).join('');
+
+  document.getElementById('modal-box').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="font-size:15px;font-weight:700">Редактировать событие</div>
+      <button class="modal-close-btn" onclick="closeModal()">${iconSvg('x',14)}</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div>
+        <label class="mn-label">Название *</label>
+        <input id="ev-title" class="mn-input" type="text" value="${ev.title}" autocomplete="off">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label class="mn-label">Дата *</label>
+          <input id="ev-date" class="mn-input" type="date" value="${ev.event_date}">
+        </div>
+        <div>
+          <label class="mn-label">Тип</label>
+          <select id="ev-type" class="mn-input">
+            ${Object.entries(EV_TYPES).map(([k,v]) =>
+              `<option value="${k}" ${k === ev.type ? 'selected' : ''}>${v.label}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="mn-label">Связанная позиция</label>
+        <select id="ev-item-id" class="mn-input">
+          <option value="">— не привязано —</option>
+          ${itemOptions}
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:space-between;margin-top:20px">
+      <button class="btn-primary" onclick="saveEvent('${evId}')">Сохранить</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+        <button class="btn-danger" onclick="deleteEvent('${evId}')">Удалить</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('modal-overlay').classList.add('open');
+  requestAnimationFrame(() => document.getElementById('ev-title')?.focus());
+}
+window.openEditEventModal = openEditEventModal;
+
+function saveEvent(evId) {
+  const title = document.getElementById('ev-title')?.value.trim();
+  if (!title) { alert('Введите название события'); return; }
+  const date    = document.getElementById('ev-date')?.value;
+  if (!date)  { alert('Укажите дату'); return; }
+  const type    = document.getElementById('ev-type')?.value || 'custom';
+  const itemId  = document.getElementById('ev-item-id')?.value || null;
+  const item    = itemId ? VRH_ITEMS.find(i => i.id === itemId) : null;
+  const projId  = item ? item.projectId : null;
+
+  if (evId) {
+    const ev = _events.find(e => e.id === evId);
+    if (!ev) return;
+    ev.title = title; ev.event_date = date; ev.type = type;
+    ev.item_id = itemId; ev.project_id = projId;
+    saveEventToStorage(ev);
+  } else {
+    const newEv = {
+      id: `ev_${Date.now()}`, title, event_date: date, type,
+      item_id: itemId, project_id: projId, done: false,
+      created_at: new Date().toISOString(),
+    };
+    _events.push(newEv);
+    saveEventToStorage(newEv);
+  }
+  closeModal();
+  render();
+}
+window.saveEvent = saveEvent;
+
+function renderEvents(el) {
+  const all = _getAllEvents();
+
+  const overdue = all.filter(e => !e.done && daysOverdue(e.event_date) > 0);
+  const todayEv = all.filter(e => !e.done && daysOverdue(e.event_date) === 0);
+  const weekEv  = all.filter(e => !e.done && daysOverdue(e.event_date) < 0 && daysOverdue(e.event_date) >= -7);
+  const monthEv = all.filter(e => !e.done && daysOverdue(e.event_date) < -7 && daysOverdue(e.event_date) >= -30);
+  const laterEv = all.filter(e => !e.done && daysOverdue(e.event_date) < -30);
+  const doneEv  = all.filter(e => e.done);
+
+  function evCard(ev) {
+    const t     = EV_TYPES[ev.type] || EV_TYPES.custom;
+    const od    = daysOverdue(ev.event_date);
+    const dateColor = od > 0 ? '#EF4444' : od === 0 ? '#10B981' : 'var(--gray-500)';
+    const linked = ev.item_id ? VRH_ITEMS.find(i => i.id === ev.item_id) : null;
+    const proj   = ev.project_id ? VRH_PROJECTS.find(p => p.id === ev.project_id) : null;
+    const editBtn = ev.auto ? '' :
+      `<button class="ev-btn-edit" onclick="openEditEventModal('${ev.id}')" title="Редактировать">${iconSvg('edit',12)}</button>`;
+    const doneBtn = ev.auto ? '' :
+      `<button class="ev-btn-done ${ev.done ? 'ev-btn-done-active' : ''}" onclick="toggleEventDone('${ev.id}')" title="${ev.done ? 'Отметить активным' : 'Отметить завершённым'}">${iconSvg('check',12)}</button>`;
+    const linkPart = linked
+      ? `<span class="ev-link" onclick="navigate('item','${linked.projectId}','${linked.id}')">${iconSvg('list',10)} ${linked.nameShort}</span>`
+      : proj ? `<span class="ev-meta-proj">${proj.name}</span>` : '';
+    const odText = od > 0 ? `<span class="ev-overdue-text">Просрочено ${od} дн.</span>` : '';
+
+    return `
+      <div class="ev-card ${ev.done ? 'ev-card-done' : ''}" style="border-left-color:${t.color}">
+        <div class="ev-date-col">
+          <span class="ev-date" style="color:${dateColor}">${formatDateShort(ev.event_date)}</span>
+          ${odText}
+        </div>
+        <div class="ev-body">
+          <div class="ev-title">${ev.title}</div>
+          <div class="ev-meta">
+            <span class="ev-type-chip" style="color:${t.color};background:${t.bg}">${t.label}</span>
+            ${linkPart}
+          </div>
+        </div>
+        <div class="ev-actions">${doneBtn}${editBtn}</div>
+      </div>`;
+  }
+
+  function group(label, evs, color) {
+    if (!evs.length) return '';
+    return `
+      <div class="ev-group">
+        <div class="ev-group-label" style="color:${color}">${label} <span class="ev-group-count">${evs.length}</span></div>
+        ${evs.map(evCard).join('')}
+      </div>`;
+  }
+
+  el.innerHTML = `
+    <div class="ev-wrap">
+      <div class="ev-topbar">
+        <div>
+          <div style="font-size:20px;font-weight:800;color:var(--gray-900)">События</div>
+          <div style="font-size:12px;color:var(--gray-400);margin-top:2px">${formatDate(new Date())} · ${all.filter(e=>!e.done).length} активных</div>
+        </div>
+        <button class="btn-primary" style="display:inline-flex;align-items:center;gap:6px" onclick="openAddEventModal()">
+          ${iconSvg('plus',13)} Добавить событие
+        </button>
+      </div>
+
+      ${!all.length ? `
+        <div class="ev-empty">
+          ${iconSvg('calendar',28)}
+          <div>Событий пока нет</div>
+          <div style="font-size:12px;color:var(--gray-400);margin-top:4px">Добавьте событие — дедлайн, поставку, напоминание</div>
+        </div>` : `
+        ${group('Просроченные', overdue, '#EF4444')}
+        ${group('Сегодня', todayEv, '#10B981')}
+        ${group('Эта неделя', weekEv, '#3B82F6')}
+        ${group('В течение месяца', monthEv, 'var(--gray-500)')}
+        ${group('Позже', laterEv, 'var(--gray-400)')}
+        ${doneEv.length ? `
+          <details class="ev-done-section">
+            <summary class="ev-group-label" style="color:var(--gray-300);cursor:pointer">
+              Завершённые <span class="ev-group-count">${doneEv.length}</span>
+            </summary>
+            ${doneEv.map(evCard).join('')}
+          </details>` : ''}
+      `}
+    </div>
+  `;
 }
 
 // =============================================================

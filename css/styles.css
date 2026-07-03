@@ -2424,6 +2424,42 @@ details.mn-details[open] > summary::after { transform:rotate(90deg); }
   .pr-header { border: none; padding: 0 0 12px; }
 }
 
+/* ── EVENTS — Страница событий ── */
+.ev-wrap { max-width: 720px; margin: 0 auto; padding: 24px 20px; }
+.ev-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; gap: 12px; flex-wrap: wrap; }
+
+.ev-group { margin-bottom: 28px; }
+.ev-group-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; list-style: none; }
+.ev-group-count { font-size: 11px; font-weight: 700; background: var(--gray-100); color: var(--gray-500); padding: 1px 6px; border-radius: 99px; }
+
+.ev-card { display: flex; align-items: flex-start; gap: 14px; background: var(--surface); border: 1px solid var(--border); border-left: 3px solid; border-radius: var(--radius-lg); padding: 12px 14px; margin-bottom: 6px; transition: box-shadow .15s; }
+.ev-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.07); }
+.ev-card-done { opacity: .5; }
+
+.ev-date-col { min-width: 64px; text-align: center; padding-top: 1px; }
+.ev-date { font-size: 12px; font-weight: 700; display: block; }
+.ev-overdue-text { font-size: 10px; color: #EF4444; font-weight: 600; display: block; margin-top: 2px; }
+
+.ev-body { flex: 1; min-width: 0; }
+.ev-title { font-size: 14px; font-weight: 600; color: var(--gray-900); margin-bottom: 4px; }
+.ev-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ev-type-chip { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; letter-spacing: .05em; }
+.ev-link { font-size: 11px; color: var(--accent); cursor: pointer; display: inline-flex; align-items: center; gap: 3px; }
+.ev-link:hover { text-decoration: underline; }
+.ev-meta-proj { font-size: 11px; color: var(--gray-400); }
+
+.ev-actions { display: flex; align-items: center; gap: 4px; }
+.ev-btn-done, .ev-btn-edit { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border); background: transparent; cursor: pointer; color: var(--gray-400); transition: all .15s; }
+.ev-btn-done:hover  { background: #DCFCE7; color: #16A34A; border-color: #86EFAC; }
+.ev-btn-done-active { background: #DCFCE7; color: #16A34A; border-color: #86EFAC; }
+.ev-btn-edit:hover  { background: var(--gray-100); color: var(--gray-700); }
+
+.ev-empty { text-align: center; padding: 60px 20px; color: var(--gray-300); display: flex; flex-direction: column; align-items: center; gap: 8px; }
+
+.ev-done-section { border: none; }
+.ev-done-section summary::-webkit-details-marker { display: none; }
+.ev-done-section > summary { margin-bottom: 8px; }
+
 /* ── MATERIALS — Спецификация материалов ── */
 .mat-section {}
 .mat-progress-bar { height: 5px; background: var(--gray-100); border-radius: 99px; overflow: hidden; }
