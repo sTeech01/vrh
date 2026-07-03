@@ -3718,48 +3718,78 @@ function deleteEvent(evId) {
 }
 window.deleteEvent = deleteEvent;
 
-function openAddEventModal(prefillDate) {
-  const todayStr = new Date().toISOString().slice(0, 10);
+function _evModalHtml(title, evId, prefill) {
+  const todayStr  = new Date().toISOString().slice(0, 10);
+  const curType   = prefill.type || 'custom';
+  const curItemId = prefill.item_id || '';
+  const typeChips = Object.entries(EV_TYPES).map(([k, v]) => `
+    <label class="ev-type-radio ${k === curType ? 'ev-type-radio-active' : ''}" id="ev-type-lbl-${k}"
+      style="${k === curType ? `background:${v.bg};border-color:${v.color};color:${v.color}` : ''}">
+      <input type="radio" name="ev-type-radio" value="${k}" ${k === curType ? 'checked' : ''}
+        onchange="document.querySelectorAll('.ev-type-radio').forEach(l=>{l.classList.remove('ev-type-radio-active');l.removeAttribute('style')});this.parentElement.classList.add('ev-type-radio-active');this.parentElement.style.background='${v.bg}';this.parentElement.style.borderColor='${v.color}';this.parentElement.style.color='${v.color}'">
+      ${v.label}
+    </label>`).join('');
   const itemOptions = VRH_ITEMS.map(i =>
-    `<option value="${i.id}">[${getComplexAbbr(i.complexId)}] ${i.nameShort}</option>`
+    `<option value="${i.id}" ${i.id === curItemId ? 'selected' : ''}>[${getComplexAbbr(i.complexId)}] ${i.nameShort}</option>`
   ).join('');
+  const saveCall = evId ? `saveEvent('${evId}')` : `saveEvent(null)`;
+  const footer = evId
+    ? `<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+         <button class="btn-primary" onclick="${saveCall}">${iconSvg('save',13)} Сохранить</button>
+         <div style="display:flex;gap:8px">
+           <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+           <button class="btn-danger" onclick="deleteEvent('${evId}')">${iconSvg('trash',13)} Удалить</button>
+         </div>
+       </div>`
+    : `<div style="display:flex;gap:8px">
+         <button class="btn-primary" onclick="${saveCall}">${iconSvg('plus',13)} Добавить</button>
+         <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+       </div>`;
 
-  document.getElementById('modal-box').innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-      <div style="font-size:15px;font-weight:700">Добавить событие</div>
+  return `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
+      <div style="font-size:16px;font-weight:700;color:var(--gray-900)">${title}</div>
       <button class="modal-close-btn" onclick="closeModal()">${iconSvg('x',14)}</button>
     </div>
-    <div style="display:flex;flex-direction:column;gap:14px">
+
+    <div style="display:flex;flex-direction:column;gap:18px">
       <div>
         <label class="mn-label">Название *</label>
-        <input id="ev-title" class="mn-input" type="text" placeholder="Забор груза, встреча, оплата счёта..." autocomplete="off">
+        <input id="ev-title" class="mn-input" type="text"
+          value="${prefill.title || ''}"
+          placeholder="Напр.: Забор груза поляки, оплата счёта, встреча..."
+          autocomplete="off">
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div>
-          <label class="mn-label">Дата *</label>
-          <input id="ev-date" class="mn-input" type="date" value="${prefillDate || todayStr}">
-        </div>
-        <div>
-          <label class="mn-label">Тип</label>
-          <select id="ev-type" class="mn-input">
-            ${Object.entries(EV_TYPES).map(([k,v]) =>
-              `<option value="${k}">${v.label}</option>`).join('')}
-          </select>
-        </div>
-      </div>
+
       <div>
-        <label class="mn-label">Связать с позицией (необязательно)</label>
+        <label class="mn-label">Дата *</label>
+        <input id="ev-date" class="mn-input" type="date"
+          value="${prefill.event_date || todayStr}"
+          style="max-width:200px">
+      </div>
+
+      <div>
+        <label class="mn-label">Тип события</label>
+        <div class="ev-type-chips" id="ev-type-chips">${typeChips}</div>
+      </div>
+
+      <div>
+        <label class="mn-label">Связать с позицией <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--gray-400)">(необязательно)</span></label>
         <select id="ev-item-id" class="mn-input">
           <option value="">— не привязано —</option>
           ${itemOptions}
         </select>
       </div>
     </div>
-    <div style="display:flex;gap:8px;margin-top:20px">
-      <button class="btn-primary" onclick="saveEvent(null)">Добавить</button>
-      <button class="btn-secondary" onclick="closeModal()">Отмена</button>
-    </div>
+
+    <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border)">${footer}</div>
   `;
+}
+
+function openAddEventModal(prefillDate) {
+  document.getElementById('modal-box').innerHTML = _evModalHtml(
+    'Добавить событие', null, { event_date: prefillDate }
+  );
   document.getElementById('modal-overlay').classList.add('open');
   requestAnimationFrame(() => document.getElementById('ev-title')?.focus());
 }
@@ -3768,49 +3798,9 @@ window.openAddEventModal = openAddEventModal;
 function openEditEventModal(evId) {
   const ev = _events.find(e => e.id === evId);
   if (!ev) return;
-  const itemOptions = VRH_ITEMS.map(i =>
-    `<option value="${i.id}" ${i.id === ev.item_id ? 'selected' : ''}>[${getComplexAbbr(i.complexId)}] ${i.nameShort}</option>`
-  ).join('');
-
-  document.getElementById('modal-box').innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-      <div style="font-size:15px;font-weight:700">Редактировать событие</div>
-      <button class="modal-close-btn" onclick="closeModal()">${iconSvg('x',14)}</button>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:14px">
-      <div>
-        <label class="mn-label">Название *</label>
-        <input id="ev-title" class="mn-input" type="text" value="${ev.title}" autocomplete="off">
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div>
-          <label class="mn-label">Дата *</label>
-          <input id="ev-date" class="mn-input" type="date" value="${ev.event_date}">
-        </div>
-        <div>
-          <label class="mn-label">Тип</label>
-          <select id="ev-type" class="mn-input">
-            ${Object.entries(EV_TYPES).map(([k,v]) =>
-              `<option value="${k}" ${k === ev.type ? 'selected' : ''}>${v.label}</option>`).join('')}
-          </select>
-        </div>
-      </div>
-      <div>
-        <label class="mn-label">Связанная позиция</label>
-        <select id="ev-item-id" class="mn-input">
-          <option value="">— не привязано —</option>
-          ${itemOptions}
-        </select>
-      </div>
-    </div>
-    <div style="display:flex;gap:8px;justify-content:space-between;margin-top:20px">
-      <button class="btn-primary" onclick="saveEvent('${evId}')">Сохранить</button>
-      <div style="display:flex;gap:8px">
-        <button class="btn-secondary" onclick="closeModal()">Отмена</button>
-        <button class="btn-danger" onclick="deleteEvent('${evId}')">Удалить</button>
-      </div>
-    </div>
-  `;
+  document.getElementById('modal-box').innerHTML = _evModalHtml(
+    'Редактировать событие', evId, ev
+  );
   document.getElementById('modal-overlay').classList.add('open');
   requestAnimationFrame(() => document.getElementById('ev-title')?.focus());
 }
@@ -3821,7 +3811,7 @@ function saveEvent(evId) {
   if (!title) { alert('Введите название события'); return; }
   const date    = document.getElementById('ev-date')?.value;
   if (!date)  { alert('Укажите дату'); return; }
-  const type    = document.getElementById('ev-type')?.value || 'custom';
+  const type    = document.querySelector('input[name="ev-type-radio"]:checked')?.value || 'custom';
   const itemId  = document.getElementById('ev-item-id')?.value || null;
   const item    = itemId ? VRH_ITEMS.find(i => i.id === itemId) : null;
   const projId  = item ? item.projectId : null;

@@ -2424,6 +2424,36 @@ details.mn-details[open] > summary::after { transform:rotate(90deg); }
   .pr-header { border: none; padding: 0 0 12px; }
 }
 
+/* ── mn-* modal form helpers (shared across events, materials, etc.) ── */
+.mn-label {
+  display: block; font-size: 11px; font-weight: 700;
+  color: var(--gray-500); text-transform: uppercase;
+  letter-spacing: .08em; margin-bottom: 6px;
+}
+.mn-input {
+  width: 100%; border: 1px solid var(--gray-200); border-radius: var(--radius);
+  padding: 9px 12px; font-size: 13px; color: var(--gray-900);
+  background: var(--white); font-family: inherit; box-sizing: border-box;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.mn-input:focus {
+  outline: none; border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(14,165,233,.10);
+}
+
+/* ── Event type chips in modal ── */
+.ev-type-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
+.ev-type-radio {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 13px; border: 1.5px solid var(--border); border-radius: 99px;
+  cursor: pointer; font-size: 12px; font-weight: 600;
+  color: var(--gray-500); background: var(--surface);
+  transition: all .15s; user-select: none;
+}
+.ev-type-radio input[type="radio"] { display: none; }
+.ev-type-radio:hover { border-color: var(--gray-300); color: var(--gray-700); }
+.ev-type-radio-active { font-weight: 700; }
+
 /* ── EVENTS — Страница событий ── */
 .ev-wrap { max-width: 720px; margin: 0 auto; padding: 24px 20px; }
 .ev-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; gap: 12px; flex-wrap: wrap; }
