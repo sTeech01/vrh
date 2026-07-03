@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #083';
+const APP_BUILD = 'DEPLOY #084';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -3408,7 +3408,7 @@ function _compModalHtml(title, saveCall, c) {
   return `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
       <div style="font-size:16px;font-weight:700;color:var(--gray-900)">${title}</div>
-      <button class="modal-close-btn" onclick="closeModal()">${iconSvg('x',14)}</button>
+      <button class="modal-close" onclick="closeModal()">${iconSvg('x',14)}</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:16px">
       <div>
@@ -3445,7 +3445,7 @@ function openEditCompModal(itemId, compId) {
       <button class="btn-primary" onclick="saveComp('${itemId}','${compId}')">${iconSvg('save',13)} Сохранить</button>
       <div style="display:flex;gap:8px">
         <button class="btn-secondary" onclick="closeModal()">Отмена</button>
-        <button class="btn-danger" onclick="deleteComp('${itemId}','${compId}')">${iconSvg('trash',13)} Удалить</button>
+        <button class="mn-btn-danger" onclick="deleteComp('${itemId}','${compId}')">${iconSvg('trash',13)} Удалить</button>
       </div>
     </div>`;
   document.getElementById('modal-box').innerHTML = _compModalHtml('Редактировать подпозицию', footer, comp);
@@ -3565,7 +3565,7 @@ function openAddMatModal(itemId) {
   document.getElementById('modal-box').innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
       <div style="font-size:15px;font-weight:700">Добавить материал</div>
-      <button class="modal-close-btn" onclick="closeModal()">${iconSvg('x',14)}</button>
+      <button class="modal-close" onclick="closeModal()">${iconSvg('x',14)}</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:14px">
       <div>
@@ -3616,7 +3616,7 @@ function openEditMatModal(matId, itemId) {
   document.getElementById('modal-box').innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
       <div style="font-size:15px;font-weight:700">Редактировать материал</div>
-      <button class="modal-close-btn" onclick="closeModal()">${iconSvg('x',14)}</button>
+      <button class="modal-close" onclick="closeModal()">${iconSvg('x',14)}</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:14px">
       <div>
@@ -3652,7 +3652,7 @@ function openEditMatModal(matId, itemId) {
       <button class="btn-primary" onclick="saveMat('${itemId}', '${matId}')">Сохранить</button>
       <div style="display:flex;gap:8px">
         <button class="btn-secondary" onclick="closeModal()">Отмена</button>
-        <button class="btn-danger" onclick="deleteMat('${matId}','${itemId}')">Удалить</button>
+        <button class="mn-btn-danger" onclick="deleteMat('${matId}','${itemId}')">Удалить</button>
       </div>
     </div>
   `;
@@ -3877,7 +3877,7 @@ function _evModalHtml(title, evId, prefill) {
          <button class="btn-primary" onclick="${saveCall}">${iconSvg('save',13)} Сохранить</button>
          <div style="display:flex;gap:8px">
            <button class="btn-secondary" onclick="closeModal()">Отмена</button>
-           <button class="btn-danger" onclick="deleteEvent('${evId}')">${iconSvg('trash',13)} Удалить</button>
+           <button class="mn-btn-danger" onclick="deleteEvent('${evId}')">${iconSvg('trash',13)} Удалить</button>
          </div>
        </div>`
     : `<div style="display:flex;gap:8px">
@@ -3888,7 +3888,7 @@ function _evModalHtml(title, evId, prefill) {
   return `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
       <div style="font-size:16px;font-weight:700;color:var(--gray-900)">${title}</div>
-      <button class="modal-close-btn" onclick="closeModal()">${iconSvg('x',14)}</button>
+      <button class="modal-close" onclick="closeModal()">${iconSvg('x',14)}</button>
     </div>
 
     <div style="display:flex;flex-direction:column;gap:18px">
