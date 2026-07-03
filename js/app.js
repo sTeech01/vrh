@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #080';
+const APP_BUILD = 'DEPLOY #081';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -14,6 +14,7 @@ let _customAssignees = [];
 let _itemOrder = {};
 let _customProjects = [];
 let _workflowStages = {}; // { [item_id]: Stage[] }
+let _itemMaterials  = {}; // { [item_id]: Material[] }
 
 // Базовые длины массивов (зафиксированы при загрузке из data.js)
 const _VRH_ITEMS_BASE_LEN    = VRH_ITEMS.length;
@@ -139,12 +140,13 @@ async function doLogout() {
 }
 
 async function loadRemoteData() {
-  const [ovRes, asRes, orRes, cpRes, wsRes] = await Promise.all([
+  const [ovRes, asRes, orRes, cpRes, wsRes, imRes] = await Promise.all([
     _sb.from('item_overrides').select('*'),
     _sb.from('custom_assignees').select('*').order('id'),
     _sb.from('item_order').select('*'),
     _sb.from('custom_projects').select('*').order('created_at'),
     _sb.from('workflow_stages').select('*').order('stage_order'),
+    _sb.from('item_materials').select('*').order('sort_order'),
   ]);
   if (ovRes.data) {
     localEdits = {};
@@ -163,6 +165,7 @@ async function loadRemoteData() {
   VRH_PROJECTS.splice(_VRH_PROJECTS_BASE_LEN);
   _customProjects = [];
   _workflowStages = {};
+  _itemMaterials  = {};
 
   // Инжект пользовательских проектов
   if (cpRes.data) {
@@ -205,6 +208,18 @@ async function loadRemoteData() {
   VRH_ITEMS.forEach(item => {
     if (isV2Project(item.projectId)) syncV2ItemDoneCount(item.id);
   });
+
+  // Загрузка спецификаций материалов
+  if (imRes.data) {
+    imRes.data.forEach(r => {
+      if (!_itemMaterials[r.item_id]) _itemMaterials[r.item_id] = [];
+      _itemMaterials[r.item_id].push({
+        id: r.id, item_id: r.item_id, project_id: r.project_id,
+        name: r.name, qty: r.qty, unit: r.unit,
+        have: r.have, sort_order: r.sort_order, created_at: r.created_at,
+      });
+    });
+  }
 }
 
 // =============================================================
@@ -1032,6 +1047,8 @@ function renderItem(el, projectId, itemId) {
         </button>
       </div>
     </div>`}
+
+    ${renderMaterialsSection(item)}
   `;
 }
 
@@ -3345,6 +3362,258 @@ function updateStageDone(stageId, itemId, value) {
   render();
 }
 window.updateStageDone = updateStageDone;
+
+// =============================================================
+// MATERIALS — СПЕЦИФИКАЦИЯ МАТЕРИАЛОВ
+// =============================================================
+function getItemMaterials(itemId) {
+  return (_itemMaterials[itemId] || []).slice().sort((a, b) => a.sort_order - b.sort_order);
+}
+
+function saveMatToStorage(mat) {
+  if (!_sb) return;
+  (async () => {
+    try {
+      await _sb.from('item_materials').upsert({
+        id: mat.id, item_id: mat.item_id, project_id: mat.project_id,
+        name: mat.name, qty: mat.qty, unit: mat.unit,
+        have: mat.have, sort_order: mat.sort_order,
+      });
+    } catch(e) { console.error('saveMatToStorage error:', e); }
+  })();
+}
+
+function deleteMatFromStorage(matId) {
+  if (!_sb) return;
+  (async () => {
+    try { await _sb.from('item_materials').delete().eq('id', matId); }
+    catch(e) { console.error('deleteMatFromStorage error:', e); }
+  })();
+}
+
+function toggleMatHave(matId, itemId) {
+  const mats = _itemMaterials[itemId];
+  if (!mats) return;
+  const mat = mats.find(m => m.id === matId);
+  if (!mat) return;
+  mat.have = !mat.have;
+  saveMatToStorage(mat);
+  render();
+}
+window.toggleMatHave = toggleMatHave;
+
+function openAddMatModal(itemId) {
+  const item = VRH_ITEMS.find(i => i.id === itemId);
+  if (!item) return;
+  const mats = getItemMaterials(itemId);
+  const nextOrder = mats.length > 0 ? Math.max(...mats.map(m => m.sort_order)) + 1 : 0;
+
+  document.getElementById('modal-box').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="font-size:15px;font-weight:700">Добавить материал</div>
+      <button class="modal-close-btn" onclick="closeModal()">${iconSvg('x',14)}</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div>
+        <label class="mn-label">Наименование *</label>
+        <input id="mat-name" class="mn-input" type="text" placeholder="Труба 40×40×3 AISI304" autocomplete="off">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label class="mn-label">Количество</label>
+          <input id="mat-qty" class="mn-input" type="number" step="0.001" min="0" placeholder="64.39">
+        </div>
+        <div>
+          <label class="mn-label">Единица</label>
+          <input id="mat-unit" class="mn-input" type="text" placeholder="м / шт. / кг / кв.м">
+        </div>
+      </div>
+      <div>
+        <label class="mn-label">В наличии</label>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <label class="mat-radio-label" id="mat-have-no-lbl">
+            <input type="radio" name="mat-have" value="0" checked onchange="document.getElementById('mat-have-no-lbl').classList.add('mat-radio-active');document.getElementById('mat-have-yes-lbl').classList.remove('mat-radio-active')">
+            Нет
+          </label>
+          <label class="mat-radio-label" id="mat-have-yes-lbl">
+            <input type="radio" name="mat-have" value="1" onchange="document.getElementById('mat-have-yes-lbl').classList.add('mat-radio-active');document.getElementById('mat-have-no-lbl').classList.remove('mat-radio-active')">
+            Есть
+          </label>
+        </div>
+      </div>
+      <input type="hidden" id="mat-sort-order" value="${nextOrder}">
+    </div>
+    <div style="display:flex;gap:8px;margin-top:20px">
+      <button class="btn-primary" onclick="saveMat('${itemId}', null)">Добавить</button>
+      <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+    </div>
+  `;
+  document.getElementById('modal-overlay').classList.add('open');
+  requestAnimationFrame(() => document.getElementById('mat-name')?.focus());
+}
+window.openAddMatModal = openAddMatModal;
+
+function openEditMatModal(matId, itemId) {
+  const mats = _itemMaterials[itemId];
+  if (!mats) return;
+  const mat = mats.find(m => m.id === matId);
+  if (!mat) return;
+
+  document.getElementById('modal-box').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="font-size:15px;font-weight:700">Редактировать материал</div>
+      <button class="modal-close-btn" onclick="closeModal()">${iconSvg('x',14)}</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div>
+        <label class="mn-label">Наименование *</label>
+        <input id="mat-name" class="mn-input" type="text" value="${mat.name}" autocomplete="off">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label class="mn-label">Количество</label>
+          <input id="mat-qty" class="mn-input" type="number" step="0.001" min="0" value="${mat.qty ?? ''}">
+        </div>
+        <div>
+          <label class="mn-label">Единица</label>
+          <input id="mat-unit" class="mn-input" type="text" value="${mat.unit ?? ''}">
+        </div>
+      </div>
+      <div>
+        <label class="mn-label">В наличии</label>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <label class="mat-radio-label${!mat.have ? ' mat-radio-active' : ''}" id="mat-have-no-lbl">
+            <input type="radio" name="mat-have" value="0" ${!mat.have ? 'checked' : ''} onchange="document.getElementById('mat-have-no-lbl').classList.add('mat-radio-active');document.getElementById('mat-have-yes-lbl').classList.remove('mat-radio-active')">
+            Нет
+          </label>
+          <label class="mat-radio-label${mat.have ? ' mat-radio-active' : ''}" id="mat-have-yes-lbl">
+            <input type="radio" name="mat-have" value="1" ${mat.have ? 'checked' : ''} onchange="document.getElementById('mat-have-yes-lbl').classList.add('mat-radio-active');document.getElementById('mat-have-no-lbl').classList.remove('mat-radio-active')">
+            Есть
+          </label>
+        </div>
+      </div>
+      <input type="hidden" id="mat-sort-order" value="${mat.sort_order}">
+    </div>
+    <div style="display:flex;gap:8px;justify-content:space-between;margin-top:20px">
+      <button class="btn-primary" onclick="saveMat('${itemId}', '${matId}')">Сохранить</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+        <button class="btn-danger" onclick="deleteMat('${matId}','${itemId}')">Удалить</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('modal-overlay').classList.add('open');
+  requestAnimationFrame(() => document.getElementById('mat-name')?.focus());
+}
+window.openEditMatModal = openEditMatModal;
+
+function saveMat(itemId, matId) {
+  const name = document.getElementById('mat-name')?.value.trim();
+  if (!name) { alert('Введите наименование материала'); return; }
+  const qty       = parseFloat(document.getElementById('mat-qty')?.value) || null;
+  const unit      = document.getElementById('mat-unit')?.value.trim() || null;
+  const haveVal   = document.querySelector('input[name="mat-have"]:checked')?.value;
+  const have      = haveVal === '1';
+  const sortOrder = parseInt(document.getElementById('mat-sort-order')?.value) || 0;
+  const item      = VRH_ITEMS.find(i => i.id === itemId);
+  if (!item) return;
+
+  if (matId) {
+    const mat = (_itemMaterials[itemId] || []).find(m => m.id === matId);
+    if (!mat) return;
+    mat.name = name; mat.qty = qty; mat.unit = unit; mat.have = have;
+    saveMatToStorage(mat);
+  } else {
+    const newMat = {
+      id: `mat_${itemId}_${Date.now()}`,
+      item_id: itemId,
+      project_id: item.projectId,
+      name, qty, unit, have,
+      sort_order: sortOrder,
+      created_at: new Date().toISOString(),
+    };
+    if (!_itemMaterials[itemId]) _itemMaterials[itemId] = [];
+    _itemMaterials[itemId].push(newMat);
+    saveMatToStorage(newMat);
+  }
+  closeModal();
+  render();
+}
+window.saveMat = saveMat;
+
+function deleteMat(matId, itemId) {
+  if (!_itemMaterials[itemId]) return;
+  _itemMaterials[itemId] = _itemMaterials[itemId].filter(m => m.id !== matId);
+  deleteMatFromStorage(matId);
+  closeModal();
+  render();
+}
+window.deleteMat = deleteMat;
+
+function renderMaterialsSection(item) {
+  const mats  = getItemMaterials(item.id);
+  const total = mats.length;
+  const haveC = mats.filter(m => m.have).length;
+  const pct   = total > 0 ? Math.round(haveC / total * 100) : 0;
+  const pctColor = pct === 100 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#EF4444';
+
+  const rows = mats.map(m => `
+    <tr class="mat-row" onclick="openEditMatModal('${m.id}','${item.id}')">
+      <td>
+        <button class="mat-toggle ${m.have ? 'mat-toggle-have' : 'mat-toggle-no'}"
+          onclick="event.stopPropagation();toggleMatHave('${m.id}','${item.id}')"
+          title="${m.have ? 'Есть в наличии — нажмите чтобы отметить отсутствующим' : 'Нет в наличии — нажмите чтобы отметить как имеющийся'}">
+          ${m.have ? iconSvg('check', 12) : iconSvg('minus', 12)}
+        </button>
+      </td>
+      <td class="mat-name">${m.name}</td>
+      <td class="mat-qty">${m.qty != null ? m.qty : '—'}</td>
+      <td class="mat-unit">${m.unit || '—'}</td>
+      <td>
+        <span class="mat-status-chip ${m.have ? 'mat-status-have' : 'mat-status-no'}">
+          ${m.have ? 'Есть' : 'Нет'}
+        </span>
+      </td>
+    </tr>`).join('');
+
+  return `
+    <div class="card mat-section" style="padding:20px 24px;margin-top:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.08em">${iconSvg('list',12)} Спецификация материалов</span>
+          ${total > 0 ? `<span style="font-size:11px;font-weight:700;color:${pctColor}">${haveC} / ${total} в наличии</span>` : ''}
+        </div>
+        <button class="btn-secondary" style="display:inline-flex;align-items:center;gap:5px;font-size:12px" onclick="openAddMatModal('${item.id}')">
+          ${iconSvg('plus',11)} Добавить материал
+        </button>
+      </div>
+
+      ${total > 0 ? `
+        <div class="mat-progress-bar" style="margin-bottom:14px">
+          <div class="mat-progress-fill" style="width:${pct}%;background:${pctColor}"></div>
+        </div>
+
+        <div style="overflow-x:auto">
+          <table class="mat-table">
+            <thead>
+              <tr>
+                <th style="width:36px"></th>
+                <th>Наименование</th>
+                <th style="width:80px;text-align:right">Кол-во</th>
+                <th style="width:60px">Ед.</th>
+                <th style="width:72px;text-align:center">Наличие</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      ` : `
+        <div style="padding:20px 0;text-align:center;color:var(--gray-400);font-size:13px">
+          Спецификация пуста. Добавьте материалы вручную.
+        </div>
+      `}
+    </div>`;
+}
 
 // =============================================================
 // FILTER

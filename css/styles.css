@@ -2423,3 +2423,32 @@ details.mn-details[open] > summary::after { transform:rotate(90deg); }
   .pr-section { page-break-inside: avoid; }
   .pr-header { border: none; padding: 0 0 12px; }
 }
+
+/* ── MATERIALS — Спецификация материалов ── */
+.mat-section {}
+.mat-progress-bar { height: 5px; background: var(--gray-100); border-radius: 99px; overflow: hidden; }
+.mat-progress-fill { height: 100%; border-radius: 99px; transition: width .3s ease; }
+
+.mat-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.mat-table th { padding: 7px 10px; text-align: left; font-size: 10px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--border); }
+.mat-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; color: var(--gray-700); }
+.mat-row { cursor: pointer; transition: background .12s; }
+.mat-row:hover td { background: var(--gray-50); }
+.mat-row:last-child td { border-bottom: none; }
+.mat-name { font-weight: 500; }
+.mat-qty  { text-align: right; font-variant-numeric: tabular-nums; color: var(--gray-500); }
+.mat-unit { color: var(--gray-400); font-size: 12px; }
+
+.mat-toggle { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 6px; border: none; cursor: pointer; transition: background .15s, color .15s; }
+.mat-toggle-have { background: #DCFCE7; color: #16A34A; }
+.mat-toggle-no   { background: var(--gray-100); color: var(--gray-400); }
+.mat-toggle:hover { opacity: .8; }
+
+.mat-status-chip { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+.mat-status-have { background: #DCFCE7; color: #166534; }
+.mat-status-no   { background: var(--gray-100); color: var(--gray-400); }
+
+.mat-radio-label { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--gray-600); transition: all .15s; }
+.mat-radio-label input[type="radio"] { display: none; }
+.mat-radio-active { border-color: var(--accent); color: var(--accent); background: var(--cyan-dim); }
+.mat-radio-label:hover { border-color: var(--accent); }
