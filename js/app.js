@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #082';
+const APP_BUILD = 'DEPLOY #083';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -1069,15 +1069,15 @@ function renderItem(el, projectId, itemId) {
 
 function renderComponents(item) {
   const rows = item.components.map(c => {
-    const qty    = c.quantity;
-    const done   = c.done;
-    const pct    = item.quantity > 0 ? Math.min(100, Math.round(done / qty * 100)) : 0;
-    const color  = pctColor(pct);
-    const isOpt  = c.optional;
-    const isBN   = !isOpt && getBottleneck(item)?.id === c.id && done < qty;
+    const qty   = c.quantity;
+    const done  = c.done;
+    const pct   = qty > 0 ? Math.min(100, Math.round(done / qty * 100)) : 0;
+    const color = pctColor(pct);
+    const isOpt = c.optional;
+    const isBN  = !isOpt && getBottleneck(item)?.id === c.id && done < qty;
 
     return `
-      <tr style="${isOpt ? 'opacity:0.65' : ''}">
+      <tr class="comp-row" onclick="openEditCompModal('${item.id}','${c.id}')" title="Нажмите чтобы редактировать" style="${isOpt ? 'opacity:0.65' : ''}">
         <td style="font-weight:${isBN ? '700' : '500'};color:${isBN ? '#F59E0B' : 'inherit'}">
           ${c.name}${isOpt ? ' <span style="font-size:9px;color:var(--gray-400)">(доп.)</span>' : ''}
           ${isBN ? `<div style="font-size:10px;color:#F59E0B;display:flex;align-items:center;gap:4px;margin-top:2px">${iconSvg('warning',9)} Узкое место</div>` : ''}
@@ -1089,26 +1089,35 @@ function renderComponents(item) {
           </div>
         </td>
         <td style="text-align:center;font-size:12px;font-weight:700;color:${color}">${pct}%</td>
-        <td style="color:var(--gray-500);font-size:11px">${c.responsible || '—'}</td>
-        <td style="color:var(--gray-400);font-size:11px;max-width:200px">${c.notes || ''}</td>
+        <td style="color:var(--gray-500);font-size:11px">${c.unit || '—'}</td>
+        <td style="color:var(--gray-400);font-size:11px;max-width:160px">${c.notes || ''}</td>
+        <td style="width:28px;text-align:center">
+          <span class="comp-edit-icon">${iconSvg('edit',12)}</span>
+        </td>
       </tr>`;
   }).join('');
 
   return `
     <div class="card" style="padding:20px 24px;margin-top:16px">
-      <div style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px">
-        ${iconSvg('list',12)} Состав изделия по КД
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <span style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.08em">
+          ${iconSvg('list',12)} Состав изделия по КД
+        </span>
+        <button class="btn-secondary" style="display:inline-flex;align-items:center;gap:5px;font-size:12px" onclick="openAddCompModal('${item.id}')">
+          ${iconSvg('plus',11)} Добавить подпозицию
+        </button>
       </div>
       <div style="overflow-x:auto">
-        <table class="items-table">
+        <table class="items-table comp-table">
           <thead>
             <tr>
               <th>Узел / компонент</th>
               <th style="text-align:center">Готово / Всего</th>
               <th>Прогресс</th>
               <th style="text-align:center">%</th>
-              <th>Ответственный</th>
+              <th>Ед.</th>
               <th>Примечание</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -2867,8 +2876,22 @@ function applyEdits() {
     if (edit.components) {
       edit.components.forEach(ec => {
         const c = item.components?.find(x => x.id === ec.id);
-        if (c && ec.done !== undefined) c.done = ec.done;
+        if (!c) return;
+        if (ec.done       !== undefined) c.done       = ec.done;
+        if (ec.name       !== undefined) c.name       = ec.name;
+        if (ec.quantity   !== undefined) c.quantity   = ec.quantity;
+        if (ec.unit       !== undefined) c.unit       = ec.unit;
+        if (ec.responsible!== undefined) c.responsible= ec.responsible;
+        if (ec.notes      !== undefined) c.notes      = ec.notes;
       });
+    }
+    if (edit.extraComponents) {
+      edit.extraComponents.forEach(ec => {
+        if (!item.components.find(c => c.id === ec.id)) item.components.push({ ...ec });
+      });
+    }
+    if (edit.deletedComponents?.length) {
+      item.components = item.components.filter(c => !edit.deletedComponents.includes(c.id));
     }
     if (edit.historyFull) {
       item.history = edit.historyFull.map(h => ({ ...h }));
@@ -3377,6 +3400,122 @@ function updateStageDone(stageId, itemId, value) {
   render();
 }
 window.updateStageDone = updateStageDone;
+
+// =============================================================
+// COMPONENTS — СОСТАВ ИЗДЕЛИЯ ПО КД
+// =============================================================
+function _compModalHtml(title, saveCall, c) {
+  return `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
+      <div style="font-size:16px;font-weight:700;color:var(--gray-900)">${title}</div>
+      <button class="modal-close-btn" onclick="closeModal()">${iconSvg('x',14)}</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div>
+        <label class="mn-label">Наименование *</label>
+        <input id="comp-name" class="mn-input" type="text" value="${c.name || ''}" placeholder="Узел, деталь, материал..." autocomplete="off">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label class="mn-label">Количество *</label>
+          <input id="comp-qty" class="mn-input" type="number" min="0" step="0.001" value="${c.quantity ?? ''}">
+        </div>
+        <div>
+          <label class="mn-label">Единица</label>
+          <input id="comp-unit" class="mn-input" type="text" value="${c.unit || ''}" placeholder="шт, м, кг...">
+        </div>
+      </div>
+      <div>
+        <label class="mn-label">Примечание</label>
+        <input id="comp-notes" class="mn-input" type="text" value="${c.notes || ''}" placeholder="Необязательно">
+      </div>
+    </div>
+    <div style="margin-top:22px;padding-top:14px;border-top:1px solid var(--border)">${saveCall}</div>
+  `;
+}
+
+function openEditCompModal(itemId, compId) {
+  const item = VRH_ITEMS.find(i => i.id === itemId);
+  if (!item) return;
+  const comp = item.components.find(c => c.id === compId);
+  if (!comp) return;
+
+  const footer = `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+      <button class="btn-primary" onclick="saveComp('${itemId}','${compId}')">${iconSvg('save',13)} Сохранить</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+        <button class="btn-danger" onclick="deleteComp('${itemId}','${compId}')">${iconSvg('trash',13)} Удалить</button>
+      </div>
+    </div>`;
+  document.getElementById('modal-box').innerHTML = _compModalHtml('Редактировать подпозицию', footer, comp);
+  document.getElementById('modal-overlay').classList.add('open');
+  requestAnimationFrame(() => document.getElementById('comp-name')?.focus());
+}
+window.openEditCompModal = openEditCompModal;
+
+function openAddCompModal(itemId) {
+  const footer = `
+    <div style="display:flex;gap:8px">
+      <button class="btn-primary" onclick="saveComp('${itemId}',null)">${iconSvg('plus',13)} Добавить</button>
+      <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+    </div>`;
+  document.getElementById('modal-box').innerHTML = _compModalHtml('Добавить подпозицию', footer, {});
+  document.getElementById('modal-overlay').classList.add('open');
+  requestAnimationFrame(() => document.getElementById('comp-name')?.focus());
+}
+window.openAddCompModal = openAddCompModal;
+
+function saveComp(itemId, compId) {
+  const name  = document.getElementById('comp-name')?.value.trim();
+  if (!name) { alert('Введите наименование'); return; }
+  const qty   = parseFloat(document.getElementById('comp-qty')?.value);
+  if (isNaN(qty) || qty < 0) { alert('Укажите количество'); return; }
+  const unit  = document.getElementById('comp-unit')?.value.trim() || '';
+  const notes = document.getElementById('comp-notes')?.value.trim() || '';
+
+  const item = VRH_ITEMS.find(i => i.id === itemId);
+  if (!item) return;
+  if (!localEdits[itemId]) localEdits[itemId] = {};
+
+  if (compId) {
+    // Редактирование существующего
+    const comp = item.components.find(c => c.id === compId);
+    if (comp) { comp.name = name; comp.quantity = qty; comp.unit = unit; comp.notes = notes; }
+    if (!localEdits[itemId].components) localEdits[itemId].components = [];
+    const ec = localEdits[itemId].components.find(x => x.id === compId);
+    if (ec) { ec.name = name; ec.quantity = qty; ec.unit = unit; ec.notes = notes; }
+    else localEdits[itemId].components.push({ id: compId, name, quantity: qty, unit, notes });
+  } else {
+    // Добавление нового
+    const newComp = { id: `comp_${Date.now()}`, name, quantity: qty, unit, done: 0, optional: false, notes };
+    item.components.push(newComp);
+    if (!localEdits[itemId].extraComponents) localEdits[itemId].extraComponents = [];
+    localEdits[itemId].extraComponents.push({ ...newComp });
+  }
+
+  saveEditsToStorage(itemId);
+  closeModal();
+  render();
+}
+window.saveComp = saveComp;
+
+function deleteComp(itemId, compId) {
+  const item = VRH_ITEMS.find(i => i.id === itemId);
+  if (!item) return;
+  item.components = item.components.filter(c => c.id !== compId);
+  if (!localEdits[itemId]) localEdits[itemId] = {};
+  if (!localEdits[itemId].deletedComponents) localEdits[itemId].deletedComponents = [];
+  if (!localEdits[itemId].deletedComponents.includes(compId)) localEdits[itemId].deletedComponents.push(compId);
+  // Также убрать из extraComponents если это новая подпозиция
+  if (localEdits[itemId].extraComponents) {
+    localEdits[itemId].extraComponents = localEdits[itemId].extraComponents.filter(c => c.id !== compId);
+  }
+  saveEditsToStorage(itemId);
+  closeModal();
+  render();
+}
+window.deleteComp = deleteComp;
 
 // =============================================================
 // MATERIALS — СПЕЦИФИКАЦИЯ МАТЕРИАЛОВ
