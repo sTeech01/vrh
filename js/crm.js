@@ -8,15 +8,20 @@
 /* ---------------- КОНСТАНТЫ ---------------- */
 
 const CRM_STAGES = [
-  { key: 'new',         label: 'Неразобран',           color: '#94A3B8', bg: '#F1F5F9' },
-  { key: 'in_work',     label: 'Взят в работу',         color: '#3B82F6', bg: '#EFF6FF' },
-  { key: 'warming',     label: 'Прогрев',               color: '#F59E0B', bg: '#FFFBEB' },
-  { key: 'pers',        label: 'ПЕРС',                  color: '#8B5CF6', bg: '#F5F3FF' },
-  { key: 'contract',    label: 'Согласование договора', color: '#EC4899', bg: '#FDF2F8' },
-  { key: 'prepayment',  label: 'Предоплата',            color: '#10B981', bg: '#ECFDF5' },
-  { key: 'engineering', label: 'Инженерный отдел',      color: '#06B6D4', bg: '#ECFEFF' },
-  { key: 'done',        label: 'Сделка завершена',      color: '#22C55E', bg: '#F0FDF4' },
+  { key: 'new',         label: 'Неразобран',            color: '#94A3B8', bg: '#F1F5F9' },
+  { key: 'in_work',     label: 'Взят в работу',          color: '#3B82F6', bg: '#EFF6FF' },
+  { key: 'warming',     label: 'Прогрев',                color: '#F59E0B', bg: '#FFFBEB' },
+  { key: 'lead_ready',  label: 'Лид / Готов проект',     color: '#8B5CF6', bg: '#F5F3FF' },
+  { key: 'negotiation', label: 'Согласование КП',        color: '#EC4899', bg: '#FDF2F8' },
+  { key: 'proposal',    label: 'Коммерческое предложение', color: '#10B981', bg: '#ECFDF5' },
+  { key: 'done',        label: 'Сделка успешна',         color: '#22C55E', bg: '#F0FDF4' },
 ];
+
+/* Совместимость с устаревшими ключами этапов */
+const _STAGE_COMPAT = {
+  'pers': 'lead_ready', 'contract': 'negotiation',
+  'prepayment': 'proposal', 'engineering': 'proposal',
+};
 
 const CRM_TYPES = [
   { key: 'forel', label: 'Форель' },
@@ -75,7 +80,8 @@ function formatDateShort(str) {
 }
 
 function getCrmStageInfo(key) {
-  return CRM_STAGES.find(s => s.key === key) || CRM_STAGES[0];
+  const k = _STAGE_COMPAT[key] || key;
+  return CRM_STAGES.find(s => s.key === k) || CRM_STAGES[0];
 }
 
 function getNextStage(currentKey) {
@@ -334,7 +340,7 @@ function renderCrmPipeline(client) {
 
   const row1 = CRM_STAGES.slice(0, 4).map((s, i) => _crmStageNode(client, s, i, currentIdx))
     .join(_crmArrow('right'));
-  const row2 = CRM_STAGES.slice(4, 8).map((s, i) => _crmStageNode(client, s, i + 4, currentIdx))
+  const row2 = CRM_STAGES.slice(4, 7).map((s, i) => _crmStageNode(client, s, i + 4, currentIdx))
     .join(_crmArrow('left'));
 
   const connector = `
