@@ -79,11 +79,6 @@ function renderPlatformHome(el) {
 
   el.innerHTML = `
     <div class="plat-home">
-      <div class="plat-header">
-        <div class="plat-eyebrow">ВРХ Инжиниринг · ERP Platform</div>
-        <div class="plat-title">Рабочий стол VRH</div>
-        <div class="plat-tagline">Выберите модуль для начала работы</div>
-      </div>
       <div class="plat-grid">${cards}</div>
     </div>`;
 }
