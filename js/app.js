@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #097';
+const APP_BUILD = 'DEPLOY #098';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -145,7 +145,8 @@ async function doLogout() {
 }
 
 async function loadRemoteData() {
-  const [ovRes, asRes, orRes, cpRes, wsRes, imRes, evRes, crmRes, crmHistRes] = await Promise.all([
+  const [ovRes, asRes, orRes, cpRes, wsRes, imRes, evRes, crmRes, crmHistRes,
+         supRes, supContRes, supHistRes, supBankRes] = await Promise.all([
     _sb.from('item_overrides').select('*'),
     _sb.from('custom_assignees').select('*').order('id'),
     _sb.from('item_order').select('*'),
@@ -155,6 +156,10 @@ async function loadRemoteData() {
     _sb.from('events').select('*').order('event_date'),
     _sb.from('crm_clients').select('*').order('created_at', { ascending: false }),
     _sb.from('crm_stage_history').select('*').order('created_at'),
+    _sb.from('suppliers').select('*').order('created_at', { ascending: false }),
+    _sb.from('supplier_contacts').select('*').order('created_at'),
+    _sb.from('supplier_history').select('*').order('event_date', { ascending: false }),
+    _sb.from('supplier_bank').select('*').order('created_at'),
   ]);
   if (ovRes.data) {
     localEdits = {};
@@ -241,6 +246,9 @@ async function loadRemoteData() {
 
   // Загрузка CRM (клиенты + история этапов) — данные живут в js/crm.js
   loadCrmData(crmRes.data, crmHistRes.data);
+
+  // Загрузка Поставщиков — данные живут в js/suppliers.js
+  loadSuppliersData(supRes.data, supContRes.data, supHistRes.data, supBankRes.data);
 }
 
 // =============================================================
@@ -359,7 +367,8 @@ function updateActiveNav() {
     const isActive = el.dataset.nav === state.view ||
       (state.view === 'project'    && el.dataset.nav === 'projects') ||
       (state.view === 'item'       && el.dataset.nav === 'projects') ||
-      (state.view === 'crm-client' && el.dataset.nav === 'crm');
+      (state.view === 'crm-client' && el.dataset.nav === 'crm') ||
+      (state.view === 'supplier'  && el.dataset.nav === 'suppliers');
     el.classList.toggle('active', isActive);
   });
 }
@@ -419,6 +428,14 @@ function render() {
       renderCrmClient(content, state.projectId);
       setBreadcrumb('CRM', 'Клиент');
       updatePlatformSidebar('crm');
+      break;
+    case 'suppliers':
+      renderSuppliersList(content);
+      updatePlatformSidebar('suppliers');
+      break;
+    case 'supplier':
+      renderSupplierDetail(content, state.projectId);
+      updatePlatformSidebar('suppliers');
       break;
     default: navigate('home');
   }

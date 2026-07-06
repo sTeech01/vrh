@@ -36,7 +36,7 @@ const ERP_MODULES = [
   },
   {
     id: 'suppliers', label: 'Поставщики', subLabel: 'База поставщиков',
-    active: false,
+    active: true, hash: 'suppliers',
     icon: _platModIcon('<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'),
   },
   {
@@ -156,8 +156,19 @@ function updatePlatformSidebar(view) {
           <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/>
         </svg>
         Клиенты
-      </a>
-      `;
+      </a>`;
+  }
+  else if (view === 'suppliers') {
+    html = `
+      ${_PLAT_BACK_BTN}
+      <div class="sidebar-section">Поставщики</div>
+      <a class="nav-item" data-nav="suppliers" href="#suppliers">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        Справочник
+      </a>`;
   }
 
   nav.innerHTML = html;
@@ -175,8 +186,10 @@ function updatePlatformSidebar(view) {
 /* ── Определение контекста по state.view ──────────────────────── */
 function getPlatformContext(view) {
   const PRODUCTION_VIEWS = ['dashboard', 'projects', 'project', 'item', 'problems', 'ai', 'report', 'events'];
-  const CRM_VIEWS = ['crm', 'crm-client'];
-  if (CRM_VIEWS.includes(view)) return 'crm';
+  const CRM_VIEWS       = ['crm', 'crm-client'];
+  const SUPPLIERS_VIEWS = ['suppliers', 'supplier'];
+  if (CRM_VIEWS.includes(view))       return 'crm';
+  if (SUPPLIERS_VIEWS.includes(view)) return 'suppliers';
   if (PRODUCTION_VIEWS.includes(view)) return 'production';
   return 'home';
 }
