@@ -162,9 +162,7 @@ function updatePlatformSidebar(view) {
         </svg>
         Клиенты
       </a>
-      <button class="btn-primary" style="margin:10px 12px 0;padding:7px 12px;font-size:12px;display:inline-flex;align-items:center;gap:6px;width:calc(100% - 24px);justify-content:center" onclick="openAddClientModal()">
-        ${iconSvg('plus', 14)} Добавить клиента
-      </button>`;
+      `;
   }
 
   nav.innerHTML = html;
