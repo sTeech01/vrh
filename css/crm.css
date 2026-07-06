@@ -564,7 +564,12 @@
 /* ---------------- МОДАЛКИ CRM ---------------- */
 
 .crm-modal {
-  padding: 4px 2px;
+  padding: 24px;
+}
+
+/* CRM-модалки уже основного mn-modal (760px вместо 1060px) */
+#modal-overlay.open:has(.crm-modal) #modal-box {
+  width: min(780px, 97vw);
 }
 
 .crm-modal-head {
