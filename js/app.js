@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #085';
+const APP_BUILD = 'DEPLOY #086';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -16,6 +16,8 @@ let _customProjects = [];
 let _workflowStages = {}; // { [item_id]: Stage[] }
 let _itemMaterials  = {}; // { [item_id]: Material[] }
 let _events         = []; // Event[] из Supabase
+// CRM: _crmClients / _crmHistory объявлены в js/crm.js (загружается до app.js),
+// здесь только сбрасываются при logout и заполняются через loadCrmData()
 
 // Базовые длины массивов (зафиксированы при загрузке из data.js)
 const _VRH_ITEMS_BASE_LEN    = VRH_ITEMS.length;
@@ -96,6 +98,7 @@ async function initApp() {
   setupNavigation();
   handleHash();
   updateProblemsBadge();
+  _updateEventsBadge();
   const badge = document.querySelector('.deploy-badge');
   if (badge) badge.textContent = APP_BUILD;
 }
@@ -128,6 +131,7 @@ async function doLogin() {
 async function doLogout() {
   await _sb.auth.signOut();
   localEdits = {}; _customAssignees = []; _itemOrder = {}; _customProjects = []; _workflowStages = {};
+  _crmClients = []; _crmHistory = {};
   VRH_ITEMS.splice(_VRH_ITEMS_BASE_LEN);
   VRH_PROJECTS.splice(_VRH_PROJECTS_BASE_LEN);
   VRH_ITEMS.forEach(item => {
@@ -141,7 +145,7 @@ async function doLogout() {
 }
 
 async function loadRemoteData() {
-  const [ovRes, asRes, orRes, cpRes, wsRes, imRes, evRes] = await Promise.all([
+  const [ovRes, asRes, orRes, cpRes, wsRes, imRes, evRes, crmRes, crmHistRes] = await Promise.all([
     _sb.from('item_overrides').select('*'),
     _sb.from('custom_assignees').select('*').order('id'),
     _sb.from('item_order').select('*'),
@@ -149,6 +153,8 @@ async function loadRemoteData() {
     _sb.from('workflow_stages').select('*').order('stage_order'),
     _sb.from('item_materials').select('*').order('sort_order'),
     _sb.from('events').select('*').order('event_date'),
+    _sb.from('crm_clients').select('*').order('created_at', { ascending: false }),
+    _sb.from('crm_stage_history').select('*').order('created_at'),
   ]);
   if (ovRes.data) {
     localEdits = {};
@@ -232,6 +238,9 @@ async function loadRemoteData() {
       });
     });
   }
+
+  // Загрузка CRM (клиенты + история этапов) — данные живут в js/crm.js
+  loadCrmData(crmRes.data, crmHistRes.data);
 }
 
 // =============================================================
@@ -315,9 +324,9 @@ window.addEventListener('hashchange', () => { if (_sb) handleHash(); });
 
 // ── Router ──────────────────────────────────────────────────────
 function handleHash() {
-  const hash  = window.location.hash.replace('#', '') || 'dashboard';
+  const hash  = window.location.hash.replace('#', '') || 'home';
   const parts = hash.split('/');
-  state.view      = parts[0] || 'dashboard';
+  state.view      = parts[0] || 'home';
   state.projectId = parts[1] || null;
   state.itemId    = parts[2] || null;
   render();
@@ -348,8 +357,9 @@ function setupNavigation() {
 function updateActiveNav() {
   document.querySelectorAll('[data-nav]').forEach(el => {
     const isActive = el.dataset.nav === state.view ||
-      (state.view === 'project' && el.dataset.nav === 'projects') ||
-      (state.view === 'item'    && el.dataset.nav === 'projects');
+      (state.view === 'project'    && el.dataset.nav === 'projects') ||
+      (state.view === 'item'       && el.dataset.nav === 'projects') ||
+      (state.view === 'crm-client' && el.dataset.nav === 'crm');
     el.classList.toggle('active', isActive);
   });
 }
@@ -387,17 +397,33 @@ function render() {
   content.classList.add('fade-in');
 
   switch (state.view) {
-    case 'dashboard': renderDashboard(content); setBreadcrumb('Обзор');    break;
-    case 'projects':  renderProjects(content);  setBreadcrumb('Проекты');    break;
-    case 'project':   renderProject(content, state.projectId);               break;
-    case 'item':      renderItem(content, state.projectId, state.itemId);    break;
-    case 'problems':  renderProblems(content);  setBreadcrumb('Проблемы');   break;
-    case 'ai':        renderAI(content);        setBreadcrumb('AI-помощник'); break;
-    case 'report':    renderReport(content, state.projectId);                  break;
-    case 'events':    renderEvents(content);    setBreadcrumb('События');      break;
-    default: navigate('dashboard');
+    case 'dashboard': renderDashboard(content); setBreadcrumb('Обзор');    updatePlatformSidebar('production'); break;
+    case 'projects':  renderProjects(content);  setBreadcrumb('Проекты');    updatePlatformSidebar('production'); break;
+    case 'project':   renderProject(content, state.projectId);               updatePlatformSidebar('production'); break;
+    case 'item':      renderItem(content, state.projectId, state.itemId);    updatePlatformSidebar('production'); break;
+    case 'problems':  renderProblems(content);  setBreadcrumb('Проблемы');   updatePlatformSidebar('production'); break;
+    case 'ai':        renderAI(content);        setBreadcrumb('AI-помощник'); updatePlatformSidebar('production'); break;
+    case 'report':    renderReport(content, state.projectId);                  updatePlatformSidebar('production'); break;
+    case 'events':    renderEvents(content);    setBreadcrumb('События');      updatePlatformSidebar('production'); break;
+    case 'home':
+      renderPlatformHome(content);
+      setBreadcrumb('Рабочий стол');
+      updatePlatformSidebar('home');
+      break;
+    case 'crm':
+      renderCrmList(content);
+      setBreadcrumb('CRM');
+      updatePlatformSidebar('crm');
+      break;
+    case 'crm-client':
+      renderCrmClient(content, state.projectId);
+      setBreadcrumb('CRM', 'Клиент');
+      updatePlatformSidebar('crm');
+      break;
+    default: navigate('home');
   }
   _updateEventsBadge();
+  updateProblemsBadge();
 
   requestAnimationFrame(() => {
     if (_prevFocusId === 'filter-search-input') {

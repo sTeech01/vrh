@@ -1,0 +1,158 @@
+/* ═══════════════════════════════════════════════════════════════
+   VRH ERP Platform — рабочий стол и карточки модулей
+   Суффикс: plat-*
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Layout главного экрана ───────────────────────────────────── */
+.plat-home {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+/* ── Шапка ────────────────────────────────────────────────────── */
+.plat-header {
+  margin-bottom: 40px;
+}
+
+.plat-eyebrow {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--gray-400);
+  margin-bottom: 8px;
+}
+
+.plat-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--gray-900);
+  margin-bottom: 6px;
+}
+
+.plat-tagline {
+  font-size: 13px;
+  color: var(--gray-500);
+}
+
+/* ── Сетка модулей ────────────────────────────────────────────── */
+.plat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .plat-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 560px) {
+  .plat-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Карточка модуля ──────────────────────────────────────────── */
+.plat-card {
+  background: #fff;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 14px;
+  padding: 24px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 160px;
+  position: relative;
+}
+
+.plat-card-active:hover {
+  border-color: var(--cyan);
+  box-shadow: 0 8px 24px rgba(14, 165, 233, 0.12);
+  transform: translateY(-2px);
+}
+
+.plat-card-inactive {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ── Иконка модуля ────────────────────────────────────────────── */
+.plat-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gray-100);
+  color: var(--gray-500);
+}
+
+.plat-card-active .plat-card-icon {
+  background: #EFF6FF;
+  color: var(--cyan);
+}
+
+.plat-card-inactive .plat-card-icon {
+  opacity: 0.35;
+}
+
+/* ── Текст карточки ───────────────────────────────────────────── */
+.plat-card-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin-top: 4px;
+}
+
+.plat-card-inactive .plat-card-name {
+  color: var(--gray-500);
+}
+
+.plat-card-sub {
+  font-size: 12px;
+  color: var(--gray-400);
+}
+
+/* ── Бейджи ───────────────────────────────────────────────────── */
+.plat-card-badge {
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 99px;
+  align-self: flex-start;
+}
+
+.plat-card-badge-active {
+  background: #DCFCE7;
+  color: #16A34A;
+}
+
+.plat-card-badge-soon {
+  background: var(--gray-100);
+  color: var(--gray-400);
+}
+
+/* ── Кнопка «Платформа» (назад) в sidebar ─────────────────────── */
+.plat-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--gray-400);
+  cursor: pointer;
+  padding: 4px 0 10px;
+  border: none;
+  background: none;
+  font-family: inherit;
+  width: 100%;
+  transition: color var(--transition);
+}
+
+.plat-back-link:hover {
+  color: var(--gray-600);
+}

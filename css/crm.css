@@ -1,0 +1,610 @@
+/* ============================================================
+   VRH ERP — CRM-модуль «Движение клиента»
+   Суффикс: crm-*
+   ============================================================ */
+
+/* ---------------- СПИСОК КЛИЕНТОВ ---------------- */
+
+.crm-page-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 24px 80px;
+}
+
+.crm-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.crm-page-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--gray-900);
+}
+
+.crm-page-subtitle {
+  font-size: 13px;
+  color: var(--gray-400);
+  margin-top: 2px;
+}
+
+.crm-filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.crm-filters input,
+.crm-filters select {
+  height: 36px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 0 12px;
+  font-size: 13px;
+  font-family: inherit;
+  background: #fff;
+  color: var(--gray-900);
+}
+
+.crm-filters input {
+  min-width: 240px;
+  flex: 1;
+}
+
+.crm-filters input:focus,
+.crm-filters select:focus {
+  outline: none;
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.10);
+}
+
+.crm-clients-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+@media (max-width: 1000px) {
+  .crm-clients-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .crm-clients-grid { grid-template-columns: 1fr; }
+}
+
+.crm-card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid var(--gray-200);
+  border-left-width: 4px;
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.crm-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.crm-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.crm-card-priority {
+  font-size: 11px;
+  color: var(--gray-400);
+  font-weight: 600;
+}
+
+.crm-card-project {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.crm-card-org {
+  font-size: 12px;
+  color: var(--gray-500);
+}
+
+.crm-card-region {
+  font-size: 11px;
+  color: var(--gray-400);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.crm-card-stage {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.crm-card-next {
+  font-size: 12px;
+  color: var(--gray-500);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.crm-card-manager {
+  font-size: 11px;
+  color: var(--gray-400);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.crm-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.crm-card-type {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--gray-500);
+  background: var(--gray-100);
+  border-radius: 6px;
+  padding: 2px 7px;
+  flex-shrink: 0;
+}
+
+.crm-cat-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.crm-cat-a { background: #DCFCE7; color: #16A34A; }
+.crm-cat-b { background: #DBEAFE; color: #2563EB; }
+.crm-cat-c { background: #FEF9C3; color: #CA8A04; }
+.crm-cat-d { background: var(--gray-100); color: var(--gray-500); }
+
+/* Подсветка дат следующего контакта */
+.crm-date-overdue { color: var(--red); font-weight: 600; }
+.crm-date-soon    { color: var(--amber); font-weight: 600; }
+
+/* ---------------- СТРАНИЦА КЛИЕНТА ---------------- */
+
+.crm-client-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 28px 24px 80px;
+}
+
+.crm-client-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+.crm-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--gray-400);
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+  padding: 4px 0;
+  margin-bottom: 8px;
+  transition: color 0.15s;
+}
+
+.crm-back-btn:hover {
+  color: var(--gray-700);
+}
+
+.crm-client-name {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--gray-900);
+}
+
+.crm-client-org {
+  font-size: 14px;
+  color: var(--gray-500);
+  margin-top: 2px;
+}
+
+/* ---------------- PIPELINE (ВОРОНКА-ЗМЕЙКА) ---------------- */
+
+.crm-pipeline {
+  margin-bottom: 36px;
+}
+
+.crm-pipeline-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 16px;
+}
+
+.crm-pipeline-snake {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.crm-pipeline-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+
+.crm-pipeline-row:nth-child(3) {
+  flex-direction: row-reverse;
+}
+
+.crm-stage-node {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1.5px solid var(--gray-200);
+  background: #fff;
+  margin: 4px;
+  cursor: default;
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+}
+
+.crm-stage-node-active {
+  border-width: 2px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
+}
+
+.crm-stage-node-past {
+  background: var(--gray-50);
+  border-color: var(--gray-200);
+  opacity: 0.75;
+}
+
+.crm-stage-node-future {
+  opacity: 0.4;
+}
+
+.crm-stage-num {
+  font-size: 10px;
+  color: var(--gray-400);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.crm-stage-check {
+  display: inline-flex;
+  align-items: center;
+}
+
+.crm-stage-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gray-700);
+}
+
+.crm-stage-date {
+  font-size: 10px;
+  color: var(--gray-400);
+}
+
+.crm-stage-arrow {
+  display: flex;
+  align-items: center;
+  color: var(--gray-300);
+  flex-shrink: 0;
+  font-size: 14px;
+  padding: 0 2px;
+}
+
+.crm-pipeline-connector {
+  display: flex;
+  justify-content: flex-end;
+  padding-right: 20px;
+  color: var(--gray-300);
+  font-size: 20px;
+  line-height: 1;
+  margin: 0 4px;
+}
+
+.crm-stage-btn {
+  margin-top: 6px;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+  align-self: flex-start;
+}
+
+.crm-stage-btn:hover {
+  background: var(--cyan-dim);
+}
+
+@media (max-width: 760px) {
+  .crm-stage-node { padding: 8px 10px; }
+  .crm-stage-name { font-size: 10px; }
+  .crm-stage-num  { font-size: 9px; }
+  .crm-stage-date { display: none; }
+}
+
+/* ---------------- ВКЛАДКИ ---------------- */
+
+.crm-tabs {
+  display: flex;
+  border-bottom: 2px solid var(--gray-200);
+  margin-bottom: 24px;
+  gap: 0;
+  flex-wrap: wrap;
+}
+
+.crm-tab {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-500);
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.15s;
+}
+
+.crm-tab-active {
+  color: var(--gray-900);
+  border-bottom-color: var(--cyan);
+}
+
+.crm-tab:hover {
+  color: var(--gray-700);
+}
+
+/* ---------------- ИСТОРИЯ (TIMELINE) ---------------- */
+
+.crm-history-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.crm-history-item {
+  display: flex;
+  gap: 16px;
+  padding-bottom: 24px;
+  position: relative;
+}
+
+.crm-history-item::before {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 28px;
+  bottom: 0;
+  width: 2px;
+  background: var(--gray-200);
+}
+
+.crm-history-item:last-child::before {
+  display: none;
+}
+
+.crm-history-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.crm-history-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.crm-history-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.crm-history-date {
+  font-size: 12px;
+  color: var(--gray-400);
+}
+
+.crm-history-author {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-600);
+}
+
+.crm-history-comment {
+  font-size: 13px;
+  color: var(--gray-700);
+  line-height: 1.55;
+  margin-bottom: 8px;
+}
+
+.crm-history-next {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 12px;
+  color: var(--gray-500);
+  background: var(--gray-50);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+/* ---------------- INFO GRID (вкладка Общее) ---------------- */
+
+.crm-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .crm-info-grid { grid-template-columns: 1fr; }
+}
+
+.crm-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.crm-info-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gray-400);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.crm-info-value {
+  font-size: 14px;
+  color: var(--gray-900);
+}
+
+/* ---------------- ПУСТОЕ СОСТОЯНИЕ ---------------- */
+
+.crm-empty {
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--gray-400);
+}
+
+.crm-empty svg {
+  display: block;
+  margin: 0 auto 16px;
+  opacity: 0.3;
+}
+
+.crm-empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gray-500);
+  margin-bottom: 8px;
+}
+
+.crm-empty-sub {
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+/* ---------------- ЗАГЛУШКИ ВКЛАДОК ---------------- */
+
+.crm-tab-stub {
+  text-align: center;
+  padding: 56px 20px;
+  color: var(--gray-400);
+}
+
+.crm-tab-stub svg {
+  display: block;
+  margin: 0 auto 12px;
+  opacity: 0.3;
+}
+
+.crm-tab-stub-text {
+  font-size: 13px;
+  color: var(--gray-400);
+}
+
+/* ---------------- МОДАЛКИ CRM ---------------- */
+
+.crm-modal {
+  padding: 4px 2px;
+}
+
+.crm-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.crm-modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--gray-900);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.crm-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 16px;
+  max-width: 760px;
+}
+
+@media (max-width: 640px) {
+  .crm-modal-grid { grid-template-columns: 1fr; }
+}
+
+.crm-modal-full {
+  grid-column: 1 / -1;
+}
+
+.crm-modal-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--gray-200);
+}
