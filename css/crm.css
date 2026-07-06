@@ -621,10 +621,10 @@
   overflow: hidden;
 }
 
-/* CRM-модалки уже основного mn-modal (760px вместо 1060px) */
-#modal-overlay.open:has(.crm-modal) #modal-box {
-  width: min(780px, 97vw);
-}
+/* CRM-модалки: размеры по смыслу */
+#modal-overlay.open:has(.crm-modal) #modal-box      { width: min(780px, 97vw); }  /* редактирование клиента */
+#modal-overlay.open:has(.crm-modal-md) #modal-box   { width: min(540px, 97vw); }  /* переход этапа */
+#modal-overlay.open:has(.crm-modal-sm) #modal-box   { width: min(440px, 97vw); }  /* договор, архив, success */
 
 .crm-modal-head {
   display: flex;

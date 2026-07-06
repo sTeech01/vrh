@@ -713,7 +713,7 @@ function openStageTransitionModal(clientId, nextStageKey) {
   const next = getCrmStageInfo(nextStageKey);
 
   document.getElementById('modal-box').innerHTML = `
-  <div class="crm-modal">
+  <div class="crm-modal crm-modal-md">
     <div class="crm-modal-head">
       <div class="crm-modal-title">
         Переход:
@@ -784,7 +784,7 @@ function openContractSignedModal(clientId) {
   const client = _crmClients.find(c => c.id === clientId);
   if (!client) return;
   document.getElementById('modal-box').innerHTML = `
-  <div class="crm-modal" style="max-width:480px">
+  <div class="crm-modal crm-modal-sm">
     <div class="crm-modal-head">
       <div class="crm-modal-title">${iconSvg('check', 16)} Договор подписан</div>
       <button class="modal-close" onclick="closeModal()">${iconSvg('x', 16)}</button>
@@ -844,7 +844,7 @@ window.saveContractSigned = saveContractSigned;
 
 function showProjectCreatedModal(clientId) {
   document.getElementById('modal-box').innerHTML = `
-  <div class="crm-modal" style="max-width:460px">
+  <div class="crm-modal crm-modal-sm">
     <div class="crm-modal-head" style="border-bottom:none;padding-bottom:4px">
       <div style="flex:1"></div>
       <button class="modal-close" onclick="closeModal();_crmRerender()">${iconSvg('x', 16)}</button>
@@ -872,7 +872,7 @@ function openArchiveClientModal(clientId) {
   const client = _crmClients.find(c => c.id === clientId);
   if (!client) return;
   document.getElementById('modal-box').innerHTML = `
-  <div class="crm-modal" style="max-width:440px">
+  <div class="crm-modal crm-modal-sm">
     <div class="crm-modal-head">
       <div class="crm-modal-title">Переместить в архив</div>
       <button class="modal-close" onclick="closeModal()">${iconSvg('x', 16)}</button>
