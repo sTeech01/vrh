@@ -1,0 +1,112 @@
+/* ============================================================
+   VRH ERP — Модуль «Проекты»
+   Суффикс: erp-proj-*
+   ============================================================ */
+
+.erp-proj-page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+/* ---------------- HERO-СЕКЦИЯ ---------------- */
+
+.erp-proj-hero {
+  text-align: center;
+  padding-bottom: 48px;
+  border-bottom: 1.5px solid var(--gray-200);
+  margin-bottom: 48px;
+}
+
+.erp-proj-illustration {
+  display: block;
+  width: 100%;
+  max-width: 520px;
+  height: auto;
+  margin: 0 auto 28px;
+  color: var(--cyan);
+}
+
+.erp-proj-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 12px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--gray-100);
+  color: var(--gray-500);
+  margin-bottom: 16px;
+}
+
+.erp-proj-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--gray-900);
+  margin: 0 0 12px;
+  line-height: 1.25;
+}
+
+.erp-proj-sub {
+  font-size: 15px;
+  color: var(--gray-500);
+  line-height: 1.65;
+  margin: 0 0 4px;
+  max-width: 540px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ---------------- СЕКЦИЯ «БУДУЩИЕ ВОЗМОЖНОСТИ» ---------------- */
+
+.erp-proj-future-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 20px;
+}
+
+.erp-proj-features {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 720px) {
+  .erp-proj-features { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 420px) {
+  .erp-proj-features { grid-template-columns: 1fr; }
+}
+
+.erp-proj-feature {
+  background: #fff;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 10px;
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.erp-proj-feature-icon {
+  color: var(--gray-400);
+  display: flex;
+}
+
+.erp-proj-feature-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gray-700);
+}
+
+.erp-proj-feature-desc {
+  font-size: 11px;
+  color: var(--gray-400);
+  line-height: 1.45;
+}

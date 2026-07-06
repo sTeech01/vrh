@@ -437,6 +437,11 @@ function render() {
       renderSupplierDetail(content, state.projectId);
       updatePlatformSidebar('suppliers');
       break;
+    case 'erp-projects':
+      renderErpProjects(content);
+      setBreadcrumb('Проекты');
+      updatePlatformSidebar('erp-projects');
+      break;
     default: navigate('home');
   }
   _updateEventsBadge();

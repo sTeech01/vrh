@@ -30,7 +30,6 @@ const CRM_CATEGORIES = [
   { key: 'A', label: 'Горячий' },
   { key: 'B', label: 'Тёплый' },
   { key: 'C', label: 'Холодный' },
-  { key: 'D', label: 'Архив' },
 ];
 
 const CRM_TABS = [
@@ -47,7 +46,7 @@ const CRM_TABS = [
 let _crmClients = [];
 let _crmHistory = {}; // { [clientId]: historyEntry[] }
 
-let _crmFilter = { search: '', stage: 'all', cat: 'all', tab: 'active' };
+let _crmFilter = { search: '', stage: 'all', cat: 'all', lifecycle: 'crm' };
 let _crmSearchDebounce = null;
 let _crmActiveTab = 'general';
 let _crmLastClientId = null;
@@ -158,7 +157,7 @@ function _crmRerenderList() {
 
 function setCrmFilter(key, val) {
   _crmFilter[key] = val;
-  if (key === 'tab') {
+  if (key === 'lifecycle') {
     _crmFilter.cat = 'all';
     _crmFilter.stage = 'all';
   }
@@ -171,14 +170,17 @@ function setCrmFilter(key, val) {
 }
 window.setCrmFilter = setCrmFilter;
 
+/* Возвращает фактический lifecycle карточки (с обратной совместимостью для category=D) */
+function _crmGetLifecycle(c) {
+  return c.lifecycle || (c.category === 'D' ? 'archived' : 'crm');
+}
+
 /* ---------------- СПИСОК КЛИЕНТОВ ---------------- */
 
 function _crmFilteredClients() {
   const q = (_crmFilter.search || '').trim().toLowerCase();
   return _crmClients.filter(c => {
-    // Вкладки: Активные = A/B/C, Архив = D
-    if (_crmFilter.tab === 'active'  && c.category === 'D') return false;
-    if (_crmFilter.tab === 'archive' && c.category !== 'D') return false;
+    if (_crmGetLifecycle(c) !== _crmFilter.lifecycle) return false;
     if (_crmFilter.stage !== 'all' && c.stage !== _crmFilter.stage) return false;
     if (_crmFilter.cat !== 'all' && c.category !== _crmFilter.cat) return false;
     if (q) {
@@ -217,19 +219,19 @@ function renderCrmList(el) {
   if (!el) return;
   if (typeof window.setBreadcrumb === 'function') setBreadcrumb('CRM');
 
-  const activeCount  = _crmClients.filter(c => c.category !== 'D').length;
-  const archiveCount = _crmClients.filter(c => c.category === 'D').length;
+  const activeCount   = _crmClients.filter(c => _crmGetLifecycle(c) === 'crm').length;
+  const archiveCount  = _crmClients.filter(c => _crmGetLifecycle(c) === 'archived').length;
+  const projectCount  = _crmClients.filter(c => _crmGetLifecycle(c) === 'project').length;
   const clients = _crmFilteredClients();
-  const isArchive = _crmFilter.tab === 'archive';
+  const isArchive = _crmFilter.lifecycle === 'archived';
 
   const stageOpts = ['<option value="all">Все этапы</option>']
     .concat(CRM_STAGES.map(s =>
       `<option value="${s.key}" ${_crmFilter.stage === s.key ? 'selected' : ''}>${_crmEsc(s.label)}</option>`))
     .join('');
 
-  // В архиве фильтр по категории не нужен (там только D)
   const catOpts = ['<option value="all">Все категории</option>']
-    .concat(CRM_CATEGORIES.filter(c => c.key !== 'D').map(c =>
+    .concat(CRM_CATEGORIES.map(c =>
       `<option value="${c.key}" ${_crmFilter.cat === c.key ? 'selected' : ''}>${_crmEsc(c.label)}</option>`))
     .join('');
 
@@ -247,7 +249,7 @@ function renderCrmList(el) {
     <div class="crm-empty">
       ${iconSvg('list', 48)}
       <div class="crm-empty-title">${isArchive ? 'Архив пуст' : 'Ничего не найдено'}</div>
-      <div class="crm-empty-sub">${isArchive ? 'Клиенты с категорией «Архив» появятся здесь' : 'Попробуйте изменить фильтры или поисковый запрос'}</div>
+      <div class="crm-empty-sub">${isArchive ? 'Архивированные клиенты появятся здесь' : 'Попробуйте изменить фильтры или поисковый запрос'}</div>
     </div>`;
   } else {
     body = `<div class="crm-clients-grid">${clients.map(crmClientCard).join('')}</div>`;
@@ -263,12 +265,15 @@ function renderCrmList(el) {
       <button class="btn-primary" onclick="openAddClientModal()">${iconSvg('plus', 14)} Добавить клиента</button>
     </div>
     <div class="crm-list-tabs">
-      <button class="crm-list-tab ${!isArchive ? 'crm-list-tab-active' : ''}" onclick="setCrmFilter('tab','active')">
+      <button class="crm-list-tab ${_crmFilter.lifecycle === 'crm' ? 'crm-list-tab-active' : ''}" onclick="setCrmFilter('lifecycle','crm')">
         Активные <span class="crm-list-tab-count">${activeCount}</span>
       </button>
-      <button class="crm-list-tab ${isArchive ? 'crm-list-tab-active' : ''}" onclick="setCrmFilter('tab','archive')">
+      <button class="crm-list-tab ${_crmFilter.lifecycle === 'archived' ? 'crm-list-tab-active' : ''}" onclick="setCrmFilter('lifecycle','archived')">
         Архив <span class="crm-list-tab-count">${archiveCount}</span>
       </button>
+      ${projectCount > 0 ? `<button class="crm-list-tab ${_crmFilter.lifecycle === 'project' ? 'crm-list-tab-active' : ''}" onclick="navigate('erp-projects')" style="color:var(--cyan)">
+        Проекты <span class="crm-list-tab-count" style="background:var(--cyan-dim);color:var(--cyan)">${projectCount}</span>
+      </button>` : ''}
     </div>
     <div class="crm-filters">
       <input type="text" id="crm-search" placeholder="Поиск по имени, проекту, региону..."
@@ -483,22 +488,59 @@ function renderCrmClient(el, clientId) {
   if (_crmLastClientId !== clientId) { _crmActiveTab = 'general'; _crmLastClientId = clientId; }
   if (typeof window.setBreadcrumb === 'function') setBreadcrumb('CRM', client.project_name || '');
 
-  const cat = (client.category || 'D').toLowerCase();
+  const cat = (client.category || 'C').toLowerCase();
+  const lifecycle = _crmGetLifecycle(client);
+
+  let lifecycleBanner = '';
+  if (lifecycle === 'project') {
+    lifecycleBanner = `
+    <div class="crm-lifecycle-banner crm-lifecycle-project">
+      <span style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">
+        ${iconSvg('check', 14)}
+        <span>Договор подписан. Карточка перенесена в модуль <strong>«Проекты»</strong>. Все данные и история сохранены.</span>
+      </span>
+      <button onclick="navigate('erp-projects')" class="crm-lifecycle-link">Открыть Проекты →</button>
+    </div>`;
+  } else if (lifecycle === 'archived') {
+    lifecycleBanner = `
+    <div class="crm-lifecycle-banner crm-lifecycle-archived">
+      <span style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">
+        ${iconSvg('minus', 14)}
+        <span>Клиент в архиве. Воронка скрыта. Все данные сохранены.</span>
+      </span>
+      <button onclick="restoreClientFromArchive('${_crmEsc(client.id)}')" class="crm-lifecycle-link">Восстановить</button>
+    </div>`;
+  }
+
+  let lifecycleActions = '';
+  if (lifecycle === 'crm') {
+    lifecycleActions = `
+      <button class="btn-secondary" onclick="openArchiveClientModal('${_crmEsc(client.id)}')" title="Переместить в архив">${iconSvg('minus', 14)} В архив</button>
+      <button class="crm-contract-btn" onclick="openContractSignedModal('${_crmEsc(client.id)}')">${iconSvg('check', 14)} Договор подписан</button>`;
+  } else if (lifecycle === 'project') {
+    lifecycleActions = `<button class="btn-primary" onclick="navigate('erp-projects')">${iconSvg('folder', 14)} Перейти в Проекты</button>`;
+  } else if (lifecycle === 'archived') {
+    lifecycleActions = `<button class="btn-secondary" onclick="restoreClientFromArchive('${_crmEsc(client.id)}')">${iconSvg('refresh', 14)} Восстановить</button>`;
+  }
 
   el.innerHTML = `
   <div class="crm-client-wrap">
     <button class="crm-back-btn" onclick="navigate('crm')">${_crmArrow('left')} Назад к списку</button>
+    ${lifecycleBanner}
     <div class="crm-client-header">
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <div class="crm-client-name">${_crmEsc(client.project_name || 'Без названия')}</div>
-          <span class="crm-cat-badge crm-cat-${_crmEsc(cat)}">${_crmEsc(getCrmCatLabel(client.category))}</span>
+          ${client.category ? `<span class="crm-cat-badge crm-cat-${_crmEsc(cat)}">${_crmEsc(getCrmCatLabel(client.category))}</span>` : ''}
         </div>
         ${client.org_name ? `<div class="crm-client-org">${_crmEsc(client.org_name)}</div>` : ''}
       </div>
-      <button class="btn-secondary" onclick="openEditClientModal('${_crmEsc(client.id)}')">${iconSvg('edit', 14)} Редактировать</button>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        ${lifecycleActions}
+        <button class="btn-secondary" onclick="openEditClientModal('${_crmEsc(client.id)}')">${iconSvg('edit', 14)} Редактировать</button>
+      </div>
     </div>
-    ${renderCrmPipeline(client)}
+    ${lifecycle !== 'archived' ? renderCrmPipeline(client) : ''}
     <div class="crm-tabs" id="crm-tabs-wrap">${renderCrmTabs(client, _crmActiveTab)}</div>
     <div id="crm-tab-content">${renderTabContent(client, _crmActiveTab)}</div>
   </div>`;
@@ -735,6 +777,178 @@ function saveStageTransition(clientId, nextStageKey) {
   _crmRerender();
 }
 window.saveStageTransition = saveStageTransition;
+
+/* ---------------- LIFECYCLE: ДОГОВОР ПОДПИСАН ---------------- */
+
+function openContractSignedModal(clientId) {
+  const client = _crmClients.find(c => c.id === clientId);
+  if (!client) return;
+  document.getElementById('modal-box').innerHTML = `
+  <div class="crm-modal" style="max-width:480px">
+    <div class="crm-modal-head">
+      <div class="crm-modal-title">${iconSvg('check', 16)} Договор подписан</div>
+      <button class="modal-close" onclick="closeModal()">${iconSvg('x', 16)}</button>
+    </div>
+    <div class="crm-modal-body">
+      <div class="crm-contract-info-box">
+        Карточка <strong>${_crmEsc(client.project_name || 'клиента')}</strong> будет перенесена
+        в модуль <strong>«Проекты»</strong>. Вся история переговоров и данные сохранятся.
+      </div>
+      <div class="crm-modal-grid">
+        <div class="crm-modal-full">
+          <label class="mn-label" for="contract-comment">Комментарий</label>
+          <textarea class="mn-input" id="contract-comment" rows="3"
+            style="height:auto;padding:8px 12px;resize:vertical"
+            placeholder="Дата подписания, номер договора..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="crm-modal-footer">
+      <div style="flex:1"></div>
+      <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+      <button class="crm-contract-btn" onclick="saveContractSigned('${_crmEsc(clientId)}')">${iconSvg('check', 14)} Подтвердить</button>
+    </div>
+  </div>`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+window.openContractSignedModal = openContractSignedModal;
+
+function saveContractSigned(clientId) {
+  const client = _crmClients.find(c => c.id === clientId);
+  if (!client) return;
+  const comment = _crmReadField('contract-comment');
+
+  client.lifecycle = 'project';
+
+  const entry = {
+    id: 'crmh_' + Date.now(),
+    client_id: clientId,
+    stage: client.stage,
+    author: 'Менеджер',
+    comment: '[Договор подписан]' + (comment ? ': ' + comment : ''),
+    created_at: new Date().toISOString(),
+  };
+  if (!_crmHistory[clientId]) _crmHistory[clientId] = [];
+  _crmHistory[clientId].push(entry);
+
+  (async () => {
+    try {
+      await _sb.from('crm_clients').upsert(client);
+      await _sb.from('crm_stage_history').insert(entry);
+    } catch (e) { console.error('saveContractSigned error:', e); }
+  })();
+
+  showProjectCreatedModal(clientId);
+}
+window.saveContractSigned = saveContractSigned;
+
+function showProjectCreatedModal(clientId) {
+  document.getElementById('modal-box').innerHTML = `
+  <div class="crm-modal" style="max-width:460px">
+    <div class="crm-modal-head" style="border-bottom:none;padding-bottom:4px">
+      <div style="flex:1"></div>
+      <button class="modal-close" onclick="closeModal();_crmRerender()">${iconSvg('x', 16)}</button>
+    </div>
+    <div style="text-align:center;padding:8px 32px 28px">
+      <div class="crm-project-success-icon">${iconSvg('check', 28)}</div>
+      <div class="crm-project-success-title">Проект успешно создан</div>
+      <div class="crm-project-success-sub">
+        Карточка теперь доступна в модуле «Проекты».<br>
+        Вся история переговоров и данные сохранены.
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:24px">
+        <button class="btn-secondary" onclick="closeModal();_crmRerender()">Остаться в CRM</button>
+        <button class="btn-primary" onclick="closeModal();navigate('erp-projects')">${iconSvg('folder', 14)} Перейти в Проекты</button>
+      </div>
+    </div>
+  </div>`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+window.showProjectCreatedModal = showProjectCreatedModal;
+
+/* ---------------- LIFECYCLE: АРХИВ ---------------- */
+
+function openArchiveClientModal(clientId) {
+  const client = _crmClients.find(c => c.id === clientId);
+  if (!client) return;
+  document.getElementById('modal-box').innerHTML = `
+  <div class="crm-modal" style="max-width:440px">
+    <div class="crm-modal-head">
+      <div class="crm-modal-title">Переместить в архив</div>
+      <button class="modal-close" onclick="closeModal()">${iconSvg('x', 16)}</button>
+    </div>
+    <div class="crm-modal-body">
+      <div class="crm-modal-grid">
+        <div class="crm-modal-full">
+          <label class="mn-label" for="archive-comment">Причина (необязательно)</label>
+          <textarea class="mn-input" id="archive-comment" rows="3"
+            style="height:auto;padding:8px 12px;resize:vertical"
+            placeholder="Почему клиент переходит в архив?"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="crm-modal-footer">
+      <div style="flex:1"></div>
+      <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+      <button class="mn-btn-danger" onclick="saveArchiveClient('${_crmEsc(clientId)}')">${iconSvg('minus', 14)} В архив</button>
+    </div>
+  </div>`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+window.openArchiveClientModal = openArchiveClientModal;
+
+function saveArchiveClient(clientId) {
+  const client = _crmClients.find(c => c.id === clientId);
+  if (!client) return;
+  const comment = _crmReadField('archive-comment');
+
+  client.lifecycle = 'archived';
+
+  const entry = {
+    id: 'crmh_' + Date.now(),
+    client_id: clientId,
+    stage: client.stage,
+    author: 'Менеджер',
+    comment: '[Переведён в архив]' + (comment ? ': ' + comment : ''),
+    created_at: new Date().toISOString(),
+  };
+  if (!_crmHistory[clientId]) _crmHistory[clientId] = [];
+  _crmHistory[clientId].push(entry);
+
+  (async () => {
+    try {
+      await _sb.from('crm_clients').upsert(client);
+      await _sb.from('crm_stage_history').insert(entry);
+    } catch (e) { console.error('saveArchiveClient error:', e); }
+  })();
+
+  closeModal();
+  navigate('crm');
+}
+window.saveArchiveClient = saveArchiveClient;
+
+function restoreClientFromArchive(clientId) {
+  const client = _crmClients.find(c => c.id === clientId);
+  if (!client) return;
+
+  client.lifecycle = 'crm';
+  if (client.category === 'D') client.category = 'C';
+
+  (async () => {
+    try {
+      await _sb.from('crm_clients').upsert(client);
+    } catch (e) { console.error('restoreClientFromArchive error:', e); }
+  })();
+
+  _crmRerender();
+  _crmToast('Клиент восстановлен в CRM');
+}
+window.restoreClientFromArchive = restoreClientFromArchive;
+
+/* Экспорт для модуля Проекты */
+window.getCrmProjectClients = function() {
+  return _crmClients.filter(c => _crmGetLifecycle(c) === 'project');
+};
 
 /* ---------------- ЭКСПОРТ ХЕЛПЕРОВ ---------------- */
 
