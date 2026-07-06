@@ -193,7 +193,6 @@ function _crmFilteredClients() {
 function crmClientCard(client) {
   const stage = getCrmStageInfo(client.stage);
   const cat = (client.category || 'D').toLowerCase();
-  const dateCls = _crmContactDateClass(client.next_contact);
   const typeLabel = getCrmTypeLabel(client.project_type);
 
   return `
@@ -206,8 +205,6 @@ function crmClientCard(client) {
     ${client.org_name ? `<div class="crm-card-org">${_crmEsc(client.org_name)}</div>` : ''}
     ${client.region ? `<div class="crm-card-region">${_CRM_PIN_SVG}<span>${_crmEsc(client.region)}</span></div>` : ''}
     <div><span class="crm-card-stage" style="color:${stage.color};background:${stage.bg}">${_crmEsc(stage.label)}</span></div>
-    ${client.next_action ? `<div class="crm-card-next">${iconSvg('clipboard', 12)} ${_crmEsc(client.next_action)}</div>` : ''}
-    ${client.next_contact ? `<div class="crm-card-next ${dateCls}">${iconSvg('calendar', 12)} Контакт: ${formatDateShort(client.next_contact)}</div>` : ''}
     <div class="crm-card-footer">
       <span class="crm-card-manager">${iconSvg('user', 12)} ${_crmEsc(client.manager || '—')}</span>
       ${typeLabel ? `<span class="crm-card-type">${_crmEsc(typeLabel)}</span>` : ''}
@@ -439,11 +436,6 @@ function renderTabContent(client, tab) {
             <span class="crm-history-author">${_crmEsc(h.author || '')}</span>
           </div>
           ${h.comment ? `<div class="crm-history-comment">${_crmEsc(h.comment)}</div>` : ''}
-          ${(h.next_action || h.next_contact) ? `
-          <div class="crm-history-next">
-            ${iconSvg('clipboard', 14)}
-            <span>${_crmEsc(h.next_action || '')}${h.next_contact ? ` — до ${formatDateShort(h.next_contact)}` : ''}</span>
-          </div>` : ''}
         </div>
       </div>`;
     }).join('')}</div>`;
@@ -563,8 +555,6 @@ function _crmClientModalHtml(client, isEdit) {
         ${isEdit ? _crmFieldSelect('crm-f-stage', 'Этап', stageOpts, c.stage || 'new') : ''}
         ${_crmFieldSelect('crm-f-category', 'Категория', catOpts, c.category || 'C')}
         ${_crmFieldInput('crm-f-manager', 'Менеджер', c.manager)}
-        ${_crmFieldInput('crm-f-next_action', 'Следующее действие', c.next_action)}
-        ${_crmFieldInput('crm-f-next_contact', 'Дата следующего контакта', c.next_contact, 'date')}
         <div class="crm-modal-full">
           <label class="mn-label" for="crm-f-comment">Комментарий</label>
           <textarea class="mn-input" id="crm-f-comment" rows="3" style="height:auto;padding:8px 12px;resize:vertical">${_crmEsc(c.comment)}</textarea>
@@ -614,8 +604,6 @@ function saveClient(clientId) {
     stage:          isNew ? 'new' : (_crmReadField('crm-f-stage') || 'new'),
     category:       _crmReadField('crm-f-category') || 'C',
     manager:        _crmReadField('crm-f-manager'),
-    next_action:    _crmReadField('crm-f-next_action'),
-    next_contact:   _crmReadField('crm-f-next_contact') || null,
     comment:        _crmReadField('crm-f-comment'),
   };
 
@@ -699,14 +687,6 @@ function openStageTransitionModal(clientId, nextStageKey) {
           <label class="mn-label" for="strans-comment">Комментарий *</label>
           <textarea class="mn-input" id="strans-comment" rows="3" style="height:auto;padding:8px 12px;resize:vertical" placeholder="Что было сделано на этом этапе"></textarea>
         </div>
-        <div class="crm-modal-full">
-          <label class="mn-label" for="strans-next-action">Следующее действие *</label>
-          <input class="mn-input" type="text" id="strans-next-action" placeholder="Например: отправить КП">
-        </div>
-        <div class="crm-modal-full">
-          <label class="mn-label" for="strans-next-contact">Дата следующего контакта *</label>
-          <input class="mn-input" type="date" id="strans-next-contact">
-        </div>
       </div>
     </div>
     <div class="crm-modal-footer">
@@ -721,11 +701,9 @@ window.openStageTransitionModal = openStageTransitionModal;
 
 function saveStageTransition(clientId, nextStageKey) {
   const comment = _crmReadField('strans-comment');
-  const nextAction = _crmReadField('strans-next-action');
-  const nextContact = _crmReadField('strans-next-contact');
 
-  if (!comment || !nextAction || !nextContact) {
-    _crmToast('Заполните все поля: комментарий, следующее действие и дату контакта');
+  if (!comment) {
+    _crmToast('Заполните комментарий');
     return;
   }
 
@@ -734,17 +712,13 @@ function saveStageTransition(clientId, nextStageKey) {
 
   client.stage = nextStageKey;
   client.last_contact = new Date().toISOString().slice(0, 10);
-  client.next_action = nextAction;
-  client.next_contact = nextContact;
 
   const entry = {
     id: 'crmh_' + Date.now(),
     client_id: clientId,
     stage: nextStageKey,
-    author: 'Менеджер', // TODO: брать из auth
+    author: 'Менеджер',
     comment: comment,
-    next_action: nextAction,
-    next_contact: nextContact,
     created_at: new Date().toISOString(),
   };
   if (!_crmHistory[clientId]) _crmHistory[clientId] = [];
