@@ -1,6 +1,6 @@
-'use strict';
+﻿'use strict';
 // =============================================================
-// VRH Production OS — AI-анализ v3.0
+// VRH Production OS - AI-анализ v3.0
 // Rule-based движок рекомендаций (без внешних API)
 // Работает с новой моделью: doneCount + components + history
 // =============================================================
@@ -16,7 +16,7 @@ function generateAIRecommendations() {
     recs.push({
       type: 'danger',
       title: `Просрочено ${overdueItems.length} позиций`,
-      text: `Позиции вышли за дедлайн. Максимальная просрочка — ${daysOverdue(sorted[0].deadline)} дн. (${sorted[0].nameShort}). Требуется немедленное совещание с руководством.`,
+      text: `Позиции вышли за дедлайн. Максимальная просрочка - ${daysOverdue(sorted[0].deadline)} дн. (${sorted[0].nameShort}). Требуется немедленное совещание с руководством.`,
       items: sorted.map(i => ({
         name: i.nameShort, itemId: i.id,
         detail: `Просрочено ${daysOverdue(i.deadline)} дн. · ${getComplexAbbr(i.complexId)}`,
@@ -51,7 +51,7 @@ function generateAIRecommendations() {
   if (urgentItems.length > 0) {
     recs.push({
       type: 'warning',
-      title: `${urgentItems.length} позиций — дедлайн в течение 2 недель`,
+      title: `${urgentItems.length} позиций - дедлайн в течение 2 недель`,
       text: 'Необходимо ежедневный контроль темпа выполнения.',
       items: urgentItems.map(i => {
         const diff = Math.round((new Date(i.deadline) - TODAY) / 86400000);
@@ -139,7 +139,7 @@ function generateWeeklyTasks() {
   const nextWeek = new Date(TODAY);
   nextWeek.setDate(nextWeek.getDate() + 7);
 
-  // Просроченные — первый приоритет
+  // Просроченные - первый приоритет
   VRH_ITEMS
     .filter(i => getItemStatus(i) === ST.OVERDUE)
     .sort((a,b) => daysOverdue(b.deadline) - daysOverdue(a.deadline))
@@ -152,7 +152,7 @@ function generateWeeklyTasks() {
       });
     });
 
-  // Дедлайн на этой неделе — второй приоритет
+  // Дедлайн на этой неделе - второй приоритет
   VRH_ITEMS
     .filter(i => {
       if (getItemStatus(i) === ST.DONE || getItemStatus(i) === ST.OVERDUE) return false;
@@ -170,7 +170,7 @@ function generateWeeklyTasks() {
       });
     });
 
-  // Закупки со статусом ORDERED — проверить поступление
+  // Закупки со статусом ORDERED - проверить поступление
   VRH_ITEMS
     .filter(i => i.type === 'purchased' && i.purchaseStatus === PUR.ORDERED)
     .slice(0, 2)
@@ -182,7 +182,7 @@ function generateWeeklyTasks() {
       });
     });
 
-  // Узкие места с активным производством — третий приоритет
+  // Узкие места с активным производством - третий приоритет
   VRH_ITEMS
     .filter(i => i.type === 'own' && i.components?.length > 0)
     .map(i => ({ item: i, bn: getBottleneck(i) }))
@@ -191,7 +191,7 @@ function generateWeeklyTasks() {
     .forEach(x => {
       tasks.push({
         itemId: x.item.id, overdue: false,
-        text: `Ускорить: ${x.item.nameShort} — компонент «${x.bn.name}»`,
+        text: `Ускорить: ${x.item.nameShort} - компонент «${x.bn.name}»`,
         detail: `${x.bn.done}/${x.item.quantity} ${x.item.unit} · узкое место`,
       });
     });

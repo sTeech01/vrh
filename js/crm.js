@@ -1,6 +1,6 @@
-'use strict';
+﻿'use strict';
 /* ============================================================
-   VRH ERP — CRM-модуль «Движение клиента»
+   VRH ERP - CRM-модуль «Движение клиента»
    Vanilla JS, зависимости: iconSvg, navigate, closeModal,
    setBreadcrumb, _sb (Supabase client), state
    ============================================================ */
@@ -268,7 +268,7 @@ function renderCrmList(el) {
   <div class="crm-page-wrap">
     <div class="crm-page-header">
       <div>
-        <div class="crm-page-title">CRM — Движение клиента</div>
+        <div class="crm-page-title">CRM - Движение клиента</div>
         <div class="crm-page-subtitle">${clients.length} клиентов</div>
       </div>
       <button class="btn-primary" onclick="openAddClientModal()">${iconSvg('plus', 14)} Добавить клиента</button>

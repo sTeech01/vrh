@@ -1,6 +1,6 @@
 ﻿'use strict';
 // =============================================================
-// VRH Production OS — Application v3.0
+// VRH Production OS - Application v3.0
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
@@ -244,15 +244,15 @@ async function loadRemoteData() {
     });
   }
 
-  // Загрузка CRM (клиенты + история этапов) — данные живут в js/crm.js
+  // Загрузка CRM (клиенты + история этапов) - данные живут в js/crm.js
   loadCrmData(crmRes.data, crmHistRes.data);
 
-  // Загрузка Поставщиков — данные живут в js/suppliers.js
+  // Загрузка Поставщиков - данные живут в js/suppliers.js
   loadSuppliersData(supRes.data, supContRes.data, supHistRes.data, supBankRes.data);
 }
 
 // =============================================================
-// WORKFLOW v2 — HELPERS
+// WORKFLOW v2 - HELPERS
 // =============================================================
 function isV2Project(projectId) {
   const p = VRH_PROJECTS.find(x => x.id === projectId);
@@ -572,7 +572,7 @@ function statCard(value, label, sub, variant, icon) {
 }
 
 function getProjectCover(project) {
-  // Для legacy-проектов — localStorage override
+  // Для legacy-проектов - localStorage override
   if (!project._isCustom) {
     try {
       const ls = JSON.parse(localStorage.getItem('vrh_project_covers') || '{}');
@@ -822,7 +822,7 @@ function renderProject(el, projectId) {
         <option value="all" ${state.filter.complex==='all'?'selected':''}>Все блоки</option>
         ${complexIds.map(cid => {
           const c = COMPLEXES.find(x => x.id === cid);
-          return `<option value="${cid}" ${state.filter.complex===cid?'selected':''}>${c?.abbr || cid} — ${c?.name || cid}</option>`;
+          return `<option value="${cid}" ${state.filter.complex===cid?'selected':''}>${c?.abbr || cid} - ${c?.name || cid}</option>`;
         }).join('')}
       </select>
       <select class="filter-select" onchange="setFilter('status',this.value)">
@@ -1070,7 +1070,7 @@ function renderItem(el, projectId, itemId) {
               if (!item.expected_delivery) return '';
               const dly = daysOverdue(item.expected_delivery);
               const txt = dly > 0
-                ? `<span style="color:#EF4444;font-weight:600">${formatDate(new Date(item.expected_delivery))} — Задержка ${dly} дн.</span>`
+                ? `<span style="color:#EF4444;font-weight:600">${formatDate(new Date(item.expected_delivery))} - Задержка ${dly} дн.</span>`
                 : `<span>${formatDate(new Date(item.expected_delivery))}</span>`;
               return `<div class="item-meta-pair"><label>Ожид. поставка</label>${txt}</div>`;
             })()}
@@ -1386,7 +1386,7 @@ function renderReport(el, projectId) {
       </div>
 
       <div class="pr-section">
-        <div class="pr-section-title pr-title-red">${iconSvg('warning', 13)} Не заказано — требует немедленного действия</div>
+        <div class="pr-section-title pr-title-red">${iconSvg('warning', 13)} Не заказано - требует немедленного действия</div>
         ${purchaseTable(pPending, 'Все позиции заказаны')}
       </div>
 
@@ -1396,7 +1396,7 @@ function renderReport(el, projectId) {
       </div>
 
       <div class="pr-section">
-        <div class="pr-section-title pr-title-blue">${iconSvg('minus', 13)} Частично получено — докупить остаток</div>
+        <div class="pr-section-title pr-title-blue">${iconSvg('minus', 13)} Частично получено - докупить остаток</div>
         ${purchaseTable(pPartial, 'Нет частично полученных позиций')}
       </div>
 
@@ -1594,7 +1594,7 @@ function aiCard(rec) {
     <div class="ai-card-items">
       ${rec.items.slice(0, 6).map(it => `
         <div class="ai-card-item" onclick="${it.itemId ? `navigate('item','${VRH_ITEMS.find(i=>i.id===it.itemId)?.projectId}','${it.itemId}')` : ''}" style="${it.itemId?'cursor:pointer':''}">
-          <strong>${it.name}</strong>${it.detail ? ` — ${it.detail}` : ''}
+          <strong>${it.name}</strong>${it.detail ? ` - ${it.detail}` : ''}
         </div>`).join('')}
       ${rec.items.length > 6 ? `<div class="ai-card-item" style="color:var(--gray-400)">...и ещё ${rec.items.length-6} позиций</div>` : ''}
     </div>` : '';
@@ -1613,7 +1613,7 @@ function aiCard(rec) {
 }
 
 // =============================================================
-// MODAL: Edit Item — redesigned card UI
+// MODAL: Edit Item - redesigned card UI
 // =============================================================
 function _mnStatusLabel(st) {
   return { done:'Готово', in_progress:'В работе', pending:'Ожидает', blocked:'Заблокировано', overdue:'Просрочено' }[st] || st;
@@ -2320,7 +2320,7 @@ function openCreateItemModal(projectId) {
         <div class="form-group">
           <label class="form-label">Комплекс <span style="color:#EF4444">*</span></label>
           <select class="form-input" id="ci-complex">
-            ${COMPLEXES.map(c => `<option value="${c.id}">${c.abbr} — ${c.name}</option>`).join('')}
+            ${COMPLEXES.map(c => `<option value="${c.id}">${c.abbr} - ${c.name}</option>`).join('')}
           </select>
         </div>
         <div class="form-group">
@@ -2732,7 +2732,7 @@ function confirmEditAssignee(itemId, oldName) {
   if (ci !== -1 && custom[ci].colorIdx !== -1) {
     custom[ci].name = newName;
   } else {
-    // стандартный исполнитель — подавляем оригинал tombstone + добавляем переименованный
+    // стандартный исполнитель - подавляем оригинал tombstone + добавляем переименованный
     const orig = ASSIGNEE_DEFAULTS.find(d => d.name === oldName);
     const tombIdx = custom.findIndex(a => a.name === oldName);
     if (tombIdx !== -1) custom[tombIdx].colorIdx = -1;
@@ -3054,7 +3054,7 @@ function exportData() {
 window.exportData = exportData;
 
 // =============================================================
-// WORKFLOW v2 — STAGE UI
+// WORKFLOW v2 - STAGE UI
 // =============================================================
 
 // Топологические уровни: level 0 = без зависимостей, level N = после уровня N-1
@@ -3450,7 +3450,7 @@ function updateStageDone(stageId, itemId, value) {
 window.updateStageDone = updateStageDone;
 
 // =============================================================
-// COMPONENTS — СОСТАВ ИЗДЕЛИЯ ПО КД
+// COMPONENTS - СОСТАВ ИЗДЕЛИЯ ПО КД
 // =============================================================
 function _compModalHtml(title, saveCall, c) {
   return `
@@ -3568,7 +3568,7 @@ function deleteComp(itemId, compId) {
 window.deleteComp = deleteComp;
 
 // =============================================================
-// MATERIALS — СПЕЦИФИКАЦИЯ МАТЕРИАЛОВ
+// MATERIALS - СПЕЦИФИКАЦИЯ МАТЕРИАЛОВ
 // =============================================================
 function getItemMaterials(itemId) {
   return (_itemMaterials[itemId] || []).slice().sort((a, b) => a.sort_order - b.sort_order);
@@ -3766,7 +3766,7 @@ function renderMaterialsSection(item) {
       <td>
         <button class="mat-toggle ${m.have ? 'mat-toggle-have' : 'mat-toggle-no'}"
           onclick="event.stopPropagation();toggleMatHave('${m.id}','${item.id}')"
-          title="${m.have ? 'Есть в наличии — нажмите чтобы отметить отсутствующим' : 'Нет в наличии — нажмите чтобы отметить как имеющийся'}">
+          title="${m.have ? 'Есть в наличии - нажмите чтобы отметить отсутствующим' : 'Нет в наличии - нажмите чтобы отметить как имеющийся'}">
           ${m.have ? iconSvg('check', 12) : iconSvg('minus', 12)}
         </button>
       </td>
@@ -3820,7 +3820,7 @@ function renderMaterialsSection(item) {
 }
 
 // =============================================================
-// EVENTS — СТРАНИЦА СОБЫТИЙ
+// EVENTS - СТРАНИЦА СОБЫТИЙ
 // =============================================================
 const EV_TYPES = {
   custom:   { label: 'Событие',  color: '#6366F1', bg: '#EEF2FF' },
@@ -3843,14 +3843,14 @@ function _getAutoEvents() {
   VRH_ITEMS.forEach(item => {
     if (!item.expected_delivery) return;
     const isDone = item.purchaseStatus === PUR.RECEIVED || item.materialsStatus === PUR.RECEIVED;
-    evs.push({ id: `auto_del_${item.id}`, title: `${item.nameShort} — поставка`,
+    evs.push({ id: `auto_del_${item.id}`, title: `${item.nameShort} - поставка`,
       event_date: item.expected_delivery, type: 'delivery', auto: true,
       item_id: item.id, project_id: item.projectId, done: isDone });
   });
   // Даты оплаты
   VRH_ITEMS.forEach(item => {
     if (!item.payment_date) return;
-    evs.push({ id: `auto_pay_${item.id}`, title: `${item.nameShort} — оплата`,
+    evs.push({ id: `auto_pay_${item.id}`, title: `${item.nameShort} - оплата`,
       event_date: item.payment_date, type: 'payment', auto: true,
       item_id: item.id, project_id: item.projectId, done: item.payment_status === 'paid' });
   });
@@ -4103,7 +4103,7 @@ function renderEvents(el) {
         <div class="ev-empty">
           ${iconSvg('calendar',28)}
           <div>Событий пока нет</div>
-          <div style="font-size:12px;color:var(--gray-400);margin-top:4px">Добавьте событие — дедлайн, поставку, напоминание</div>
+          <div style="font-size:12px;color:var(--gray-400);margin-top:4px">Добавьте событие - дедлайн, поставку, напоминание</div>
         </div>` : `
         ${group('Просроченные', overdue, '#EF4444')}
         ${group('Сегодня', todayEv, '#10B981')}
