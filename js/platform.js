@@ -58,7 +58,8 @@ const ERP_MODULES = [
 
 /* ── Главный экран платформы (рабочий стол) ───────────────────── */
 function renderPlatformHome(el) {
-  const cards = ERP_MODULES.map(m => {
+  const sorted = [...ERP_MODULES].sort((a, b) => (b.active ? 1 : 0) - (a.active ? 1 : 0));
+  const cards = sorted.map(m => {
     if (m.active) {
       return `
         <div class="plat-card plat-card-active" onclick="navigate('${m.hash}')">
