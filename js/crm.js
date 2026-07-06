@@ -215,7 +215,10 @@ function crmClientCard(client) {
     <div><span class="crm-card-stage" style="color:${stage.color};background:${stage.bg}">${_crmEsc(stage.label)}</span></div>
     <div class="crm-card-footer">
       <span class="crm-card-manager">${iconSvg('user', 12)} ${_crmEsc(client.manager || '—')}</span>
-      ${typeLabel ? `<span class="crm-card-type">${_crmEsc(typeLabel)}</span>` : ''}
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        ${client.capacity ? `<span class="crm-card-type">${_crmEsc(client.capacity)} т/год</span>` : ''}
+        ${typeLabel ? `<span class="crm-card-type">${_crmEsc(typeLabel)}</span>` : ''}
+      </div>
     </div>
   </div>`;
 }
@@ -413,7 +416,7 @@ function renderTabContent(client, tab) {
       ${_crmInfoItem('Регион', client.region)}
       ${_crmInfoItem('Адрес', client.address)}
       ${_crmInfoItem('Тип проекта', getCrmTypeLabel(client.project_type))}
-      ${_crmInfoItem('Производительность', client.productivity)}
+      ${_crmInfoItem('Мощность (т/год)', client.capacity)}
       ${_crmInfoItem('Наличие участка', _crmBoolText(client.has_land))}
       ${_crmInfoItem('Наличие здания', _crmBoolText(client.has_building))}
       ${_crmInfoItem('Вид рыбы', client.fish_type)}
@@ -600,6 +603,7 @@ function _crmClientModalHtml(client, isEdit) {
         ${_crmFieldInput('crm-f-region', 'Регион', c.region)}
         ${_crmFieldInput('crm-f-address', 'Адрес', c.address)}
         ${_crmFieldSelect('crm-f-project_type', 'Тип проекта', typeOpts, c.project_type || '')}
+        ${_crmFieldInput('crm-f-capacity', 'Мощность (т/год)', c.capacity)}
         ${isEdit ? _crmFieldSelect('crm-f-stage', 'Этап', stageOpts, c.stage || 'new') : ''}
         ${_crmFieldSelect('crm-f-category', 'Категория', catOpts, c.category || 'C')}
         ${_crmFieldInput('crm-f-manager', 'Менеджер', c.manager)}
@@ -649,6 +653,7 @@ function saveClient(clientId) {
     region:         _crmReadField('crm-f-region'),
     address:        _crmReadField('crm-f-address'),
     project_type:   _crmReadField('crm-f-project_type') || null,
+    capacity:       _crmReadField('crm-f-capacity') || null,
     stage:          isNew ? 'new' : (_crmReadField('crm-f-stage') || 'new'),
     category:       _crmReadField('crm-f-category') || 'C',
     manager:        _crmReadField('crm-f-manager'),
