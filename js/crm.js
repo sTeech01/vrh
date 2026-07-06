@@ -26,7 +26,12 @@ const CRM_TYPES = [
   { key: 'other', label: 'Другое' },
 ];
 
-const CRM_CATEGORIES = ['A', 'B', 'C', 'D'];
+const CRM_CATEGORIES = [
+  { key: 'A', label: 'Горячий' },
+  { key: 'B', label: 'Тёплый' },
+  { key: 'C', label: 'Холодный' },
+  { key: 'D', label: 'Архив' },
+];
 
 const CRM_TABS = [
   { key: 'general',   label: 'Общее' },
@@ -42,7 +47,7 @@ const CRM_TABS = [
 let _crmClients = [];
 let _crmHistory = {}; // { [clientId]: historyEntry[] }
 
-let _crmFilter = { search: '', stage: 'all', cat: 'all' };
+let _crmFilter = { search: '', stage: 'all', cat: 'all', tab: 'active' };
 let _crmSearchDebounce = null;
 let _crmActiveTab = 'general';
 let _crmLastClientId = null;
@@ -78,6 +83,11 @@ function getNextStage(currentKey) {
   const idx = CRM_STAGES.findIndex(s => s.key === currentKey);
   if (idx === -1 || idx >= CRM_STAGES.length - 1) return null;
   return CRM_STAGES[idx + 1].key;
+}
+
+function getCrmCatLabel(key) {
+  const found = CRM_CATEGORIES.find(c => c.key === (key || 'C'));
+  return found ? found.label : key || '—';
 }
 
 function getCrmTypeLabel(key) {
@@ -148,6 +158,10 @@ function _crmRerenderList() {
 
 function setCrmFilter(key, val) {
   _crmFilter[key] = val;
+  if (key === 'tab') {
+    _crmFilter.cat = 'all';
+    _crmFilter.stage = 'all';
+  }
   if (key === 'search') {
     clearTimeout(_crmSearchDebounce);
     _crmSearchDebounce = setTimeout(_crmRerenderList, 250);
@@ -162,6 +176,9 @@ window.setCrmFilter = setCrmFilter;
 function _crmFilteredClients() {
   const q = (_crmFilter.search || '').trim().toLowerCase();
   return _crmClients.filter(c => {
+    // Вкладки: Активные = A/B/C, Архив = D
+    if (_crmFilter.tab === 'active'  && c.category === 'D') return false;
+    if (_crmFilter.tab === 'archive' && c.category !== 'D') return false;
     if (_crmFilter.stage !== 'all' && c.stage !== _crmFilter.stage) return false;
     if (_crmFilter.cat !== 'all' && c.category !== _crmFilter.cat) return false;
     if (q) {
@@ -182,7 +199,7 @@ function crmClientCard(client) {
   return `
   <div class="crm-card" style="border-left-color:${stage.color}" onclick="navigate('crm-client','${_crmEsc(client.id)}')">
     <div class="crm-card-top">
-      <span class="crm-cat-badge crm-cat-${_crmEsc(cat)}">${_crmEsc(client.category || 'D')}</span>
+      <span class="crm-cat-badge crm-cat-${_crmEsc(cat)}">${_crmEsc(getCrmCatLabel(client.category))}</span>
       ${client.client_priority ? `<span class="crm-card-priority">${_crmEsc(client.client_priority)}</span>` : ''}
     </div>
     <div class="crm-card-project">${_crmEsc(client.project_name || 'Без названия')}</div>
@@ -203,21 +220,24 @@ function renderCrmList(el) {
   if (!el) return;
   if (typeof window.setBreadcrumb === 'function') setBreadcrumb('CRM');
 
+  const activeCount  = _crmClients.filter(c => c.category !== 'D').length;
+  const archiveCount = _crmClients.filter(c => c.category === 'D').length;
   const clients = _crmFilteredClients();
-  const hasAny = _crmClients.length > 0;
+  const isArchive = _crmFilter.tab === 'archive';
 
   const stageOpts = ['<option value="all">Все этапы</option>']
     .concat(CRM_STAGES.map(s =>
       `<option value="${s.key}" ${_crmFilter.stage === s.key ? 'selected' : ''}>${_crmEsc(s.label)}</option>`))
     .join('');
 
+  // В архиве фильтр по категории не нужен (там только D)
   const catOpts = ['<option value="all">Все категории</option>']
-    .concat(CRM_CATEGORIES.map(c =>
-      `<option value="${c}" ${_crmFilter.cat === c ? 'selected' : ''}>Категория ${c}</option>`))
+    .concat(CRM_CATEGORIES.filter(c => c.key !== 'D').map(c =>
+      `<option value="${c.key}" ${_crmFilter.cat === c.key ? 'selected' : ''}>${_crmEsc(c.label)}</option>`))
     .join('');
 
   let body;
-  if (!hasAny) {
+  if (!_crmClients.length) {
     body = `
     <div class="crm-empty">
       ${iconSvg('folder', 48)}
@@ -229,8 +249,8 @@ function renderCrmList(el) {
     body = `
     <div class="crm-empty">
       ${iconSvg('list', 48)}
-      <div class="crm-empty-title">Ничего не найдено</div>
-      <div class="crm-empty-sub">Попробуйте изменить фильтры или поисковый запрос</div>
+      <div class="crm-empty-title">${isArchive ? 'Архив пуст' : 'Ничего не найдено'}</div>
+      <div class="crm-empty-sub">${isArchive ? 'Клиенты с категорией «Архив» появятся здесь' : 'Попробуйте изменить фильтры или поисковый запрос'}</div>
     </div>`;
   } else {
     body = `<div class="crm-clients-grid">${clients.map(crmClientCard).join('')}</div>`;
@@ -241,16 +261,24 @@ function renderCrmList(el) {
     <div class="crm-page-header">
       <div>
         <div class="crm-page-title">CRM — Движение клиента</div>
-        <div class="crm-page-subtitle">${clients.length} из ${_crmClients.length} клиентов</div>
+        <div class="crm-page-subtitle">${clients.length} клиентов</div>
       </div>
       <button class="btn-primary" onclick="openAddClientModal()">${iconSvg('plus', 14)} Добавить клиента</button>
+    </div>
+    <div class="crm-list-tabs">
+      <button class="crm-list-tab ${!isArchive ? 'crm-list-tab-active' : ''}" onclick="setCrmFilter('tab','active')">
+        Активные <span class="crm-list-tab-count">${activeCount}</span>
+      </button>
+      <button class="crm-list-tab ${isArchive ? 'crm-list-tab-active' : ''}" onclick="setCrmFilter('tab','archive')">
+        Архив <span class="crm-list-tab-count">${archiveCount}</span>
+      </button>
     </div>
     <div class="crm-filters">
       <input type="text" id="crm-search" placeholder="Поиск по имени, проекту, региону..."
              value="${_crmEsc(_crmFilter.search)}"
              oninput="setCrmFilter('search', this.value)">
       <select id="crm-filter-stage" onchange="setCrmFilter('stage', this.value)">${stageOpts}</select>
-      <select id="crm-filter-cat" onchange="setCrmFilter('cat', this.value)">${catOpts}</select>
+      ${!isArchive ? `<select id="crm-filter-cat" onchange="setCrmFilter('cat', this.value)">${catOpts}</select>` : ''}
     </div>
     ${body}
   </div>`;
@@ -472,7 +500,7 @@ function renderCrmClient(el, clientId) {
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <div class="crm-client-name">${_crmEsc(client.project_name || 'Без названия')}</div>
-          <span class="crm-cat-badge crm-cat-${_crmEsc(cat)}">${_crmEsc(client.category || 'D')}</span>
+          <span class="crm-cat-badge crm-cat-${_crmEsc(cat)}">${_crmEsc(getCrmCatLabel(client.category))}</span>
         </div>
         ${client.org_name ? `<div class="crm-client-org">${_crmEsc(client.org_name)}</div>` : ''}
       </div>
@@ -513,7 +541,7 @@ function _crmClientModalHtml(client, isEdit) {
   const c = client || {};
   const typeOpts = [{ value: '', label: '—' }].concat(CRM_TYPES.map(t => ({ value: t.key, label: t.label })));
   const stageOpts = CRM_STAGES.map(s => ({ value: s.key, label: s.label }));
-  const catOpts = CRM_CATEGORIES.map(x => ({ value: x, label: 'Категория ' + x }));
+  const catOpts = CRM_CATEGORIES.map(c => ({ value: c.key, label: c.label }));
 
   return `
   <div class="crm-modal">

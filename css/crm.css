@@ -32,6 +32,56 @@
   margin-top: 2px;
 }
 
+.crm-list-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--gray-200);
+  margin-bottom: 16px;
+}
+
+.crm-list-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-500);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.15s;
+}
+
+.crm-list-tab:hover { color: var(--gray-700); }
+
+.crm-list-tab-active {
+  color: var(--gray-900);
+  border-bottom-color: var(--cyan);
+}
+
+.crm-list-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--gray-100);
+  color: var(--gray-500);
+}
+
+.crm-list-tab-active .crm-list-tab-count {
+  background: var(--cyan-dim);
+  color: var(--cyan);
+}
+
 .crm-filters {
   display: flex;
   gap: 10px;
@@ -174,12 +224,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  padding: 2px 8px;
+  height: 20px;
   border-radius: 6px;
   font-size: 11px;
   font-weight: 700;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .crm-cat-a { background: #DCFCE7; color: #16A34A; }
