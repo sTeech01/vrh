@@ -107,6 +107,13 @@ function _supFiltered() {
       if (!hay.includes(q)) return false;
     }
     return true;
+  }).sort((a, b) => {
+    const aInactive = a.status === 'inactive' ? 1 : 0;
+    const bInactive = b.status === 'inactive' ? 1 : 0;
+    if (aInactive !== bInactive) return aInactive - bInactive;
+    const aName = (a.short_name || a.full_name || '').toLowerCase();
+    const bName = (b.short_name || b.full_name || '').toLowerCase();
+    return aName.localeCompare(bName, 'ru');
   });
 }
 
