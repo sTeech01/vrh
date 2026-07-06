@@ -5,9 +5,9 @@
 
 /* ── Layout главного экрана ───────────────────────────────────── */
 .plat-home {
-  max-width: 960px;
+  max-width: 1000px;
   margin: 0 auto;
-  padding: 48px 24px 80px;
+  padding: 20px 24px;
 }
 
 /* ── Шапка ────────────────────────────────────────────────────── */
@@ -39,7 +39,7 @@
 .plat-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  gap: 10px;
 }
 
 @media (max-width: 900px) {
@@ -54,14 +54,13 @@
 .plat-card {
   background: #fff;
   border: 1.5px solid var(--gray-200);
-  border-radius: 14px;
-  padding: 24px;
+  border-radius: 12px;
+  padding: 16px 18px;
   cursor: pointer;
   transition: all 0.18s ease;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  min-height: 160px;
+  gap: 8px;
   position: relative;
 }
 
@@ -78,14 +77,20 @@
 
 /* ── Иконка модуля ────────────────────────────────────────────── */
 .plat-card-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--gray-100);
   color: var(--gray-500);
+  flex-shrink: 0;
+}
+
+.plat-card-icon svg {
+  width: 22px;
+  height: 22px;
 }
 
 .plat-card-active .plat-card-icon {
@@ -99,10 +104,9 @@
 
 /* ── Текст карточки ───────────────────────────────────────────── */
 .plat-card-name {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--gray-900);
-  margin-top: 4px;
 }
 
 .plat-card-inactive .plat-card-name {
@@ -120,9 +124,9 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  padding: 3px 8px;
+  padding: 2px 7px;
   border-radius: 99px;
   align-self: flex-start;
 }
