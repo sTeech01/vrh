@@ -19,11 +19,11 @@ const CRM_STAGES = [
 ];
 
 const CRM_TYPES = [
-  { key: 'uzv',   label: 'УЗВ' },
-  { key: 'ikra',  label: 'Икра' },
   { key: 'forel', label: 'Форель' },
   { key: 'osetr', label: 'Осётр' },
-  { key: 'combo', label: 'Комбинированный' },
+  { key: 'ikra',  label: 'Икра' },
+  { key: 'combo', label: 'Форель + Осётр' },
+  { key: 'other', label: 'Другое' },
 ];
 
 const CRM_CATEGORIES = ['A', 'B', 'C', 'D'];
