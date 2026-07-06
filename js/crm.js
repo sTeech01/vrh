@@ -560,8 +560,7 @@ function _crmClientModalHtml(client, isEdit) {
         ${_crmFieldInput('crm-f-region', 'Регион', c.region)}
         ${_crmFieldInput('crm-f-address', 'Адрес', c.address)}
         ${_crmFieldSelect('crm-f-project_type', 'Тип проекта', typeOpts, c.project_type || '')}
-        ${_crmFieldInput('crm-f-productivity', 'Производительность', c.productivity)}
-        ${_crmFieldSelect('crm-f-stage', 'Этап', stageOpts, c.stage || 'new')}
+        ${isEdit ? _crmFieldSelect('crm-f-stage', 'Этап', stageOpts, c.stage || 'new') : ''}
         ${_crmFieldSelect('crm-f-category', 'Категория', catOpts, c.category || 'C')}
         ${_crmFieldInput('crm-f-manager', 'Менеджер', c.manager)}
         ${_crmFieldInput('crm-f-next_action', 'Следующее действие', c.next_action)}
@@ -601,6 +600,7 @@ function _crmReadField(id) {
 }
 
 function saveClient(clientId) {
+  const isNew = clientId === null || clientId === undefined;
   const fields = {
     project_name:   _crmReadField('crm-f-project_name'),
     org_name:       _crmReadField('crm-f-org_name'),
@@ -611,8 +611,7 @@ function saveClient(clientId) {
     region:         _crmReadField('crm-f-region'),
     address:        _crmReadField('crm-f-address'),
     project_type:   _crmReadField('crm-f-project_type') || null,
-    productivity:   _crmReadField('crm-f-productivity'),
-    stage:          _crmReadField('crm-f-stage') || 'new',
+    stage:          isNew ? 'new' : (_crmReadField('crm-f-stage') || 'new'),
     category:       _crmReadField('crm-f-category') || 'C',
     manager:        _crmReadField('crm-f-manager'),
     next_action:    _crmReadField('crm-f-next_action'),
@@ -628,8 +627,6 @@ function saveClient(clientId) {
   }
 
   let client;
-  const isNew = clientId === null || clientId === undefined;
-
   if (isNew) {
     client = Object.assign({
       id: 'crm_' + Date.now(),
@@ -696,18 +693,20 @@ function openStageTransitionModal(clientId, nextStageKey) {
       </div>
       <button class="modal-close" onclick="closeModal()">${iconSvg('x', 16)}</button>
     </div>
-    <div class="crm-modal-grid">
-      <div class="crm-modal-full">
-        <label class="mn-label" for="strans-comment">Комментарий *</label>
-        <textarea class="mn-input" id="strans-comment" rows="3" style="height:auto;padding:8px 12px;resize:vertical" placeholder="Что было сделано на этом этапе"></textarea>
-      </div>
-      <div class="crm-modal-full">
-        <label class="mn-label" for="strans-next-action">Следующее действие *</label>
-        <input class="mn-input" type="text" id="strans-next-action" placeholder="Например: отправить КП">
-      </div>
-      <div class="crm-modal-full">
-        <label class="mn-label" for="strans-next-contact">Дата следующего контакта *</label>
-        <input class="mn-input" type="date" id="strans-next-contact">
+    <div class="crm-modal-body">
+      <div class="crm-modal-grid">
+        <div class="crm-modal-full">
+          <label class="mn-label" for="strans-comment">Комментарий *</label>
+          <textarea class="mn-input" id="strans-comment" rows="3" style="height:auto;padding:8px 12px;resize:vertical" placeholder="Что было сделано на этом этапе"></textarea>
+        </div>
+        <div class="crm-modal-full">
+          <label class="mn-label" for="strans-next-action">Следующее действие *</label>
+          <input class="mn-input" type="text" id="strans-next-action" placeholder="Например: отправить КП">
+        </div>
+        <div class="crm-modal-full">
+          <label class="mn-label" for="strans-next-contact">Дата следующего контакта *</label>
+          <input class="mn-input" type="date" id="strans-next-contact">
+        </div>
       </div>
     </div>
     <div class="crm-modal-footer">
