@@ -521,25 +521,27 @@ function _crmClientModalHtml(client, isEdit) {
       <div class="crm-modal-title">${isEdit ? 'Редактирование клиента' : 'Новый клиент'}</div>
       <button class="modal-close" onclick="closeModal()">${iconSvg('x', 16)}</button>
     </div>
-    <div class="crm-modal-grid">
-      ${_crmFieldInput('crm-f-project_name', 'Название проекта *', c.project_name)}
-      ${_crmFieldInput('crm-f-org_name', 'Организация', c.org_name)}
-      ${_crmFieldInput('crm-f-contact_person', 'Контактное лицо', c.contact_person)}
-      ${_crmFieldInput('crm-f-phone', 'Телефон', c.phone)}
-      ${_crmFieldInput('crm-f-email', 'Email', c.email)}
-      ${_crmFieldInput('crm-f-telegram', 'Telegram', c.telegram)}
-      ${_crmFieldInput('crm-f-region', 'Регион', c.region)}
-      ${_crmFieldInput('crm-f-address', 'Адрес', c.address)}
-      ${_crmFieldSelect('crm-f-project_type', 'Тип проекта', typeOpts, c.project_type || '')}
-      ${_crmFieldInput('crm-f-productivity', 'Производительность', c.productivity)}
-      ${_crmFieldSelect('crm-f-stage', 'Этап', stageOpts, c.stage || 'new')}
-      ${_crmFieldSelect('crm-f-category', 'Категория', catOpts, c.category || 'C')}
-      ${_crmFieldInput('crm-f-manager', 'Менеджер', c.manager)}
-      ${_crmFieldInput('crm-f-next_action', 'Следующее действие', c.next_action)}
-      ${_crmFieldInput('crm-f-next_contact', 'Дата следующего контакта', c.next_contact, 'date')}
-      <div class="crm-modal-full">
-        <label class="mn-label" for="crm-f-comment">Комментарий</label>
-        <textarea class="mn-input" id="crm-f-comment" rows="3" style="height:auto;padding:8px 12px;resize:vertical">${_crmEsc(c.comment)}</textarea>
+    <div class="crm-modal-body">
+      <div class="crm-modal-grid">
+        ${_crmFieldInput('crm-f-project_name', 'Название проекта *', c.project_name)}
+        ${_crmFieldInput('crm-f-org_name', 'Организация', c.org_name)}
+        ${_crmFieldInput('crm-f-contact_person', 'Контактное лицо', c.contact_person)}
+        ${_crmFieldInput('crm-f-phone', 'Телефон', c.phone)}
+        ${_crmFieldInput('crm-f-email', 'Email', c.email)}
+        ${_crmFieldInput('crm-f-telegram', 'Telegram', c.telegram)}
+        ${_crmFieldInput('crm-f-region', 'Регион', c.region)}
+        ${_crmFieldInput('crm-f-address', 'Адрес', c.address)}
+        ${_crmFieldSelect('crm-f-project_type', 'Тип проекта', typeOpts, c.project_type || '')}
+        ${_crmFieldInput('crm-f-productivity', 'Производительность', c.productivity)}
+        ${_crmFieldSelect('crm-f-stage', 'Этап', stageOpts, c.stage || 'new')}
+        ${_crmFieldSelect('crm-f-category', 'Категория', catOpts, c.category || 'C')}
+        ${_crmFieldInput('crm-f-manager', 'Менеджер', c.manager)}
+        ${_crmFieldInput('crm-f-next_action', 'Следующее действие', c.next_action)}
+        ${_crmFieldInput('crm-f-next_contact', 'Дата следующего контакта', c.next_contact, 'date')}
+        <div class="crm-modal-full">
+          <label class="mn-label" for="crm-f-comment">Комментарий</label>
+          <textarea class="mn-input" id="crm-f-comment" rows="3" style="height:auto;padding:8px 12px;resize:vertical">${_crmEsc(c.comment)}</textarea>
+        </div>
       </div>
     </div>
     <div class="crm-modal-footer">
