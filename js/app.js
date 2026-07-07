@@ -615,13 +615,6 @@ function projectCard(project) {
         </div>
         <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
           <div class="project-pct" style="color:${color}">${pct}%</div>
-          <button class="project-delete-btn" title="Удалить проект"
-            onclick="event.stopPropagation();confirmDeleteProject('${project.id}')"
-            style="width:26px;height:26px;border-radius:4px;border:1px solid var(--gray-200);background:var(--white);color:var(--gray-400);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;flex-shrink:0"
-            onmouseover="this.style.background='rgba(227,6,19,0.08)';this.style.borderColor='#EF4444';this.style.color='#EF4444'"
-            onmouseout="this.style.background='var(--white)';this.style.borderColor='var(--gray-200)';this.style.color='var(--gray-400)'">
-            ${iconSvg('x', 11)}
-          </button>
         </div>
       </div>
       <div class="pbar-wrap">
