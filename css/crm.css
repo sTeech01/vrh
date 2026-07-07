@@ -925,12 +925,12 @@
   padding: 5px 6px;
   border-radius: 7px;
   color: var(--gray-300);
-  display: none;
+  display: flex;
+  align-items: center;
   flex-shrink: 0;
   line-height: 1;
 }
 .crm-ct-edit:hover { background: var(--gray-100); color: var(--gray-600); }
-.crm-ct-card:hover .crm-ct-edit { display: flex; align-items: center; }
 
 .crm-ct-add-btn {
   display: flex;

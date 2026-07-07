@@ -132,9 +132,16 @@ function loadCrmData(clientsData, historyData) {
     if (!_crmHistory[h.client_id]) _crmHistory[h.client_id] = [];
     _crmHistory[h.client_id].push(h);
   });
-  // Контакты хранятся в поле contacts_json на каждом клиенте
+  // Контакты из item_overrides (ключ crm_ct_{clientId}) — читается через localEdits
   _crmContacts = {};
   (_crmClients).forEach(client => {
+    // Первый источник: item_overrides через localEdits (гарантированно работающий механизм)
+    const ctData = (typeof localEdits !== 'undefined') ? localEdits['crm_ct_' + client.id] : null;
+    if (ctData && Array.isArray(ctData.contacts) && ctData.contacts.length > 0) {
+      _crmContacts[client.id] = ctData.contacts.map(c => ({ ...c, client_id: client.id }));
+      return;
+    }
+    // Запасной источник: contacts_json колонка (если PostgREST уже знает о ней)
     if (client.contacts_json) {
       try {
         const arr = JSON.parse(client.contacts_json);
@@ -755,14 +762,12 @@ function saveContact(clientId, contactId) {
   if (contentEl && _crmActiveTab === 'contacts') contentEl.innerHTML = renderTabContent(client, 'contacts');
   if (contentEl && _crmActiveTab === 'general')  contentEl.innerHTML = renderTabContent(client, 'general');
 
-  if (!_sb) return;
-  const allContacts = _crmContacts[clientId] || [];
-  (async () => {
-    const { error } = await _sb.from('crm_clients')
-      .upsert({ id: clientId, contacts_json: JSON.stringify(allContacts) }, { onConflict: 'id' });
-    if (error) console.error('contacts_json save error:', error.code, error.message);
-    else console.log('contacts_json saved OK, count:', allContacts.length);
-  })();
+  // Сохраняем через item_overrides (ключ crm_ct_{clientId}) — гарантированно работает
+  if (typeof saveEditsToStorage === 'function' && typeof localEdits !== 'undefined') {
+    const ctKey = 'crm_ct_' + clientId;
+    localEdits[ctKey] = { contacts: _crmContacts[clientId] || [] };
+    saveEditsToStorage(ctKey);
+  }
 }
 window.saveContact = saveContact;
 
@@ -778,13 +783,12 @@ function deleteContact(clientId, contactId) {
   if (contentEl && _crmActiveTab === 'contacts') contentEl.innerHTML = renderTabContent(client, 'contacts');
   if (contentEl && _crmActiveTab === 'general')  contentEl.innerHTML = renderTabContent(client, 'general');
 
-  if (!_sb) return;
-  const remaining = _crmContacts[clientId] || [];
-  (async () => {
-    const { error } = await _sb.from('crm_clients')
-      .upsert({ id: clientId, contacts_json: JSON.stringify(remaining) }, { onConflict: 'id' });
-    if (error) console.error('deleteContact DB error:', error.code, error.message);
-  })();
+  // Сохраняем обновлённый список через item_overrides
+  if (typeof saveEditsToStorage === 'function' && typeof localEdits !== 'undefined') {
+    const ctKey = 'crm_ct_' + clientId;
+    localEdits[ctKey] = { contacts: _crmContacts[clientId] || [] };
+    saveEditsToStorage(ctKey);
+  }
 }
 window.deleteContact = deleteContact;
 
