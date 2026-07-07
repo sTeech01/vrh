@@ -632,8 +632,10 @@ function _saveContacts(clientId, contacts) {
   client.contacts_json = JSON.stringify(contacts);
   if (!_sb) return;
   (async () => {
-    try { await _sb.from('crm_clients').update({ contacts_json: client.contacts_json }).eq('id', clientId); }
-    catch(e) { console.error('_saveContacts:', e); }
+    try {
+      const { error } = await _sb.from('crm_clients').upsert({ id: clientId, contacts_json: client.contacts_json });
+      if (error) console.error('_saveContacts error:', error.code, error.message, error.details);
+    } catch(e) { console.error('_saveContacts exception:', e); }
   })();
 }
 
@@ -792,8 +794,10 @@ function _saveSiteItems(clientId, items) {
   client.site_items = JSON.stringify(items);
   if (!_sb) return;
   (async () => {
-    try { await _sb.from('crm_clients').update({ site_items: client.site_items }).eq('id', clientId); }
-    catch(e) { console.error('_saveSiteItems:', e); }
+    try {
+      const { error } = await _sb.from('crm_clients').upsert({ id: clientId, site_items: client.site_items });
+      if (error) console.error('_saveSiteItems error:', error.code, error.message, error.details);
+    } catch(e) { console.error('_saveSiteItems exception:', e); }
   })();
 }
 
@@ -925,8 +929,10 @@ function _saveJournalEntries(clientId, entries) {
   client.journal_entries = JSON.stringify(entries);
   if (!_sb) return;
   (async () => {
-    try { await _sb.from('crm_clients').update({ journal_entries: client.journal_entries }).eq('id', clientId); }
-    catch(e) { console.error('_saveJournalEntries:', e); }
+    try {
+      const { error } = await _sb.from('crm_clients').upsert({ id: clientId, journal_entries: client.journal_entries });
+      if (error) console.error('_saveJournalEntries error:', error.code, error.message, error.details);
+    } catch(e) { console.error('_saveJournalEntries exception:', e); }
   })();
 }
 
