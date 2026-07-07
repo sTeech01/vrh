@@ -587,45 +587,216 @@ function clearNextAction(clientId) {
 }
 window.clearNextAction = clearNextAction;
 
-/* ── DASHBOARD: Journal ─────────────────────────────────────── */
-function openJournalModal(clientId) {
+/* ── SITE ITEMS helpers (Площадка) ──────────────────────────── */
+function _getSiteItems(client) {
+  if (client.site_items) {
+    try { return JSON.parse(client.site_items); } catch(e) {}
+  }
+  const landSt  = client.has_land     === true ? 'yes' : client.has_land     === false ? 'no' : 'pending';
+  const buildSt = client.has_building === true ? 'yes' : client.has_building === false ? 'no' : 'pending';
+  return [
+    { id: 'land',  label: 'Участок',       status: landSt,    note: '' },
+    { id: 'build', label: 'Здание',         status: buildSt,   note: '' },
+    { id: 'gas',   label: 'Газ',            status: 'pending', note: '' },
+    { id: 'elec',  label: 'Электричество',  status: 'pending', note: '' },
+    { id: 'water', label: 'Вода',           status: 'pending', note: '' },
+  ];
+}
+
+function _saveSiteItems(clientId, items) {
   const client = _crmClients.find(c => c.id === clientId);
   if (!client) return;
+  client.site_items = JSON.stringify(items);
+  if (!_sb) return;
+  (async () => {
+    try { await _sb.from('crm_clients').update({ site_items: client.site_items }).eq('id', clientId); }
+    catch(e) { console.error('_saveSiteItems:', e); }
+  })();
+}
+
+function toggleSiteItemStatus(clientId, itemId) {
+  const client = _crmClients.find(c => c.id === clientId);
+  if (!client) return;
+  const items = _getSiteItems(client);
+  const it = items.find(i => i.id === itemId);
+  if (!it) return;
+  it.status = it.status === 'pending' ? 'yes' : it.status === 'yes' ? 'no' : 'pending';
+  _saveSiteItems(clientId, items);
+  const contentEl = document.getElementById('crm-tab-content');
+  if (contentEl && _crmActiveTab === 'general') contentEl.innerHTML = renderTabContent(client, 'general');
+}
+window.toggleSiteItemStatus = toggleSiteItemStatus;
+
+function openAddSiteItemModal(clientId) {
   document.getElementById('modal-box').innerHTML = `
-  <div class="crm-modal crm-modal-md">
+  <div class="crm-modal crm-modal-chip">
     <div class="crm-modal-head">
-      <div class="crm-modal-title">${iconSvg('chat', 15)} Журнал проекта</div>
+      <div class="crm-modal-title">${iconSvg('plus', 15)} Добавить позицию</div>
       <button class="modal-close" onclick="closeModal()">${iconSvg('x', 16)}</button>
     </div>
     <div class="crm-modal-body">
-      <textarea class="mn-input" id="journal-text" rows="7" style="height:auto;padding:10px 12px;resize:vertical;line-height:1.7;font-size:14px">${_crmEsc(client.comment||'')}</textarea>
-      <p style="font-size:11px;color:var(--gray-400);margin-top:8px">Запись сохраняется как основная заметка по проекту.</p>
+      <label class="mn-label">Наименование</label>
+      <input class="mn-input" id="si-label" type="text" placeholder="Например: Дорога, Сети" />
+      <label class="mn-label" style="margin-top:12px">Статус</label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px"><input type="radio" name="si-status" value="pending" checked> Не определено</label>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px"><input type="radio" name="si-status" value="yes"> Есть</label>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px"><input type="radio" name="si-status" value="no"> Нет</label>
+      </div>
+      <label class="mn-label" style="margin-top:12px">Пометка (необязательно)</label>
+      <input class="mn-input" id="si-note" type="text" placeholder="нашел, соответствует..." />
     </div>
     <div class="crm-modal-footer">
       <div style="flex:1"></div>
       <button class="btn-secondary" onclick="closeModal()">Отмена</button>
-      <button class="btn-primary" onclick="saveJournalEntry('${_crmEsc(clientId)}')">Сохранить</button>
+      <button class="btn-primary" onclick="saveSiteItem('${_crmEsc(clientId)}', null)">Добавить</button>
     </div>
   </div>`;
   document.getElementById('modal-overlay').classList.add('open');
-  setTimeout(() => { document.getElementById('journal-text')?.focus(); }, 60);
+  setTimeout(() => document.getElementById('si-label')?.focus(), 60);
 }
-window.openJournalModal = openJournalModal;
+window.openAddSiteItemModal = openAddSiteItemModal;
 
-function saveJournalEntry(clientId) {
+function openEditSiteItemModal(clientId, itemId) {
   const client = _crmClients.find(c => c.id === clientId);
   if (!client) return;
-  client.comment = document.getElementById('journal-text')?.value.trim() || null;
+  const items = _getSiteItems(client);
+  const it = items.find(i => i.id === itemId);
+  if (!it) return;
+  const radios = ['pending', 'yes', 'no'].map(v =>
+    `<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px"><input type="radio" name="si-status" value="${v}"${it.status === v ? ' checked' : ''}> ${v === 'pending' ? 'Не определено' : v === 'yes' ? 'Есть' : 'Нет'}</label>`
+  ).join('');
+  document.getElementById('modal-box').innerHTML = `
+  <div class="crm-modal crm-modal-chip">
+    <div class="crm-modal-head">
+      <div class="crm-modal-title">${iconSvg('edit', 15)} Редактировать позицию</div>
+      <button class="modal-close" onclick="closeModal()">${iconSvg('x', 16)}</button>
+    </div>
+    <div class="crm-modal-body">
+      <label class="mn-label">Наименование</label>
+      <input class="mn-input" id="si-label" type="text" value="${_crmEsc(it.label)}" />
+      <label class="mn-label" style="margin-top:12px">Статус</label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">${radios}</div>
+      <label class="mn-label" style="margin-top:12px">Пометка</label>
+      <input class="mn-input" id="si-note" type="text" value="${_crmEsc(it.note || '')}" placeholder="нашел, соответствует..." />
+    </div>
+    <div class="crm-modal-footer">
+      <button class="mn-btn-danger" onclick="deleteSiteItem('${_crmEsc(clientId)}','${_crmEsc(itemId)}')">${iconSvg('trash', 13)} Удалить</button>
+      <div style="flex:1"></div>
+      <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+      <button class="btn-primary" onclick="saveSiteItem('${_crmEsc(clientId)}','${_crmEsc(itemId)}')">Сохранить</button>
+    </div>
+  </div>`;
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('si-label')?.focus(), 60);
+}
+window.openEditSiteItemModal = openEditSiteItemModal;
+
+function saveSiteItem(clientId, itemId) {
+  const client = _crmClients.find(c => c.id === clientId);
+  if (!client) return;
+  const label = document.getElementById('si-label')?.value.trim();
+  if (!label) return;
+  const status = document.querySelector('input[name="si-status"]:checked')?.value || 'pending';
+  const note = document.getElementById('si-note')?.value.trim() || '';
+  const items = _getSiteItems(client);
+  if (itemId) {
+    const it = items.find(i => i.id === itemId);
+    if (it) { it.label = label; it.status = status; it.note = note; }
+  } else {
+    items.push({ id: 'si_' + Date.now(), label, status, note });
+  }
+  _saveSiteItems(clientId, items);
   closeModal();
   const contentEl = document.getElementById('crm-tab-content');
   if (contentEl && _crmActiveTab === 'general') contentEl.innerHTML = renderTabContent(client, 'general');
+}
+window.saveSiteItem = saveSiteItem;
+
+function deleteSiteItem(clientId, itemId) {
+  const client = _crmClients.find(c => c.id === clientId);
+  if (!client) return;
+  const items = _getSiteItems(client).filter(i => i.id !== itemId);
+  _saveSiteItems(clientId, items);
+  closeModal();
+  const contentEl = document.getElementById('crm-tab-content');
+  if (contentEl && _crmActiveTab === 'general') contentEl.innerHTML = renderTabContent(client, 'general');
+}
+window.deleteSiteItem = deleteSiteItem;
+
+/* ── JOURNAL ENTRIES ────────────────────────────────────────── */
+function _getJournalEntries(client) {
+  if (client.journal_entries) {
+    try { return JSON.parse(client.journal_entries); } catch(e) {}
+  }
+  if (client.comment) {
+    const date = String(client.created_at || '').slice(0, 10);
+    return [{ id: 'init_0', date, text: client.comment }];
+  }
+  return [];
+}
+
+function _saveJournalEntries(clientId, entries) {
+  const client = _crmClients.find(c => c.id === clientId);
+  if (!client) return;
+  client.journal_entries = JSON.stringify(entries);
   if (!_sb) return;
   (async () => {
-    try { await _sb.from('crm_clients').update({ comment: client.comment }).eq('id', clientId); }
-    catch(e) { console.error('saveJournalEntry:', e); }
+    try { await _sb.from('crm_clients').update({ journal_entries: client.journal_entries }).eq('id', clientId); }
+    catch(e) { console.error('_saveJournalEntries:', e); }
   })();
 }
-window.saveJournalEntry = saveJournalEntry;
+
+function openAddJournalModal(clientId) {
+  const today = new Date().toISOString().slice(0, 10);
+  document.getElementById('modal-box').innerHTML = `
+  <div class="crm-modal crm-modal-md">
+    <div class="crm-modal-head">
+      <div class="crm-modal-title">${iconSvg('plus', 15)} Новая запись в журнале</div>
+      <button class="modal-close" onclick="closeModal()">${iconSvg('x', 16)}</button>
+    </div>
+    <div class="crm-modal-body">
+      <label class="mn-label">Дата</label>
+      <input class="mn-input" id="jrn-date" type="date" value="${today}" style="max-width:180px"/>
+      <label class="mn-label" style="margin-top:12px">Запись</label>
+      <textarea class="mn-input" id="jrn-text" rows="6" style="height:auto;padding:10px 12px;resize:vertical;line-height:1.7;font-size:14px" placeholder="Что произошло? Какие договоренности?"></textarea>
+    </div>
+    <div class="crm-modal-footer">
+      <div style="flex:1"></div>
+      <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+      <button class="btn-primary" onclick="saveNewJournalEntry('${_crmEsc(clientId)}')">Добавить запись</button>
+    </div>
+  </div>`;
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('jrn-text')?.focus(), 60);
+}
+window.openAddJournalModal = openAddJournalModal;
+
+function saveNewJournalEntry(clientId) {
+  const client = _crmClients.find(c => c.id === clientId);
+  if (!client) return;
+  const text = document.getElementById('jrn-text')?.value.trim();
+  if (!text) return;
+  const date = document.getElementById('jrn-date')?.value || new Date().toISOString().slice(0, 10);
+  const entries = _getJournalEntries(client);
+  entries.unshift({ id: 'jrn_' + Date.now(), date, text });
+  _saveJournalEntries(clientId, entries);
+  closeModal();
+  const contentEl = document.getElementById('crm-tab-content');
+  if (contentEl && _crmActiveTab === 'general') contentEl.innerHTML = renderTabContent(client, 'general');
+}
+window.saveNewJournalEntry = saveNewJournalEntry;
+
+function deleteJournalEntry(clientId, entryId) {
+  const client = _crmClients.find(c => c.id === clientId);
+  if (!client) return;
+  if (!confirm('Удалить запись из журнала?')) return;
+  const entries = _getJournalEntries(client).filter(e => e.id !== entryId);
+  _saveJournalEntries(clientId, entries);
+  const contentEl = document.getElementById('crm-tab-content');
+  if (contentEl && _crmActiveTab === 'general') contentEl.innerHTML = renderTabContent(client, 'general');
+}
+window.deleteJournalEntry = deleteJournalEntry;
 
 /* ── DASHBOARD: General Tab renderer ───────────────────────── */
 function _renderGeneralTab(client) {
@@ -654,25 +825,29 @@ function _renderGeneralTab(client) {
   </div>`;
 
   // ── Журнал проекта ─────────────────────────────────────────
-  const lastHist = (_crmHistory[client.id] || []).slice()
-    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))[0];
-  const journalDate = lastHist
-    ? formatDateShort(String(lastHist.created_at).slice(0, 10))
-    : formatDateShort(String(client.created_at || '').slice(0, 10));
-
-  const journalContent = client.comment ? `
-    <div class="crm-journal-meta">${journalDate}</div>
-    <div class="crm-journal-text">${_crmEsc(client.comment)}</div>` :
-    `<div class="crm-journal-empty">Нет записей. Добавьте первую заметку о проекте.</div>`;
+  const journalEntries = _getJournalEntries(client);
+  let journalContent;
+  if (journalEntries.length) {
+    journalContent = journalEntries.slice(0, 5).map(e => `
+      <div class="crm-journal-entry">
+        <div class="crm-journal-entry-head">
+          <span class="crm-journal-meta">${formatDateShort(e.date)}</span>
+          <button class="crm-journal-del" onclick="deleteJournalEntry('${cid}','${_crmEsc(e.id)}')" title="Удалить запись">${iconSvg('trash', 12)}</button>
+        </div>
+        <div class="crm-journal-text">${_crmEsc(e.text)}</div>
+      </div>`).join('');
+    if (journalEntries.length > 5) {
+      journalContent += `<div style="font-size:11px;color:var(--gray-400);margin-top:6px">Ещё ${journalEntries.length - 5} зап. в истории</div>`;
+    }
+  } else {
+    journalContent = `<div class="crm-journal-empty">Нет записей. Добавьте первую заметку о проекте.</div>`;
+  }
 
   const journalWidget = `
   <div class="crm-db-widget crm-journal-widget">
     <div class="crm-widget-head">
       <span class="crm-widget-title">${iconSvg('chat', 14)} Журнал проекта</span>
-      <div style="display:flex;gap:6px;align-items:center">
-        <button class="crm-widget-btn" onclick="setCrmTab('${cid}','history')">${iconSvg('list', 11)} Все записи</button>
-        <button class="crm-widget-btn crm-widget-btn-accent" onclick="openJournalModal('${cid}')">${iconSvg('plus', 11)} Добавить</button>
-      </div>
+      <button class="crm-widget-btn crm-widget-btn-accent" onclick="openAddJournalModal('${cid}')">${iconSvg('plus', 11)} Добавить запись</button>
     </div>
     ${journalContent}
   </div>`;
@@ -706,22 +881,26 @@ function _renderGeneralTab(client) {
   </div>`;
 
   // ── Площадка ───────────────────────────────────────────────
-  const siteChecks = [
-    { label: 'Участок',       val: client.has_land },
-    { label: 'Здание',        val: client.has_building },
-    { label: 'Газ',           val: null },
-    { label: 'Электричество', val: null },
-    { label: 'Вода',          val: null },
-  ].map(it => {
-    const done = it.val === true || it.val === 'true' || it.val === 'yes';
-    const cls = done ? 'crm-chk-yes' : (it.val === false || it.val === 'false' || it.val === 'no' ? 'crm-chk-no' : 'crm-chk-undef');
-    return `<div class="crm-chk-item ${cls}">${done ? iconSvg('check', 12) : iconSvg('minus', 12)} ${_crmEsc(it.label)}</div>`;
+  const siteItems = _getSiteItems(client);
+  const siteChecks = siteItems.map(it => {
+    const cls = it.status === 'yes' ? 'crm-chk-yes' : it.status === 'no' ? 'crm-chk-no' : 'crm-chk-undef';
+    const ic  = it.status === 'yes' ? iconSvg('check', 12) : it.status === 'no' ? iconSvg('x', 12) : iconSvg('minus', 12);
+    const note = it.note ? `<span class="crm-chk-note">${_crmEsc(it.note)}</span>` : '';
+    return `
+    <div class="crm-chk-item ${cls}">
+      <button class="crm-chk-status-btn" onclick="toggleSiteItemStatus('${cid}','${_crmEsc(it.id)}')" title="Изменить статус">${ic}</button>
+      <span class="crm-chk-label">${_crmEsc(it.label)}${note}</span>
+      <button class="crm-chk-edit" onclick="openEditSiteItemModal('${cid}','${_crmEsc(it.id)}')" title="Редактировать">${iconSvg('edit', 11)}</button>
+    </div>`;
   }).join('');
 
   const siteWidget = `
   <div class="crm-db-widget">
-    <div class="crm-widget-head"><span class="crm-widget-title">${iconSvg('folder', 14)} Площадка</span></div>
-    <div class="crm-checklist">${siteChecks}</div>
+    <div class="crm-widget-head">
+      <span class="crm-widget-title">${iconSvg('folder', 14)} Площадка</span>
+      <button class="crm-widget-btn" onclick="openAddSiteItemModal('${cid}')">${iconSvg('plus', 11)} Добавить</button>
+    </div>
+    <div class="crm-checklist">${siteChecks || '<div class="crm-journal-empty">Нет позиций. Нажмите + Добавить.</div>'}</div>
   </div>`;
 
   // ── Финансирование / ЛПР ──────────────────────────────────
