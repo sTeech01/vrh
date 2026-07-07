@@ -661,7 +661,7 @@ function openAddContactModal(clientId) {
     <div class="crm-modal-footer">
       <div style="flex:1"></div>
       <button class="btn-secondary" onclick="closeModal()">Отмена</button>
-      <button class="btn-primary" onclick="saveContact('${_crmEsc(clientId)}', null)">Добавить</button>
+      <button class="btn-primary" onclick="saveContact('${_crmEsc(clientId)}')">Добавить</button>
     </div>
   </div>`;
   document.getElementById('modal-overlay').classList.add('open');
@@ -672,8 +672,10 @@ window.openAddContactModal = openAddContactModal;
 function openEditContactModal(clientId, contactId) {
   const client = _crmClients.find(c => c.id === clientId);
   if (!client) return;
-  const contacts = _getContacts(client);
-  const ct = contacts.find(c => c.id === contactId);
+  // ищем сначала в хранилище, потом в legacy-списке
+  const stored = (_crmContacts[clientId] || []).find(c => c.id === contactId);
+  const legacy = !stored ? _getContacts(client).find(c => c.id === contactId) : null;
+  const ct = stored || legacy;
   if (!ct) return;
   document.getElementById('modal-box').innerHTML = `
   <div class="crm-modal crm-modal-md">
@@ -726,7 +728,7 @@ function saveContact(clientId, contactId) {
     document.getElementById('ct-name')?.focus();
     return;
   }
-  const id = contactId || ('c_' + Date.now());
+  const id = (contactId && contactId !== 'null') ? contactId : ('c_' + Date.now());
   const record = {
     id,
     client_id: clientId,
