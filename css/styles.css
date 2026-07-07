@@ -1870,6 +1870,32 @@ details.mn-details[open] > summary::after { transform:rotate(90deg); }
 
   /* ── Toast выше bottom-nav ──────────────────────────────── */
   #toast { bottom: 72px; font-size: 12px; }
+
+  /* ── Platform home grid ─────────────────────────────────── */
+  .plat-modules-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+  .plat-module-card  { padding: 16px 14px !important; min-height: 100px !important; }
+  .plat-module-name  { font-size: 14px !important; }
+
+  /* ── Suppliers ──────────────────────────────────────────── */
+  .sup-list-wrap    { padding: 14px 12px 80px; }
+  .sup-grid         { grid-template-columns: 1fr !important; }
+  .sup-detail-wrap  { padding: 12px 12px 80px; }
+  .sup-detail-grid  { grid-template-columns: 1fr !important; gap: 10px !important; }
+
+  /* ── Events page ────────────────────────────────────────── */
+  .ev-page-wrap  { padding: 14px 12px 80px; }
+  .ev-item       { padding: 10px 12px; gap: 8px; }
+  .ev-title      { font-size: 13px; }
+
+  /* ── Workflow stages ────────────────────────────────────── */
+  .wf-stages-grid  { grid-template-columns: 1fr !important; }
+  .wf-stage-card   { padding: 12px 14px; }
+
+  /* ── Item detail ────────────────────────────────────────── */
+  .mn-two-col { grid-template-columns: 1fr !important; }
+
+  /* ── Dashboard quick stats ──────────────────────────────── */
+  .dash-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
 }
 
 @media print {

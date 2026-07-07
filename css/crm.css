@@ -541,7 +541,7 @@
   padding: 8px 12px;
 }
 
-/* ---------------- INFO GRID (вкладка Общее) ---------------- */
+/* ---------------- INFO GRID (вкладка Общее) — legacy, только для contacts ---------------- */
 
 .crm-info-grid {
   display: grid;
@@ -571,6 +571,126 @@
   font-size: 14px;
   color: var(--gray-900);
 }
+
+/* ---------------- GENERAL TAB — карточки секций ---------------- */
+
+.crm-general-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .crm-general-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 600px) {
+  .crm-general-grid { grid-template-columns: 1fr; }
+}
+
+.crm-sc {
+  background: #fff;
+  border: 1px solid var(--gray-200);
+  border-radius: 14px;
+  padding: 16px 18px 18px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.crm-sc-full {
+  grid-column: 1 / -1;
+}
+
+.crm-sc-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.crm-sc-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--gray-100);
+  color: var(--gray-500);
+  flex-shrink: 0;
+}
+
+.crm-sc-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gray-700);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.crm-sc-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.crm-sc-comment {
+  font-size: 13px;
+  color: var(--gray-700);
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Field rows */
+.crm-field-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.crm-fl {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--gray-400);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.crm-fv {
+  font-size: 13px;
+  color: var(--gray-800);
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.crm-fv-empty {
+  font-size: 12px;
+  color: var(--gray-300);
+  font-style: italic;
+}
+
+/* Badges для важных полей */
+.crm-fv-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.crm-fv-badge-type  { background: #EFF6FF; color: #2563EB; }
+.crm-fv-badge-prio  { background: #FEF3C7; color: #D97706; }
+.crm-fv-badge-fin   { background: #ECFDF5; color: #059669; }
+.crm-fv-badge-yes   { background: #DCFCE7; color: #16A34A; }
+.crm-fv-badge-no    { background: #FEF2F2; color: #DC2626; }
 
 /* ---------------- ПУСТОЕ СОСТОЯНИЕ ---------------- */
 
@@ -784,4 +904,73 @@
   font-size: 14px;
   color: var(--gray-500);
   line-height: 1.6;
+}
+
+/* ════════════════════════════════════════════════════════════
+   MOBILE CRM (≤ 767px)
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+  /* List page */
+  .crm-page-wrap    { padding: 14px 12px 80px; }
+  .crm-page-title   { font-size: 16px; }
+  .crm-page-header  { margin-bottom: 10px; }
+
+  .crm-clients-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .crm-card { padding: 8px 10px; gap: 4px; }
+  .crm-card-project { font-size: 12px; }
+
+  /* Client page */
+  .crm-client-wrap  { padding: 12px 12px 80px; }
+  .crm-client-name  { font-size: 18px; }
+  .crm-client-header { margin-bottom: 16px; gap: 10px; }
+
+  /* Header buttons stack vertically */
+  .crm-client-header > div:last-child {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  /* Pipeline snake: hide on very small screens, show compact */
+  .crm-pipeline { margin-bottom: 20px; }
+  .crm-stage-node { padding: 7px 8px; margin: 2px; }
+  .crm-stage-name { font-size: 10px; }
+  .crm-stage-num  { font-size: 9px; }
+  .crm-stage-date, .crm-stage-btn { display: none; }
+
+  /* Tabs: scroll horizontally */
+  .crm-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .crm-tabs::-webkit-scrollbar { display: none; }
+  .crm-tab { white-space: nowrap; padding: 8px 12px; font-size: 12px; }
+
+  /* General tab cards */
+  .crm-general-grid { grid-template-columns: 1fr; gap: 10px; }
+  .crm-sc { padding: 12px 14px 14px; }
+  .crm-sc-head { margin-bottom: 10px; padding-bottom: 8px; }
+
+  /* Filters */
+  .crm-filters { flex-direction: column; align-items: stretch; }
+  .crm-filters input,
+  .crm-filters select { width: 100%; min-width: 0; }
+
+  /* List tabs */
+  .crm-list-tabs { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
+  .crm-list-tabs::-webkit-scrollbar { display: none; }
+  .crm-list-tab { white-space: nowrap; }
+
+  /* Modals full-width on mobile */
+  #modal-overlay.open:has(.crm-modal) #modal-box,
+  #modal-overlay.open:has(.crm-modal-md) #modal-box,
+  #modal-overlay.open:has(.crm-modal-sm) #modal-box { width: 100vw; border-radius: 16px 16px 0 0; }
+}
+
+@media (max-width: 480px) {
+  .crm-clients-grid { grid-template-columns: 1fr; }
 }

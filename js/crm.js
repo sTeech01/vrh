@@ -391,7 +391,7 @@ function _crmInfoItem(label, value) {
   return `
   <div class="crm-info-item">
     <div class="crm-info-label">${_crmEsc(label)}</div>
-    <div class="crm-info-value">${value ? _crmEsc(value) : '<span style="color:var(--gray-300)">—</span>'}</div>
+    <div class="crm-info-value">${value ? _crmEsc(value) : '<span style="color:var(--gray-300)">-</span>'}</div>
   </div>`;
 }
 
@@ -409,28 +409,101 @@ function _crmTabStub(title) {
   </div>`;
 }
 
-function renderTabContent(client, tab) {
-  if (tab === 'general') {
-    return `
-    <div class="crm-info-grid">
-      ${_crmInfoItem('Регион', client.region)}
-      ${_crmInfoItem('Адрес', client.address)}
-      ${_crmInfoItem('Тип проекта', getCrmTypeLabel(client.project_type))}
-      ${_crmInfoItem('Мощность (т/год)', client.capacity)}
-      ${_crmInfoItem('Наличие участка', _crmBoolText(client.has_land))}
-      ${_crmInfoItem('Наличие здания', _crmBoolText(client.has_building))}
-      ${_crmInfoItem('Вид рыбы', client.fish_type)}
-      ${_crmInfoItem('Источник финансирования', client.funding_source)}
-      ${_crmInfoItem('Срок реализации (мес.)', client.deadline_months)}
-      ${_crmInfoItem('Посещённые хозяйства', client.visited_farms)}
-      ${_crmInfoItem('Приоритет клиента', client.client_priority)}
-      ${_crmInfoItem('Почему выбрали нас', client.why_chose_us)}
-      ${_crmInfoItem('ЛПР', client.lpr)}
-      ${_crmInfoItem('Партнёры', client.partners)}
-      ${_crmInfoItem('Конкуренты', client.competitors)}
-      ${_crmInfoItem('Комментарий', client.comment)}
-    </div>`;
+function _crmField(label, value, badgeClass) {
+  const empty = value === null || value === undefined || value === '';
+  let valHtml;
+  if (empty) {
+    valHtml = '<span class="crm-fv-empty">Не заполнено</span>';
+  } else if (badgeClass) {
+    valHtml = `<span class="crm-fv-badge ${badgeClass}">${_crmEsc(value)}</span>`;
+  } else {
+    valHtml = `<span class="crm-fv">${_crmEsc(value)}</span>`;
   }
+  return `<div class="crm-field-row"><span class="crm-fl">${_crmEsc(label)}</span>${valHtml}</div>`;
+}
+
+function _crmSectionCard(title, iconName, fields, fullWidth) {
+  return `
+  <div class="crm-sc${fullWidth ? ' crm-sc-full' : ''}">
+    <div class="crm-sc-head">
+      <span class="crm-sc-icon">${iconSvg(iconName, 13)}</span>
+      <span class="crm-sc-title">${_crmEsc(title)}</span>
+    </div>
+    <div class="crm-sc-body">${fields}</div>
+  </div>`;
+}
+
+function _renderGeneralTab(client) {
+  const typeLabel   = getCrmTypeLabel(client.project_type);
+  const boolLand    = _crmBoolText(client.has_land);
+  const boolBuild   = _crmBoolText(client.has_building);
+
+  const typeBadge   = client.project_type ? 'crm-fv-badge-type' : '';
+  const prioBadge   = client.client_priority ? 'crm-fv-badge-prio' : '';
+  const finBadge    = client.funding_source  ? 'crm-fv-badge-fin'  : '';
+  const landBadge   = boolLand  ? (boolLand  === 'Да' ? 'crm-fv-badge-yes' : 'crm-fv-badge-no') : '';
+  const buildBadge  = boolBuild ? (boolBuild === 'Да' ? 'crm-fv-badge-yes' : 'crm-fv-badge-no') : '';
+
+  const mainFields = [
+    _crmField('Название проекта',  client.project_name),
+    _crmField('Регион',            client.region),
+    _crmField('Адрес',             client.address),
+    _crmField('Менеджер',          client.manager),
+    _crmField('Создан',            formatDateShort(String(client.created_at || '').slice(0, 10))),
+    _crmField('Последний контакт', formatDateShort(client.last_contact)),
+  ].join('');
+
+  const projectFields = [
+    _crmField('Тип проекта',          typeLabel,               typeBadge),
+    _crmField('Вид рыбы',             client.fish_type),
+    _crmField('Мощность (т/год)',      client.capacity),
+    _crmField('Срок реализации (мес.)', client.deadline_months),
+  ].join('');
+
+  const siteFields = [
+    _crmField('Наличие участка',  boolLand  || null, landBadge),
+    _crmField('Наличие здания',   boolBuild || null, buildBadge),
+    _crmField('Источник воды',    null),
+    _crmField('Электроснабжение', null),
+    _crmField('Газ',              null),
+  ].join('');
+
+  const finFields = [
+    _crmField('Источник финансирования', client.funding_source, finBadge),
+    _crmField('Партнёры',                client.partners),
+    _crmField('Бюджет',                  null),
+  ].join('');
+
+  const clientFields = [
+    _crmField('ЛПР',                   client.lpr),
+    _crmField('Приоритет клиента',      client.client_priority, prioBadge),
+    _crmField('Посещённые хозяйства',   client.visited_farms),
+    _crmField('Почему выбрали нас',     client.why_chose_us),
+    _crmField('Конкуренты',             client.competitors),
+  ].join('');
+
+  const commentBlock = `
+  <div class="crm-sc crm-sc-full">
+    <div class="crm-sc-head">
+      <span class="crm-sc-icon">${iconSvg('chat', 13)}</span>
+      <span class="crm-sc-title">Комментарий</span>
+    </div>
+    <div class="crm-sc-comment">${client.comment ? _crmEsc(client.comment) : '<span class="crm-fv-empty">Не заполнено</span>'}</div>
+  </div>`;
+
+  return `
+  <div class="crm-general-grid">
+    ${_crmSectionCard('Основная информация', 'document',   mainFields)}
+    ${_crmSectionCard('Проект',              'list',        projectFields)}
+    ${_crmSectionCard('Площадка',            'folder',      siteFields)}
+    ${_crmSectionCard('Финансирование',      'chart',       finFields)}
+    ${_crmSectionCard('Клиент',              'user',        clientFields)}
+    ${commentBlock}
+  </div>`;
+}
+
+function renderTabContent(client, tab) {
+  if (tab === 'general') return _renderGeneralTab(client);
 
   if (tab === 'history') {
     const hist = (_crmHistory[client.id] || []).slice()
