@@ -133,9 +133,20 @@ function loadCrmData(clientsData, historyData, contactsData) {
     _crmHistory[h.client_id].push(h);
   });
   _crmContacts = {};
+  // Первый источник — таблица crm_contacts
   (contactsData || []).forEach(c => {
     if (!_crmContacts[c.client_id]) _crmContacts[c.client_id] = [];
     _crmContacts[c.client_id].push(c);
+  });
+  // Второй источник — поле contacts_json в crm_clients (fallback)
+  (_crmClients).forEach(client => {
+    if (!_crmContacts[client.id] && client.contacts_json) {
+      try {
+        const arr = JSON.parse(client.contacts_json);
+        if (Array.isArray(arr) && arr.length > 0)
+          _crmContacts[client.id] = arr.map(c => ({ ...c, client_id: client.id }));
+      } catch(e) {}
+    }
   });
 }
 window.loadCrmData = loadCrmData;
@@ -744,14 +755,23 @@ function saveContact(clientId, contactId) {
   else _crmContacts[clientId].push(record);
 
   closeModal();
+  if (typeof showToast === 'function') showToast('Контакт сохранён');
   const contentEl = document.getElementById('crm-tab-content');
   if (contentEl && _crmActiveTab === 'contacts') contentEl.innerHTML = renderTabContent(client, 'contacts');
   if (contentEl && _crmActiveTab === 'general')  contentEl.innerHTML = renderTabContent(client, 'general');
 
   if (!_sb) return;
+  const allContacts = _crmContacts[clientId] || [];
   (async () => {
-    const { error } = await _sb.from('crm_contacts').upsert(record);
-    if (error) console.error('saveContact DB error:', error.code, error.message);
+    // Способ 1: таблица crm_contacts
+    const { error: e1 } = await _sb.from('crm_contacts').upsert(record);
+    if (e1) console.warn('crm_contacts upsert:', e1.message);
+    // Способ 2: поле contacts_json в crm_clients (всегда работает если колонка есть)
+    const { error: e2 } = await _sb.from('crm_clients').update({
+      contacts_json: JSON.stringify(allContacts)
+    }).eq('id', clientId);
+    if (e2) console.error('contacts_json save error:', e2.code, e2.message);
+    else console.log('contacts_json saved OK, count:', allContacts.length);
   })();
 }
 window.saveContact = saveContact;
