@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #118';
+const APP_BUILD = 'DEPLOY #119';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -145,7 +145,7 @@ async function doLogout() {
 }
 
 async function loadRemoteData() {
-  const [ovRes, asRes, orRes, cpRes, wsRes, imRes, evRes, crmRes, crmHistRes, crmConRes,
+  const [ovRes, asRes, orRes, cpRes, wsRes, imRes, evRes, crmRes, crmHistRes,
          supRes, supContRes, supHistRes, supBankRes] = await Promise.all([
     _sb.from('item_overrides').select('*'),
     _sb.from('custom_assignees').select('*').order('id'),
@@ -156,7 +156,6 @@ async function loadRemoteData() {
     _sb.from('events').select('*').order('event_date'),
     _sb.from('crm_clients').select('*').order('created_at', { ascending: false }),
     _sb.from('crm_stage_history').select('*').order('created_at'),
-    _sb.from('crm_contacts').select('*').order('created_at'),
     _sb.from('suppliers').select('*').order('created_at', { ascending: false }),
     _sb.from('supplier_contacts').select('*').order('created_at'),
     _sb.from('supplier_history').select('*').order('event_date', { ascending: false }),
@@ -246,7 +245,7 @@ async function loadRemoteData() {
   }
 
   // Загрузка CRM (клиенты + история этапов) - данные живут в js/crm.js
-  loadCrmData(crmRes.data, crmHistRes.data, crmConRes.data);
+  loadCrmData(crmRes.data, crmHistRes.data);
 
   // Загрузка Поставщиков - данные живут в js/suppliers.js
   loadSuppliersData(supRes.data, supContRes.data, supHistRes.data, supBankRes.data);

@@ -125,22 +125,17 @@ function _crmStageDate(clientId, stageKey) {
 
 /* ---------------- ЗАГРУЗКА ДАННЫХ (вызывается из app.js) ---------------- */
 
-function loadCrmData(clientsData, historyData, contactsData) {
+function loadCrmData(clientsData, historyData) {
   _crmClients = clientsData || [];
   _crmHistory = {};
   (historyData || []).forEach(h => {
     if (!_crmHistory[h.client_id]) _crmHistory[h.client_id] = [];
     _crmHistory[h.client_id].push(h);
   });
+  // Контакты хранятся в поле contacts_json на каждом клиенте
   _crmContacts = {};
-  // Первый источник — таблица crm_contacts
-  (contactsData || []).forEach(c => {
-    if (!_crmContacts[c.client_id]) _crmContacts[c.client_id] = [];
-    _crmContacts[c.client_id].push(c);
-  });
-  // Второй источник — поле contacts_json в crm_clients (fallback)
   (_crmClients).forEach(client => {
-    if (!_crmContacts[client.id] && client.contacts_json) {
+    if (client.contacts_json) {
       try {
         const arr = JSON.parse(client.contacts_json);
         if (Array.isArray(arr) && arr.length > 0)
@@ -763,14 +758,9 @@ function saveContact(clientId, contactId) {
   if (!_sb) return;
   const allContacts = _crmContacts[clientId] || [];
   (async () => {
-    // Способ 1: таблица crm_contacts
-    const { error: e1 } = await _sb.from('crm_contacts').upsert(record);
-    if (e1) console.warn('crm_contacts upsert:', e1.message);
-    // Способ 2: поле contacts_json в crm_clients (всегда работает если колонка есть)
-    const { error: e2 } = await _sb.from('crm_clients').update({
-      contacts_json: JSON.stringify(allContacts)
-    }).eq('id', clientId);
-    if (e2) console.error('contacts_json save error:', e2.code, e2.message);
+    const { error } = await _sb.from('crm_clients')
+      .upsert({ id: clientId, contacts_json: JSON.stringify(allContacts) }, { onConflict: 'id' });
+    if (error) console.error('contacts_json save error:', error.code, error.message);
     else console.log('contacts_json saved OK, count:', allContacts.length);
   })();
 }
@@ -789,8 +779,10 @@ function deleteContact(clientId, contactId) {
   if (contentEl && _crmActiveTab === 'general')  contentEl.innerHTML = renderTabContent(client, 'general');
 
   if (!_sb) return;
+  const remaining = _crmContacts[clientId] || [];
   (async () => {
-    const { error } = await _sb.from('crm_contacts').delete().eq('id', contactId);
+    const { error } = await _sb.from('crm_clients')
+      .upsert({ id: clientId, contacts_json: JSON.stringify(remaining) }, { onConflict: 'id' });
     if (error) console.error('deleteContact DB error:', error.code, error.message);
   })();
 }
