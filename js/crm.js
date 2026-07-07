@@ -587,6 +587,26 @@ function clearNextAction(clientId) {
 }
 window.clearNextAction = clearNextAction;
 
+/* ── Phone formatter ────────────────────────────────────────── */
+function formatPhoneInput(input) {
+  let raw = input.value.replace(/\D/g, '');
+  if (raw.startsWith('8') && raw.length > 1) raw = '7' + raw.slice(1);
+  if (!raw) { input.value = ''; return; }
+  if (!raw.startsWith('7')) { input.value = '+' + raw.slice(0, 15); return; }
+  const d = raw.slice(1);
+  let out = '+7';
+  if (!d.length) { input.value = out; return; }
+  out += ' (' + d.slice(0, 3);
+  if (d.length < 3) { input.value = out; return; }
+  out += ') ' + d.slice(3, 6);
+  if (d.length < 6) { input.value = out; return; }
+  out += '-' + d.slice(6, 8);
+  if (d.length < 8) { input.value = out; return; }
+  out += '-' + d.slice(8, 10);
+  input.value = out;
+}
+window.formatPhoneInput = formatPhoneInput;
+
 /* ── CONTACTS helpers ───────────────────────────────────────── */
 function _getContacts(client) {
   if (client.contacts_json) {
@@ -619,7 +639,7 @@ function _saveContacts(clientId, contacts) {
 
 function openAddContactModal(clientId) {
   document.getElementById('modal-box').innerHTML = `
-  <div class="crm-modal crm-modal-chip">
+  <div class="crm-modal crm-modal-md">
     <div class="crm-modal-head">
       <div class="crm-modal-title">${iconSvg('user', 15)} Новый контакт</div>
       <button class="modal-close" onclick="closeModal()">${iconSvg('x', 16)}</button>
@@ -628,6 +648,7 @@ function openAddContactModal(clientId) {
       <div>
         <label class="mn-label">Имя *</label>
         <input class="mn-input" id="ct-name" type="text" placeholder="Иванов Иван Иванович" />
+        <div id="ct-name-err" style="display:none;font-size:11px;color:#DC2626;margin-top:4px">Введите имя контакта</div>
       </div>
       <div>
         <label class="mn-label">Должность / Роль</label>
@@ -635,7 +656,7 @@ function openAddContactModal(clientId) {
       </div>
       <div>
         <label class="mn-label">Телефон</label>
-        <input class="mn-input" id="ct-phone" type="tel" placeholder="+7 (___) ___-__-__" />
+        <input class="mn-input" id="ct-phone" type="tel" placeholder="+7 (___) ___-__-__" oninput="formatPhoneInput(this)" />
       </div>
       <div>
         <label class="mn-label">Email</label>
@@ -664,7 +685,7 @@ function openEditContactModal(clientId, contactId) {
   const ct = contacts.find(c => c.id === contactId);
   if (!ct) return;
   document.getElementById('modal-box').innerHTML = `
-  <div class="crm-modal crm-modal-chip">
+  <div class="crm-modal crm-modal-md">
     <div class="crm-modal-head">
       <div class="crm-modal-title">${iconSvg('edit', 15)} Редактировать контакт</div>
       <button class="modal-close" onclick="closeModal()">${iconSvg('x', 16)}</button>
@@ -673,6 +694,7 @@ function openEditContactModal(clientId, contactId) {
       <div>
         <label class="mn-label">Имя *</label>
         <input class="mn-input" id="ct-name" type="text" value="${_crmEsc(ct.name)}" />
+        <div id="ct-name-err" style="display:none;font-size:11px;color:#DC2626;margin-top:4px">Введите имя контакта</div>
       </div>
       <div>
         <label class="mn-label">Должность / Роль</label>
@@ -680,7 +702,7 @@ function openEditContactModal(clientId, contactId) {
       </div>
       <div>
         <label class="mn-label">Телефон</label>
-        <input class="mn-input" id="ct-phone" type="tel" value="${_crmEsc(ct.phone || '')}" />
+        <input class="mn-input" id="ct-phone" type="tel" value="${_crmEsc(ct.phone || '')}" oninput="formatPhoneInput(this)" />
       </div>
       <div>
         <label class="mn-label">Email</label>
@@ -707,7 +729,12 @@ function saveContact(clientId, contactId) {
   const client = _crmClients.find(c => c.id === clientId);
   if (!client) return;
   const name = document.getElementById('ct-name')?.value.trim();
-  if (!name) return;
+  if (!name) {
+    const errEl = document.getElementById('ct-name-err');
+    if (errEl) errEl.style.display = 'block';
+    document.getElementById('ct-name')?.focus();
+    return;
+  }
   const contacts = _getContacts(client);
   const data = {
     name,
