@@ -587,6 +587,162 @@ function clearNextAction(clientId) {
 }
 window.clearNextAction = clearNextAction;
 
+/* ── CONTACTS helpers ───────────────────────────────────────── */
+function _getContacts(client) {
+  if (client.contacts_json) {
+    try { return JSON.parse(client.contacts_json); } catch(e) {}
+  }
+  // migrate from legacy single-contact fields
+  if (client.contact_person || client.phone || client.email || client.telegram) {
+    return [{
+      id: 'c_legacy',
+      name: client.contact_person || '',
+      role: '',
+      phone: client.phone || '',
+      email: client.email || '',
+      telegram: client.telegram || '',
+    }];
+  }
+  return [];
+}
+
+function _saveContacts(clientId, contacts) {
+  const client = _crmClients.find(c => c.id === clientId);
+  if (!client) return;
+  client.contacts_json = JSON.stringify(contacts);
+  if (!_sb) return;
+  (async () => {
+    try { await _sb.from('crm_clients').update({ contacts_json: client.contacts_json }).eq('id', clientId); }
+    catch(e) { console.error('_saveContacts:', e); }
+  })();
+}
+
+function openAddContactModal(clientId) {
+  document.getElementById('modal-box').innerHTML = `
+  <div class="crm-modal crm-modal-chip">
+    <div class="crm-modal-head">
+      <div class="crm-modal-title">${iconSvg('user', 15)} Новый контакт</div>
+      <button class="modal-close" onclick="closeModal()">${iconSvg('x', 16)}</button>
+    </div>
+    <div class="crm-modal-body" style="display:flex;flex-direction:column;gap:10px">
+      <div>
+        <label class="mn-label">Имя *</label>
+        <input class="mn-input" id="ct-name" type="text" placeholder="Иванов Иван Иванович" />
+      </div>
+      <div>
+        <label class="mn-label">Должность / Роль</label>
+        <input class="mn-input" id="ct-role" type="text" placeholder="Директор, Технолог, ЛПР..." />
+      </div>
+      <div>
+        <label class="mn-label">Телефон</label>
+        <input class="mn-input" id="ct-phone" type="tel" placeholder="+7 (___) ___-__-__" />
+      </div>
+      <div>
+        <label class="mn-label">Email</label>
+        <input class="mn-input" id="ct-email" type="email" placeholder="example@domain.ru" />
+      </div>
+      <div>
+        <label class="mn-label">Telegram</label>
+        <input class="mn-input" id="ct-telegram" type="text" placeholder="@username" />
+      </div>
+    </div>
+    <div class="crm-modal-footer">
+      <div style="flex:1"></div>
+      <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+      <button class="btn-primary" onclick="saveContact('${_crmEsc(clientId)}', null)">Добавить</button>
+    </div>
+  </div>`;
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('ct-name')?.focus(), 60);
+}
+window.openAddContactModal = openAddContactModal;
+
+function openEditContactModal(clientId, contactId) {
+  const client = _crmClients.find(c => c.id === clientId);
+  if (!client) return;
+  const contacts = _getContacts(client);
+  const ct = contacts.find(c => c.id === contactId);
+  if (!ct) return;
+  document.getElementById('modal-box').innerHTML = `
+  <div class="crm-modal crm-modal-chip">
+    <div class="crm-modal-head">
+      <div class="crm-modal-title">${iconSvg('edit', 15)} Редактировать контакт</div>
+      <button class="modal-close" onclick="closeModal()">${iconSvg('x', 16)}</button>
+    </div>
+    <div class="crm-modal-body" style="display:flex;flex-direction:column;gap:10px">
+      <div>
+        <label class="mn-label">Имя *</label>
+        <input class="mn-input" id="ct-name" type="text" value="${_crmEsc(ct.name)}" />
+      </div>
+      <div>
+        <label class="mn-label">Должность / Роль</label>
+        <input class="mn-input" id="ct-role" type="text" value="${_crmEsc(ct.role || '')}" placeholder="Директор, Технолог, ЛПР..." />
+      </div>
+      <div>
+        <label class="mn-label">Телефон</label>
+        <input class="mn-input" id="ct-phone" type="tel" value="${_crmEsc(ct.phone || '')}" />
+      </div>
+      <div>
+        <label class="mn-label">Email</label>
+        <input class="mn-input" id="ct-email" type="email" value="${_crmEsc(ct.email || '')}" />
+      </div>
+      <div>
+        <label class="mn-label">Telegram</label>
+        <input class="mn-input" id="ct-telegram" type="text" value="${_crmEsc(ct.telegram || '')}" />
+      </div>
+    </div>
+    <div class="crm-modal-footer">
+      <button class="mn-btn-danger" onclick="deleteContact('${_crmEsc(clientId)}','${_crmEsc(contactId)}')">${iconSvg('trash', 13)} Удалить</button>
+      <div style="flex:1"></div>
+      <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+      <button class="btn-primary" onclick="saveContact('${_crmEsc(clientId)}','${_crmEsc(contactId)}')">Сохранить</button>
+    </div>
+  </div>`;
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('ct-name')?.focus(), 60);
+}
+window.openEditContactModal = openEditContactModal;
+
+function saveContact(clientId, contactId) {
+  const client = _crmClients.find(c => c.id === clientId);
+  if (!client) return;
+  const name = document.getElementById('ct-name')?.value.trim();
+  if (!name) return;
+  const contacts = _getContacts(client);
+  const data = {
+    name,
+    role:     document.getElementById('ct-role')?.value.trim() || '',
+    phone:    document.getElementById('ct-phone')?.value.trim() || '',
+    email:    document.getElementById('ct-email')?.value.trim() || '',
+    telegram: document.getElementById('ct-telegram')?.value.trim() || '',
+  };
+  if (contactId) {
+    const idx = contacts.findIndex(c => c.id === contactId);
+    if (idx >= 0) contacts[idx] = { ...contacts[idx], ...data };
+  } else {
+    contacts.push({ id: 'c_' + Date.now(), ...data });
+  }
+  _saveContacts(clientId, contacts);
+  closeModal();
+  const contentEl = document.getElementById('crm-tab-content');
+  if (contentEl && _crmActiveTab === 'contacts') contentEl.innerHTML = renderTabContent(client, 'contacts');
+  if (contentEl && _crmActiveTab === 'general')  contentEl.innerHTML = renderTabContent(client, 'general');
+}
+window.saveContact = saveContact;
+
+function deleteContact(clientId, contactId) {
+  if (!confirm('Удалить контактное лицо?')) return;
+  const client = _crmClients.find(c => c.id === clientId);
+  if (!client) return;
+  const contacts = _getContacts(client).filter(c => c.id !== contactId);
+  _saveContacts(clientId, contacts);
+  closeModal();
+  const contentEl = document.getElementById('crm-tab-content');
+  if (contentEl && _crmActiveTab === 'contacts') contentEl.innerHTML = renderTabContent(client, 'contacts');
+  if (contentEl && _crmActiveTab === 'general')  contentEl.innerHTML = renderTabContent(client, 'general');
+}
+window.deleteContact = deleteContact;
+
 /* ── SITE ITEMS helpers (Площадка) ──────────────────────────── */
 function _getSiteItems(client) {
   if (client.site_items) {
@@ -853,30 +1009,34 @@ function _renderGeneralTab(client) {
   </div>`;
 
   // ── Контакт ────────────────────────────────────────────────
-  const hasContact = client.contact_person || client.phone || client.telegram || client.email;
+  const allContacts = _getContacts(client);
+  const firstCt = allContacts[0];
   let contactContent;
-  if (hasContact) {
-    const name = client.contact_person || client.org_name || '';
-    const initials = name.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
-    const phoneLink  = client.phone    ? `<a href="tel:${_crmEsc(client.phone)}" class="crm-cact-btn">${iconSvg('clipboard', 12)} ${_crmEsc(client.phone)}</a>` : '';
-    const tgLink     = client.telegram ? `<a href="https://t.me/${_crmEsc(client.telegram.replace('@',''))}" target="_blank" class="crm-cact-btn">${iconSvg('chat', 12)} ${_crmEsc(client.telegram)}</a>` : '';
-    const emailLink  = client.email    ? `<a href="mailto:${_crmEsc(client.email)}" class="crm-cact-btn">${iconSvg('document', 12)} ${_crmEsc(client.email)}</a>` : '';
+  if (firstCt) {
+    const initials = firstCt.name.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
+    const phoneLink = firstCt.phone    ? `<a href="tel:${_crmEsc(firstCt.phone)}" class="crm-cact-btn">${iconSvg('clipboard', 12)} ${_crmEsc(firstCt.phone)}</a>` : '';
+    const tgLink    = firstCt.telegram ? `<a href="https://t.me/${_crmEsc(firstCt.telegram.replace('@',''))}" target="_blank" class="crm-cact-btn">${iconSvg('chat', 12)} ${_crmEsc(firstCt.telegram)}</a>` : '';
+    const emailLink = firstCt.email    ? `<a href="mailto:${_crmEsc(firstCt.email)}" class="crm-cact-btn">${iconSvg('document', 12)} ${_crmEsc(firstCt.email)}</a>` : '';
     contactContent = `
     <div class="crm-contact-row">
       <div class="crm-contact-ava">${initials}</div>
       <div class="crm-contact-info">
-        ${name ? `<div class="crm-contact-name">${_crmEsc(name)}</div>` : ''}
+        <div class="crm-contact-name">${_crmEsc(firstCt.name)}</div>
+        ${firstCt.role ? `<div style="font-size:11px;color:var(--gray-400);margin-bottom:4px">${_crmEsc(firstCt.role)}</div>` : ''}
         <div class="crm-contact-links">${phoneLink}${tgLink}${emailLink}</div>
       </div>
     </div>
-    <button class="crm-widget-more" onclick="setCrmTab('${cid}','contacts')">${iconSvg('user', 11)} Все контакты →</button>`;
+    <button class="crm-widget-more" onclick="setCrmTab('${cid}','contacts')">${iconSvg('user', 11)} ${allContacts.length > 1 ? `Все контакты (${allContacts.length}) →` : 'Все контакты →'}</button>`;
   } else {
-    contactContent = `<button class="crm-widget-add-btn" onclick="openEditClientModal('${cid}')">${iconSvg('plus', 13)} Добавить контактные данные</button>`;
+    contactContent = `<button class="crm-widget-add-btn" onclick="openAddContactModal('${cid}')">${iconSvg('plus', 13)} Добавить контактное лицо</button>`;
   }
 
   const contactWidget = `
   <div class="crm-db-widget">
-    <div class="crm-widget-head"><span class="crm-widget-title">${iconSvg('user', 14)} Контакт</span></div>
+    <div class="crm-widget-head">
+      <span class="crm-widget-title">${iconSvg('user', 14)} Контакт</span>
+      <button class="crm-widget-btn" onclick="openAddContactModal('${cid}')">${iconSvg('plus', 11)} Добавить</button>
+    </div>
     ${contactContent}
   </div>`;
 
@@ -990,12 +1150,27 @@ function renderTabContent(client, tab) {
   }
 
   if (tab === 'contacts') {
+    const contacts = _getContacts(client);
+    const cards = contacts.map(ct => {
+      const initials = ct.name.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
+      const phoneLink = ct.phone    ? `<a href="tel:${_crmEsc(ct.phone)}" class="crm-cact-btn">${iconSvg('clipboard', 12)} ${_crmEsc(ct.phone)}</a>` : '';
+      const tgLink    = ct.telegram ? `<a href="https://t.me/${_crmEsc(ct.telegram.replace('@',''))}" target="_blank" class="crm-cact-btn">${iconSvg('chat', 12)} ${_crmEsc(ct.telegram)}</a>` : '';
+      const emailLink = ct.email    ? `<a href="mailto:${_crmEsc(ct.email)}" class="crm-cact-btn">${iconSvg('document', 12)} ${_crmEsc(ct.email)}</a>` : '';
+      return `
+      <div class="crm-ct-card">
+        <div class="crm-ct-ava">${initials}</div>
+        <div class="crm-ct-info">
+          <div class="crm-ct-name">${_crmEsc(ct.name)}</div>
+          ${ct.role ? `<div class="crm-ct-role">${_crmEsc(ct.role)}</div>` : ''}
+          <div class="crm-contact-links" style="margin-top:6px">${phoneLink}${tgLink}${emailLink}</div>
+        </div>
+        <button class="crm-ct-edit" onclick="openEditContactModal('${_crmEsc(client.id)}','${_crmEsc(ct.id)}')" title="Редактировать">${iconSvg('edit', 14)}</button>
+      </div>`;
+    }).join('');
     return `
-    <div class="crm-info-grid">
-      ${_crmInfoItem('Контактное лицо', client.contact_person)}
-      ${_crmInfoItem('Телефон', client.phone)}
-      ${_crmInfoItem('Email', client.email)}
-      ${_crmInfoItem('Telegram', client.telegram)}
+    <div class="crm-ct-list">
+      ${cards || `<div class="crm-empty-small">Контактных лиц нет.</div>`}
+      <button class="crm-ct-add-btn" onclick="openAddContactModal('${_crmEsc(client.id)}')">${iconSvg('plus', 14)} Добавить контактное лицо</button>
     </div>`;
   }
 
