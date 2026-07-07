@@ -267,10 +267,6 @@ function renderCrmList(el) {
   el.innerHTML = `
   <div class="crm-page-wrap">
     <div class="crm-page-header">
-      <div>
-        <div class="crm-page-title">CRM - Движение клиента</div>
-        <div class="crm-page-subtitle">${clients.length} клиентов</div>
-      </div>
       <button class="btn-primary" onclick="openAddClientModal()">${iconSvg('plus', 14)} Добавить клиента</button>
     </div>
     <div class="crm-list-tabs">

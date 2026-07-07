@@ -13,10 +13,9 @@
 
 .crm-page-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 10px;
   gap: 8px;
 }
 
