@@ -49,7 +49,8 @@ const CRM_TABS = [
 ];
 
 let _crmClients = [];
-let _crmHistory = {}; // { [clientId]: historyEntry[] }
+let _crmHistory = {};   // { [clientId]: historyEntry[] }
+let _crmContacts = {};  // { [clientId]: Contact[] }
 
 let _crmFilter = { search: '', stage: 'all', cat: 'all', lifecycle: 'crm' };
 let _crmSearchDebounce = null;
@@ -124,12 +125,17 @@ function _crmStageDate(clientId, stageKey) {
 
 /* ---------------- ЗАГРУЗКА ДАННЫХ (вызывается из app.js) ---------------- */
 
-function loadCrmData(clientsData, historyData) {
+function loadCrmData(clientsData, historyData, contactsData) {
   _crmClients = clientsData || [];
   _crmHistory = {};
   (historyData || []).forEach(h => {
     if (!_crmHistory[h.client_id]) _crmHistory[h.client_id] = [];
     _crmHistory[h.client_id].push(h);
+  });
+  _crmContacts = {};
+  (contactsData || []).forEach(c => {
+    if (!_crmContacts[c.client_id]) _crmContacts[c.client_id] = [];
+    _crmContacts[c.client_id].push(c);
   });
 }
 window.loadCrmData = loadCrmData;
@@ -603,15 +609,15 @@ function formatPhoneInput(input) {
 }
 window.formatPhoneInput = formatPhoneInput;
 
-/* ── CONTACTS helpers ───────────────────────────────────────── */
+/* ── CONTACTS (таблица crm_contacts) ────────────────────────── */
 function _getContacts(client) {
-  if (client.contacts_json) {
-    try { return JSON.parse(client.contacts_json); } catch(e) {}
-  }
+  const stored = _crmContacts[client.id];
+  if (stored && stored.length > 0) return stored;
   // migrate from legacy single-contact fields
   if (client.contact_person || client.phone || client.email || client.telegram) {
     return [{
-      id: 'c_legacy',
+      id: 'c_leg_' + client.id,
+      client_id: client.id,
       name: client.contact_person || '',
       role: '',
       phone: client.phone || '',
@@ -620,19 +626,6 @@ function _getContacts(client) {
     }];
   }
   return [];
-}
-
-function _saveContacts(clientId, contacts) {
-  const client = _crmClients.find(c => c.id === clientId);
-  if (!client) return;
-  client.contacts_json = JSON.stringify(contacts);
-  if (!_sb) return;
-  (async () => {
-    try {
-      const { error } = await _sb.from('crm_clients').upsert({ id: clientId, contacts_json: client.contacts_json });
-      if (error) console.error('_saveContacts error:', error.code, error.message, error.details);
-    } catch(e) { console.error('_saveContacts exception:', e); }
-  })();
 }
 
 function openAddContactModal(clientId) {
@@ -733,25 +726,31 @@ function saveContact(clientId, contactId) {
     document.getElementById('ct-name')?.focus();
     return;
   }
-  const contacts = _getContacts(client);
-  const data = {
+  const id = contactId || ('c_' + Date.now());
+  const record = {
+    id,
+    client_id: clientId,
     name,
     role:     document.getElementById('ct-role')?.value.trim() || '',
     phone:    document.getElementById('ct-phone')?.value.trim() || '',
     email:    document.getElementById('ct-email')?.value.trim() || '',
     telegram: document.getElementById('ct-telegram')?.value.trim() || '',
   };
-  if (contactId) {
-    const idx = contacts.findIndex(c => c.id === contactId);
-    if (idx >= 0) contacts[idx] = { ...contacts[idx], ...data };
-  } else {
-    contacts.push({ id: 'c_' + Date.now(), ...data });
-  }
-  _saveContacts(clientId, contacts);
+  if (!_crmContacts[clientId]) _crmContacts[clientId] = [];
+  const idx = _crmContacts[clientId].findIndex(c => c.id === id);
+  if (idx >= 0) _crmContacts[clientId][idx] = record;
+  else _crmContacts[clientId].push(record);
+
   closeModal();
   const contentEl = document.getElementById('crm-tab-content');
   if (contentEl && _crmActiveTab === 'contacts') contentEl.innerHTML = renderTabContent(client, 'contacts');
   if (contentEl && _crmActiveTab === 'general')  contentEl.innerHTML = renderTabContent(client, 'general');
+
+  if (!_sb) return;
+  (async () => {
+    const { error } = await _sb.from('crm_contacts').upsert(record);
+    if (error) console.error('saveContact DB error:', error.code, error.message);
+  })();
 }
 window.saveContact = saveContact;
 
@@ -759,12 +758,19 @@ function deleteContact(clientId, contactId) {
   if (!confirm('Удалить контактное лицо?')) return;
   const client = _crmClients.find(c => c.id === clientId);
   if (!client) return;
-  const contacts = _getContacts(client).filter(c => c.id !== contactId);
-  _saveContacts(clientId, contacts);
+  if (_crmContacts[clientId]) {
+    _crmContacts[clientId] = _crmContacts[clientId].filter(c => c.id !== contactId);
+  }
   closeModal();
   const contentEl = document.getElementById('crm-tab-content');
   if (contentEl && _crmActiveTab === 'contacts') contentEl.innerHTML = renderTabContent(client, 'contacts');
   if (contentEl && _crmActiveTab === 'general')  contentEl.innerHTML = renderTabContent(client, 'general');
+
+  if (!_sb) return;
+  (async () => {
+    const { error } = await _sb.from('crm_contacts').delete().eq('id', contactId);
+    if (error) console.error('deleteContact DB error:', error.code, error.message);
+  })();
 }
 window.deleteContact = deleteContact;
 
