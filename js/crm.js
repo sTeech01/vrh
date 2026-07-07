@@ -409,96 +409,378 @@ function _crmTabStub(title) {
   </div>`;
 }
 
-function _crmField(label, value, badgeClass) {
-  const empty = value === null || value === undefined || value === '';
-  let valHtml;
-  if (empty) {
-    valHtml = '<span class="crm-fv-empty">Не заполнено</span>';
-  } else if (badgeClass) {
-    valHtml = `<span class="crm-fv-badge ${badgeClass}">${_crmEsc(value)}</span>`;
+/* ── DASHBOARD: Property Chip definitions ──────────────────── */
+const _CRM_CHIP_DEFS = [
+  { field: 'project_type', label: 'Тип проекта',      icon: 'list',
+    display: c => getCrmTypeLabel(c.project_type) || null,
+    raw:     c => c.project_type || '',
+    type: 'select', opts: () => [{value:'',label:'- Не выбран -'}].concat(CRM_TYPES.map(t=>({value:t.key,label:t.label}))) },
+  { field: 'region',          label: 'Регион',           icon: 'clipboard',
+    display: c => c.region || null,        raw: c => c.region || '',          type: 'text' },
+  { field: 'capacity',        label: 'Мощность',          icon: 'chart',
+    display: c => c.capacity ? c.capacity + ' т/год' : null,
+    raw: c => c.capacity || '',            type: 'text', placeholder: 'т/год' },
+  { field: 'deadline_months', label: 'Срок реализации',   icon: 'clock',
+    display: c => c.deadline_months ? c.deadline_months + ' мес.' : null,
+    raw: c => c.deadline_months || '',     type: 'text', placeholder: 'месяцев' },
+  { field: 'funding_source',  label: 'Финансирование',    icon: 'cart',
+    display: c => c.funding_source || null, raw: c => c.funding_source || '', type: 'text' },
+  { field: 'client_priority', label: 'Приоритет',          icon: 'alert',
+    display: c => c.client_priority || null, raw: c => c.client_priority || '', type: 'text' },
+  { field: 'manager',         label: 'Менеджер',           icon: 'user',
+    display: c => c.manager || null,        raw: c => c.manager || '',          type: 'text' },
+];
+
+function _renderChipsRow(client) {
+  const cid = _crmEsc(client.id);
+  const chips = _CRM_CHIP_DEFS.map(def => {
+    const val = def.display(client);
+    if (!val) return '';
+    return `
+    <button class="crm-chip" onclick="openChipEditModal('${cid}','${def.field}')">
+      <span class="crm-chip-ic">${iconSvg(def.icon, 13)}</span>
+      <span class="crm-chip-inner">
+        <span class="crm-chip-val">${_crmEsc(val)}</span>
+        <span class="crm-chip-lbl">${_crmEsc(def.label)}</span>
+      </span>
+      <span class="crm-chip-edit">${iconSvg('edit', 10)}</span>
+    </button>`;
+  }).filter(Boolean);
+
+  chips.push(`
+    <button class="crm-chip crm-chip-add" onclick="openEditClientModal('${cid}')">
+      ${iconSvg('plus', 12)} Добавить данные
+    </button>`);
+
+  return `<div class="crm-chips-row">${chips.join('')}</div>`;
+}
+
+function openChipEditModal(clientId, field) {
+  const client = _crmClients.find(c => c.id === clientId);
+  const def = _CRM_CHIP_DEFS.find(d => d.field === field);
+  if (!client || !def) return;
+
+  let inputHtml;
+  if (def.type === 'select') {
+    const opts = def.opts().map(o =>
+      `<option value="${_crmEsc(o.value)}" ${def.raw(client) === o.value ? 'selected' : ''}>${_crmEsc(o.label)}</option>`
+    ).join('');
+    inputHtml = `<select class="mn-input" id="chip-edit-val" style="margin-top:4px">${opts}</select>`;
   } else {
-    valHtml = `<span class="crm-fv">${_crmEsc(value)}</span>`;
+    inputHtml = `<input class="mn-input" type="text" id="chip-edit-val" value="${_crmEsc(def.raw(client))}" placeholder="${_crmEsc(def.placeholder||def.label)}" style="margin-top:4px">`;
   }
-  return `<div class="crm-field-row"><span class="crm-fl">${_crmEsc(label)}</span>${valHtml}</div>`;
-}
 
-function _crmSectionCard(title, iconName, fields, fullWidth) {
-  return `
-  <div class="crm-sc${fullWidth ? ' crm-sc-full' : ''}">
-    <div class="crm-sc-head">
-      <span class="crm-sc-icon">${iconSvg(iconName, 13)}</span>
-      <span class="crm-sc-title">${_crmEsc(title)}</span>
+  document.getElementById('modal-box').innerHTML = `
+  <div class="crm-modal crm-modal-chip">
+    <div class="crm-modal-head">
+      <div class="crm-modal-title">${iconSvg(def.icon, 15)} ${_crmEsc(def.label)}</div>
+      <button class="modal-close" onclick="closeModal()">${iconSvg('x', 16)}</button>
     </div>
-    <div class="crm-sc-body">${fields}</div>
+    <div class="crm-modal-body" style="padding-top:4px;padding-bottom:8px">
+      <label class="mn-label" for="chip-edit-val">${_crmEsc(def.label)}</label>
+      ${inputHtml}
+    </div>
+    <div class="crm-modal-footer">
+      <div style="flex:1"></div>
+      <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+      <button class="btn-primary" onclick="saveChipField('${_crmEsc(clientId)}','${_crmEsc(field)}')">Сохранить</button>
+    </div>
   </div>`;
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => { const el = document.getElementById('chip-edit-val'); if (el) el.focus(); }, 60);
 }
+window.openChipEditModal = openChipEditModal;
 
+function saveChipField(clientId, field) {
+  const client = _crmClients.find(c => c.id === clientId);
+  if (!client) return;
+  const el = document.getElementById('chip-edit-val');
+  if (!el) return;
+  const value = el.value.trim() || null;
+  client[field] = value;
+  closeModal();
+  const contentEl = document.getElementById('crm-tab-content');
+  if (contentEl && _crmActiveTab === 'general') contentEl.innerHTML = renderTabContent(client, 'general');
+  if (!_sb) return;
+  (async () => {
+    try { await _sb.from('crm_clients').update({ [field]: value }).eq('id', clientId); }
+    catch(e) { console.error('saveChipField:', e); }
+  })();
+}
+window.saveChipField = saveChipField;
+
+/* ── DASHBOARD: Next Action ─────────────────────────────────── */
+function openNextActionModal(clientId) {
+  const client = _crmClients.find(c => c.id === clientId);
+  if (!client) return;
+  const hasData = client.next_action_text || client.next_action_date;
+  document.getElementById('modal-box').innerHTML = `
+  <div class="crm-modal crm-modal-sm">
+    <div class="crm-modal-head">
+      <div class="crm-modal-title">${iconSvg('calendar', 15)} Следующее действие</div>
+      <button class="modal-close" onclick="closeModal()">${iconSvg('x', 16)}</button>
+    </div>
+    <div class="crm-modal-body">
+      <div style="display:flex;flex-direction:column;gap:12px;padding-bottom:4px">
+        <div>
+          <label class="mn-label" for="na-text">Задача</label>
+          <input class="mn-input" type="text" id="na-text" value="${_crmEsc(client.next_action_text||'')}" placeholder="Что нужно сделать">
+        </div>
+        <div>
+          <label class="mn-label" for="na-date">Дата</label>
+          <input class="mn-input" type="date" id="na-date" value="${_crmEsc(client.next_action_date||'')}">
+        </div>
+        <div>
+          <label class="mn-label" for="na-assignee">Ответственный</label>
+          <input class="mn-input" type="text" id="na-assignee" value="${_crmEsc(client.next_action_assignee||'')}" placeholder="Имя">
+        </div>
+      </div>
+    </div>
+    <div class="crm-modal-footer">
+      ${hasData ? `<button class="mn-btn-danger" onclick="clearNextAction('${_crmEsc(clientId)}')">${iconSvg('trash',14)} Удалить</button>` : ''}
+      <div style="flex:1"></div>
+      <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+      <button class="btn-primary" onclick="saveNextAction('${_crmEsc(clientId)}')">Сохранить</button>
+    </div>
+  </div>`;
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => { document.getElementById('na-text')?.focus(); }, 60);
+}
+window.openNextActionModal = openNextActionModal;
+
+function saveNextAction(clientId) {
+  const client = _crmClients.find(c => c.id === clientId);
+  if (!client) return;
+  client.next_action_text     = document.getElementById('na-text')?.value.trim()     || null;
+  client.next_action_date     = document.getElementById('na-date')?.value             || null;
+  client.next_action_assignee = document.getElementById('na-assignee')?.value.trim() || null;
+  closeModal();
+  const contentEl = document.getElementById('crm-tab-content');
+  if (contentEl && _crmActiveTab === 'general') contentEl.innerHTML = renderTabContent(client, 'general');
+  if (!_sb) return;
+  (async () => {
+    try {
+      await _sb.from('crm_clients').update({
+        next_action_text: client.next_action_text,
+        next_action_date: client.next_action_date,
+        next_action_assignee: client.next_action_assignee,
+      }).eq('id', clientId);
+    } catch(e) { console.warn('saveNextAction: columns may not exist yet, run migration', e.message); }
+  })();
+}
+window.saveNextAction = saveNextAction;
+
+function clearNextAction(clientId) {
+  const client = _crmClients.find(c => c.id === clientId);
+  if (!client) return;
+  client.next_action_text = null;
+  client.next_action_date = null;
+  client.next_action_assignee = null;
+  closeModal();
+  const contentEl = document.getElementById('crm-tab-content');
+  if (contentEl && _crmActiveTab === 'general') contentEl.innerHTML = renderTabContent(client, 'general');
+  if (!_sb) return;
+  (async () => {
+    try { await _sb.from('crm_clients').update({ next_action_text: null, next_action_date: null, next_action_assignee: null }).eq('id', clientId); }
+    catch(e) {}
+  })();
+}
+window.clearNextAction = clearNextAction;
+
+/* ── DASHBOARD: Journal ─────────────────────────────────────── */
+function openJournalModal(clientId) {
+  const client = _crmClients.find(c => c.id === clientId);
+  if (!client) return;
+  document.getElementById('modal-box').innerHTML = `
+  <div class="crm-modal crm-modal-md">
+    <div class="crm-modal-head">
+      <div class="crm-modal-title">${iconSvg('chat', 15)} Журнал проекта</div>
+      <button class="modal-close" onclick="closeModal()">${iconSvg('x', 16)}</button>
+    </div>
+    <div class="crm-modal-body">
+      <textarea class="mn-input" id="journal-text" rows="7" style="height:auto;padding:10px 12px;resize:vertical;line-height:1.7;font-size:14px">${_crmEsc(client.comment||'')}</textarea>
+      <p style="font-size:11px;color:var(--gray-400);margin-top:8px">Запись сохраняется как основная заметка по проекту.</p>
+    </div>
+    <div class="crm-modal-footer">
+      <div style="flex:1"></div>
+      <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+      <button class="btn-primary" onclick="saveJournalEntry('${_crmEsc(clientId)}')">Сохранить</button>
+    </div>
+  </div>`;
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => { document.getElementById('journal-text')?.focus(); }, 60);
+}
+window.openJournalModal = openJournalModal;
+
+function saveJournalEntry(clientId) {
+  const client = _crmClients.find(c => c.id === clientId);
+  if (!client) return;
+  client.comment = document.getElementById('journal-text')?.value.trim() || null;
+  closeModal();
+  const contentEl = document.getElementById('crm-tab-content');
+  if (contentEl && _crmActiveTab === 'general') contentEl.innerHTML = renderTabContent(client, 'general');
+  if (!_sb) return;
+  (async () => {
+    try { await _sb.from('crm_clients').update({ comment: client.comment }).eq('id', clientId); }
+    catch(e) { console.error('saveJournalEntry:', e); }
+  })();
+}
+window.saveJournalEntry = saveJournalEntry;
+
+/* ── DASHBOARD: General Tab renderer ───────────────────────── */
 function _renderGeneralTab(client) {
-  const typeLabel   = getCrmTypeLabel(client.project_type);
-  const boolLand    = _crmBoolText(client.has_land);
-  const boolBuild   = _crmBoolText(client.has_building);
+  const cid = _crmEsc(client.id);
 
-  const typeBadge   = client.project_type ? 'crm-fv-badge-type' : '';
-  const prioBadge   = client.client_priority ? 'crm-fv-badge-prio' : '';
-  const finBadge    = client.funding_source  ? 'crm-fv-badge-fin'  : '';
-  const landBadge   = boolLand  ? (boolLand  === 'Да' ? 'crm-fv-badge-yes' : 'crm-fv-badge-no') : '';
-  const buildBadge  = boolBuild ? (boolBuild === 'Да' ? 'crm-fv-badge-yes' : 'crm-fv-badge-no') : '';
+  // Property chips
+  const chipsRow = _renderChipsRow(client);
 
-  const mainFields = [
-    _crmField('Название проекта',  client.project_name),
-    _crmField('Регион',            client.region),
-    _crmField('Адрес',             client.address),
-    _crmField('Менеджер',          client.manager),
-    _crmField('Создан',            formatDateShort(String(client.created_at || '').slice(0, 10))),
-    _crmField('Последний контакт', formatDateShort(client.last_contact)),
-  ].join('');
+  // ── Следующее действие ──────────────────────────────────────
+  const hasNA = client.next_action_text || client.next_action_date;
+  const naContent = hasNA ? `
+    <div class="crm-na-content">
+      ${client.next_action_date ? `<div class="crm-na-date">${iconSvg('calendar', 12)} ${formatDateShort(client.next_action_date)}</div>` : ''}
+      <div class="crm-na-task">${_crmEsc(client.next_action_text || '')}</div>
+      ${client.next_action_assignee ? `<div class="crm-na-who">${iconSvg('user', 11)} ${_crmEsc(client.next_action_assignee)}</div>` : ''}
+    </div>` :
+    `<button class="crm-widget-add-btn" onclick="openNextActionModal('${cid}')">${iconSvg('plus', 13)} Добавить следующее действие</button>`;
 
-  const projectFields = [
-    _crmField('Тип проекта',          typeLabel,               typeBadge),
-    _crmField('Вид рыбы',             client.fish_type),
-    _crmField('Мощность (т/год)',      client.capacity),
-    _crmField('Срок реализации (мес.)', client.deadline_months),
-  ].join('');
-
-  const siteFields = [
-    _crmField('Наличие участка',  boolLand  || null, landBadge),
-    _crmField('Наличие здания',   boolBuild || null, buildBadge),
-    _crmField('Источник воды',    null),
-    _crmField('Электроснабжение', null),
-    _crmField('Газ',              null),
-  ].join('');
-
-  const finFields = [
-    _crmField('Источник финансирования', client.funding_source, finBadge),
-    _crmField('Партнёры',                client.partners),
-    _crmField('Бюджет',                  null),
-  ].join('');
-
-  const clientFields = [
-    _crmField('ЛПР',                   client.lpr),
-    _crmField('Приоритет клиента',      client.client_priority, prioBadge),
-    _crmField('Посещённые хозяйства',   client.visited_farms),
-    _crmField('Почему выбрали нас',     client.why_chose_us),
-    _crmField('Конкуренты',             client.competitors),
-  ].join('');
-
-  const commentBlock = `
-  <div class="crm-sc crm-sc-full">
-    <div class="crm-sc-head">
-      <span class="crm-sc-icon">${iconSvg('chat', 13)}</span>
-      <span class="crm-sc-title">Комментарий</span>
+  const nextActionWidget = `
+  <div class="crm-db-widget crm-na-widget">
+    <div class="crm-widget-head">
+      <span class="crm-widget-title">${iconSvg('calendar', 14)} Следующее действие</span>
+      ${hasNA ? `<button class="crm-widget-btn" onclick="openNextActionModal('${cid}')">${iconSvg('edit', 11)} Изменить</button>` : ''}
     </div>
-    <div class="crm-sc-comment">${client.comment ? _crmEsc(client.comment) : '<span class="crm-fv-empty">Не заполнено</span>'}</div>
+    ${naContent}
   </div>`;
 
+  // ── Журнал проекта ─────────────────────────────────────────
+  const lastHist = (_crmHistory[client.id] || []).slice()
+    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))[0];
+  const journalDate = lastHist
+    ? formatDateShort(String(lastHist.created_at).slice(0, 10))
+    : formatDateShort(String(client.created_at || '').slice(0, 10));
+
+  const journalContent = client.comment ? `
+    <div class="crm-journal-meta">${journalDate}</div>
+    <div class="crm-journal-text">${_crmEsc(client.comment)}</div>` :
+    `<div class="crm-journal-empty">Нет записей. Добавьте первую заметку о проекте.</div>`;
+
+  const journalWidget = `
+  <div class="crm-db-widget crm-journal-widget">
+    <div class="crm-widget-head">
+      <span class="crm-widget-title">${iconSvg('chat', 14)} Журнал проекта</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="crm-widget-btn" onclick="setCrmTab('${cid}','history')">${iconSvg('list', 11)} Все записи</button>
+        <button class="crm-widget-btn crm-widget-btn-accent" onclick="openJournalModal('${cid}')">${iconSvg('plus', 11)} Добавить</button>
+      </div>
+    </div>
+    ${journalContent}
+  </div>`;
+
+  // ── Контакт ────────────────────────────────────────────────
+  const hasContact = client.contact_person || client.phone || client.telegram || client.email;
+  let contactContent;
+  if (hasContact) {
+    const name = client.contact_person || client.org_name || '';
+    const initials = name.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
+    const phoneLink  = client.phone    ? `<a href="tel:${_crmEsc(client.phone)}" class="crm-cact-btn">${iconSvg('clipboard', 12)} ${_crmEsc(client.phone)}</a>` : '';
+    const tgLink     = client.telegram ? `<a href="https://t.me/${_crmEsc(client.telegram.replace('@',''))}" target="_blank" class="crm-cact-btn">${iconSvg('chat', 12)} ${_crmEsc(client.telegram)}</a>` : '';
+    const emailLink  = client.email    ? `<a href="mailto:${_crmEsc(client.email)}" class="crm-cact-btn">${iconSvg('document', 12)} ${_crmEsc(client.email)}</a>` : '';
+    contactContent = `
+    <div class="crm-contact-row">
+      <div class="crm-contact-ava">${initials}</div>
+      <div class="crm-contact-info">
+        ${name ? `<div class="crm-contact-name">${_crmEsc(name)}</div>` : ''}
+        <div class="crm-contact-links">${phoneLink}${tgLink}${emailLink}</div>
+      </div>
+    </div>
+    <button class="crm-widget-more" onclick="setCrmTab('${cid}','contacts')">${iconSvg('user', 11)} Все контакты →</button>`;
+  } else {
+    contactContent = `<button class="crm-widget-add-btn" onclick="openEditClientModal('${cid}')">${iconSvg('plus', 13)} Добавить контактные данные</button>`;
+  }
+
+  const contactWidget = `
+  <div class="crm-db-widget">
+    <div class="crm-widget-head"><span class="crm-widget-title">${iconSvg('user', 14)} Контакт</span></div>
+    ${contactContent}
+  </div>`;
+
+  // ── Площадка ───────────────────────────────────────────────
+  const siteChecks = [
+    { label: 'Участок',       val: client.has_land },
+    { label: 'Здание',        val: client.has_building },
+    { label: 'Газ',           val: null },
+    { label: 'Электричество', val: null },
+    { label: 'Вода',          val: null },
+  ].map(it => {
+    const done = it.val === true || it.val === 'true' || it.val === 'yes';
+    const cls = done ? 'crm-chk-yes' : (it.val === false || it.val === 'false' || it.val === 'no' ? 'crm-chk-no' : 'crm-chk-undef');
+    return `<div class="crm-chk-item ${cls}">${done ? iconSvg('check', 12) : iconSvg('minus', 12)} ${_crmEsc(it.label)}</div>`;
+  }).join('');
+
+  const siteWidget = `
+  <div class="crm-db-widget">
+    <div class="crm-widget-head"><span class="crm-widget-title">${iconSvg('folder', 14)} Площадка</span></div>
+    <div class="crm-checklist">${siteChecks}</div>
+  </div>`;
+
+  // ── Финансирование / ЛПР ──────────────────────────────────
+  let finWidget = '';
+  const finBadges = [];
+  if (client.funding_source) finBadges.push(`<span class="crm-fin-badge crm-fin-green">${iconSvg('cart',11)} ${_crmEsc(client.funding_source)}</span>`);
+  if (client.lpr)            finBadges.push(`<span class="crm-fin-badge crm-fin-blue">${iconSvg('user',11)} ЛПР: ${_crmEsc(client.lpr)}</span>`);
+  if (client.partners)       finBadges.push(`<span class="crm-fin-badge crm-fin-purple">${iconSvg('user',11)} ${_crmEsc(client.partners)}</span>`);
+  if (finBadges.length) {
+    finWidget = `
+    <div class="crm-db-widget">
+      <div class="crm-widget-head"><span class="crm-widget-title">${iconSvg('chart', 14)} Финансирование</span></div>
+      <div class="crm-fin-badges">${finBadges.join('')}</div>
+    </div>`;
+  }
+
+  // ── Последняя активность ──────────────────────────────────
+  const histItems = (_crmHistory[client.id] || []).slice()
+    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+    .slice(0, 5);
+
+  let activityWidget = '';
+  if (histItems.length) {
+    const rows = histItems.map(h => {
+      const st = getCrmStageInfo(h.stage);
+      const comment = h.comment ? ` - ${h.comment.slice(0, 70)}${h.comment.length > 70 ? '...' : ''}` : '';
+      return `
+      <div class="crm-act-item">
+        <span class="crm-act-dot" style="background:${st.bg};color:${st.color}">${iconSvg('check', 10)}</span>
+        <span class="crm-act-label"><span class="crm-act-stage" style="color:${st.color}">${_crmEsc(st.label)}</span><span class="crm-act-comment">${_crmEsc(comment)}</span></span>
+        <span class="crm-act-date">${formatDateShort(String(h.created_at).slice(0,10))}</span>
+      </div>`;
+    }).join('');
+
+    activityWidget = `
+    <div class="crm-db-widget crm-act-widget">
+      <div class="crm-widget-head">
+        <span class="crm-widget-title">${iconSvg('clock', 14)} Последняя активность</span>
+        <button class="crm-widget-btn" onclick="setCrmTab('${cid}','history')">${iconSvg('list', 11)} Полная история</button>
+      </div>
+      <div class="crm-act-list">${rows}</div>
+    </div>`;
+  }
+
   return `
-  <div class="crm-general-grid">
-    ${_crmSectionCard('Основная информация', 'document',   mainFields)}
-    ${_crmSectionCard('Проект',              'list',        projectFields)}
-    ${_crmSectionCard('Площадка',            'folder',      siteFields)}
-    ${_crmSectionCard('Финансирование',      'chart',       finFields)}
-    ${_crmSectionCard('Клиент',              'user',        clientFields)}
-    ${commentBlock}
+  <div class="crm-dashboard">
+    ${chipsRow}
+    <div class="crm-db-body">
+      <div class="crm-db-left">
+        ${nextActionWidget}
+        ${journalWidget}
+      </div>
+      <div class="crm-db-right">
+        ${contactWidget}
+        ${siteWidget}
+        ${finWidget}
+      </div>
+    </div>
+    ${activityWidget}
   </div>`;
 }
 
