@@ -642,7 +642,6 @@ function _getContacts(client) {
 }
 
 function openAddContactModal(clientId) {
-  console.log('[CRM] openAddContactModal called, clientId=', clientId);
   try {
   document.getElementById('modal-box').innerHTML = `
   <div class="crm-modal crm-modal-md">
@@ -680,21 +679,18 @@ function openAddContactModal(clientId) {
     </div>
   </div>`;
   document.getElementById('modal-overlay').classList.add('open');
-  console.log('[CRM] modal opened OK');
   setTimeout(() => document.getElementById('ct-name')?.focus(), 60);
-  } catch(e) { console.error('[CRM] openAddContactModal ERROR:', e); }
+  } catch(e) { console.error('openAddContactModal ERROR:', e); }
 }
 window.openAddContactModal = openAddContactModal;
 
 function openEditContactModal(clientId, contactId) {
-  console.log('[CRM] openEditContactModal called', clientId, contactId);
   const client = _crmClients.find(c => c.id === clientId);
-  if (!client) { console.warn('[CRM] client not found in _crmClients, len=', _crmClients.length); return; }
-  // ищем сначала в хранилище, потом в legacy-списке
+  if (!client) return;
   const stored = (_crmContacts[clientId] || []).find(c => c.id === contactId);
   const legacy = !stored ? _getContacts(client).find(c => c.id === contactId) : null;
   const ct = stored || legacy;
-  if (!ct) { console.warn('[CRM] contact not found, stored=', stored, 'legacy=', legacy); return; }
+  if (!ct) return;
   try {
   document.getElementById('modal-box').innerHTML = `
   <div class="crm-modal crm-modal-md">
@@ -733,9 +729,8 @@ function openEditContactModal(clientId, contactId) {
     </div>
   </div>`;
   document.getElementById('modal-overlay').classList.add('open');
-  console.log('[CRM] edit contact modal opened OK');
   setTimeout(() => document.getElementById('ct-name')?.focus(), 60);
-  } catch(e) { console.error('[CRM] openEditContactModal ERROR:', e); }
+  } catch(e) { console.error('openEditContactModal ERROR:', e); }
 }
 window.openEditContactModal = openEditContactModal;
 
