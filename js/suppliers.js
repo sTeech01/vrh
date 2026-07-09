@@ -361,7 +361,7 @@ function _supTabContacts(s) {
             <div class="sup-contact-name">${_supEsc(c.name || '—')}</div>
             ${c.position ? `<div class="sup-contact-pos">${_supEsc(c.position)}</div>` : ''}
           </div>
-          <button class="sup-icon-btn" onclick="openEditContactModal('${_supEsc(c.id)}','${_supEsc(s.id)}')">${iconSvg('edit',14)}</button>
+          <button class="sup-icon-btn" onclick="openSupEditContactModal('${_supEsc(c.id)}','${_supEsc(s.id)}')">${iconSvg('edit',14)}</button>
         </div>
         <div class="sup-contact-fields">
           ${c.phone    ? `<span>${iconSvg('user',11)} ${_supEsc(c.phone)}</span>`    : ''}
@@ -379,7 +379,7 @@ function _supTabContacts(s) {
     <div class="sup-tab-section">
       <div class="sup-section-header">
         <div class="sup-section-title">Контактные лица</div>
-        <button class="btn-primary sup-btn-sm" onclick="openAddContactModal('${_supEsc(s.id)}')">${iconSvg('plus',12)} Добавить</button>
+        <button class="btn-primary sup-btn-sm" onclick="openSupAddContactModal('${_supEsc(s.id)}')">${iconSvg('plus',12)} Добавить</button>
       </div>
       <div class="sup-contacts-list">${rows}</div>
     </div>
@@ -635,26 +635,26 @@ function _supContactModalHtml(contact, supplierId, isEdit) {
       </div>
     </div>
     <div class="crm-modal-footer">
-      ${isEdit ? `<button class="mn-btn-danger" onclick="deleteContact('${_supEsc(c.id)}','${_supEsc(supplierId)}')">${iconSvg('trash',14)} Удалить</button>` : ''}
+      ${isEdit ? `<button class="mn-btn-danger" onclick="deleteSupContact('${_supEsc(c.id)}','${_supEsc(supplierId)}')">${iconSvg('trash',14)} Удалить</button>` : ''}
       <div style="flex:1"></div>
       <button class="btn-secondary" onclick="closeModal()">Отмена</button>
-      <button class="btn-primary" onclick="saveContact('${_supEsc(supplierId)}',${isEdit?`'${_supEsc(c.id)}'`:'null'})">${isEdit ? 'Сохранить' : 'Добавить'}</button>
+      <button class="btn-primary" onclick="saveSupContact('${_supEsc(supplierId)}',${isEdit?`'${_supEsc(c.id)}'`:'null'})">${isEdit ? 'Сохранить' : 'Добавить'}</button>
     </div>
   </div>`;
 }
 
-function openAddContactModal(supplierId) {
+function openSupAddContactModal(supplierId) {
   document.getElementById('modal-box').innerHTML = _supContactModalHtml(null, supplierId, false);
   document.getElementById('modal-overlay').classList.add('open');
 }
-function openEditContactModal(contactId, supplierId) {
+function openSupEditContactModal(contactId, supplierId) {
   const c = (_supContacts[supplierId] || []).find(x => x.id === contactId);
   if (!c) return;
   document.getElementById('modal-box').innerHTML = _supContactModalHtml(c, supplierId, true);
   document.getElementById('modal-overlay').classList.add('open');
 }
 
-function saveContact(supplierId, contactId) {
+function saveSupContact(supplierId, contactId) {
   const isNew = !contactId;
   const fields = {
     supplier_id: supplierId,
@@ -680,25 +680,25 @@ function saveContact(supplierId, contactId) {
   }
   (async () => {
     try { await _sb.from('supplier_contacts').upsert(contact); }
-    catch (e) { console.error('saveContact error:', e); }
+    catch (e) { console.error('saveSupContact error:', e); }
   })();
   closeModal();
   setSupTab(supplierId, 'contacts');
 }
-window.saveContact = saveContact;
+window.saveSupContact = saveSupContact;
 
-function deleteContact(contactId, supplierId) {
+function deleteSupContact(contactId, supplierId) {
   if (!confirm('Удалить контакт?')) return;
   if (_supContacts[supplierId])
     _supContacts[supplierId] = _supContacts[supplierId].filter(x => x.id !== contactId);
   (async () => {
     try { await _sb.from('supplier_contacts').delete().eq('id', contactId); }
-    catch (e) { console.error('deleteContact error:', e); }
+    catch (e) { console.error('deleteSupContact error:', e); }
   })();
   closeModal();
   setSupTab(supplierId, 'contacts');
 }
-window.deleteContact = deleteContact;
+window.deleteSupContact = deleteSupContact;
 
 // ── МОДАЛКА: ИСТОРИЯ ─────────────────────────────────────────────
 function openAddHistoryModal(supplierId) {
@@ -843,8 +843,8 @@ window.setSupViewMode       = setSupViewMode;
 window.setSupTab            = setSupTab;
 window.openAddSupplierModal  = openAddSupplierModal;
 window.openEditSupplierModal = openEditSupplierModal;
-window.openAddContactModal   = openAddContactModal;
-window.openEditContactModal  = openEditContactModal;
+window.openSupAddContactModal   = openSupAddContactModal;
+window.openSupEditContactModal  = openSupEditContactModal;
 window.openAddHistoryModal   = openAddHistoryModal;
 window.openAddBankModal      = openAddBankModal;
 window.openEditBankModal     = openEditBankModal;
