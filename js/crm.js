@@ -11,7 +11,7 @@ const CRM_STAGES = [
   { key: 'new',         label: 'Неразобран',            color: '#94A3B8', bg: '#F1F5F9' },
   { key: 'in_work',     label: 'Взят в работу',          color: '#3B82F6', bg: '#EFF6FF' },
   { key: 'warming',     label: 'Прогрев',                color: '#F59E0B', bg: '#FFFBEB' },
-  { key: 'lead_ready',  label: 'Лид / Готов проект',     color: '#8B5CF6', bg: '#F5F3FF' },
+  { key: 'lead_ready',  label: 'Лид / Готов',            color: '#8B5CF6', bg: '#F5F3FF' },
   { key: 'negotiation', label: 'Согласование КП',        color: '#EC4899', bg: '#FDF2F8' },
   { key: 'proposal',    label: 'Коммерческое предложение', color: '#10B981', bg: '#ECFDF5' },
   { key: 'done',        label: 'Сделка успешна',         color: '#22C55E', bg: '#F0FDF4' },
