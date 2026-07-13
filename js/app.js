@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #125';
+const APP_BUILD = 'DEPLOY #126';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -3638,6 +3638,10 @@ function openAddMatModal(itemId) {
           </label>
         </div>
       </div>
+      <div>
+        <label class="mn-label">Примечание</label>
+        <textarea id="mat-notes" class="mn-input" rows="2" placeholder="Поставщик, артикул, комментарий..." style="resize:vertical"></textarea>
+      </div>
       <input type="hidden" id="mat-sort-order" value="${nextOrder}">
     </div>
     <div style="display:flex;gap:8px;margin-top:20px">
@@ -3689,6 +3693,10 @@ function openEditMatModal(matId, itemId) {
           </label>
         </div>
       </div>
+      <div>
+        <label class="mn-label">Примечание</label>
+        <textarea id="mat-notes" class="mn-input" rows="2" style="resize:vertical">${mat.notes ?? ''}</textarea>
+      </div>
       <input type="hidden" id="mat-sort-order" value="${mat.sort_order}">
     </div>
     <div style="display:flex;gap:8px;justify-content:space-between;margin-top:20px">
@@ -3709,6 +3717,7 @@ function saveMat(itemId, matId) {
   if (!name) { alert('Введите наименование материала'); return; }
   const qty       = parseFloat(document.getElementById('mat-qty')?.value) || null;
   const unit      = document.getElementById('mat-unit')?.value.trim() || null;
+  const notes     = document.getElementById('mat-notes')?.value.trim() || null;
   const haveVal   = document.querySelector('input[name="mat-have"]:checked')?.value;
   const have      = haveVal === '1';
   const sortOrder = parseInt(document.getElementById('mat-sort-order')?.value) || 0;
@@ -3718,14 +3727,14 @@ function saveMat(itemId, matId) {
   if (matId) {
     const mat = (_itemMaterials[itemId] || []).find(m => m.id === matId);
     if (!mat) return;
-    mat.name = name; mat.qty = qty; mat.unit = unit; mat.have = have;
+    mat.name = name; mat.qty = qty; mat.unit = unit; mat.have = have; mat.notes = notes;
     saveMatToStorage(mat);
   } else {
     const newMat = {
       id: `mat_${itemId}_${Date.now()}`,
       item_id: itemId,
       project_id: item.projectId,
-      name, qty, unit, have,
+      name, qty, unit, have, notes,
       sort_order: sortOrder,
       created_at: new Date().toISOString(),
     };
