@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #126';
+const APP_BUILD = 'DEPLOY #127';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -132,6 +132,7 @@ async function doLogout() {
   await _sb.auth.signOut();
   localEdits = {}; _customAssignees = []; _itemOrder = {}; _customProjects = []; _workflowStages = {};
   _crmClients = []; _crmHistory = {}; _crmContacts = {};
+  if (typeof loadWarehouseData === 'function') loadWarehouseData([], [], []);
   VRH_ITEMS.splice(_VRH_ITEMS_BASE_LEN);
   VRH_PROJECTS.splice(_VRH_PROJECTS_BASE_LEN);
   VRH_ITEMS.forEach(item => {
@@ -146,7 +147,8 @@ async function doLogout() {
 
 async function loadRemoteData() {
   const [ovRes, asRes, orRes, cpRes, wsRes, imRes, evRes, crmRes, crmHistRes,
-         supRes, supContRes, supHistRes, supBankRes] = await Promise.all([
+         supRes, supContRes, supHistRes, supBankRes,
+         whItemsRes, whCatsRes, whTxRes] = await Promise.all([
     _sb.from('item_overrides').select('*'),
     _sb.from('custom_assignees').select('*').order('id'),
     _sb.from('item_order').select('*'),
@@ -160,6 +162,9 @@ async function loadRemoteData() {
     _sb.from('supplier_contacts').select('*').order('created_at'),
     _sb.from('supplier_history').select('*').order('event_date', { ascending: false }),
     _sb.from('supplier_bank').select('*').order('created_at'),
+    _sb.from('inventory_items').select('*').order('created_at'),
+    _sb.from('inventory_categories').select('*').order('name'),
+    _sb.from('inventory_transactions').select('*').order('date', { ascending: false }),
   ]);
   if (ovRes.data) {
     localEdits = {};
@@ -249,6 +254,11 @@ async function loadRemoteData() {
 
   // Загрузка Поставщиков - данные живут в js/suppliers.js
   loadSuppliersData(supRes.data, supContRes.data, supHistRes.data, supBankRes.data);
+
+  // Загрузка Склада - данные живут в js/warehouse.js
+  if (typeof loadWarehouseData === 'function') {
+    loadWarehouseData(whItemsRes.data, whCatsRes.data, whTxRes.data);
+  }
 }
 
 // =============================================================
@@ -367,8 +377,9 @@ function updateActiveNav() {
     const isActive = el.dataset.nav === state.view ||
       (state.view === 'project'    && el.dataset.nav === 'projects') ||
       (state.view === 'item'       && el.dataset.nav === 'projects') ||
-      (state.view === 'crm-client' && el.dataset.nav === 'crm') ||
-      (state.view === 'supplier'  && el.dataset.nav === 'suppliers');
+      (state.view === 'crm-client'    && el.dataset.nav === 'crm') ||
+      (state.view === 'supplier'      && el.dataset.nav === 'suppliers') ||
+      (state.view === 'warehouse-item' && el.dataset.nav === 'warehouse');
     el.classList.toggle('active', isActive);
   });
 }
@@ -441,6 +452,14 @@ function render() {
       renderErpProjects(content);
       setBreadcrumb('Проекты');
       updatePlatformSidebar('erp-projects');
+      break;
+    case 'warehouse':
+      renderWarehouseList(content);
+      updatePlatformSidebar('warehouse');
+      break;
+    case 'warehouse-item':
+      renderWarehouseItem(content, state.projectId);
+      updatePlatformSidebar('warehouse');
       break;
     default: navigate('home');
   }

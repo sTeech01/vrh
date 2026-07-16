@@ -1,0 +1,397 @@
+/* ============================================================
+   VRH ERP — Модуль «Склад»
+   Суффикс: wh-*
+   ============================================================ */
+
+/* ── Список ───────────────────────────────────────────────── */
+.wh-page-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px 80px;
+}
+
+.wh-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.wh-page-title    { font-size: 22px; font-weight: 800; color: var(--gray-900); }
+.wh-page-subtitle { font-size: 13px; color: var(--gray-400); margin-top: 2px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+
+.wh-hdr-warn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--amber);
+  font-weight: 600;
+}
+
+/* Toolbar */
+.wh-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.wh-tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--gray-100);
+  border-radius: var(--radius);
+  padding: 3px;
+}
+
+.wh-tab {
+  padding: 5px 14px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-500);
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+.wh-tab:hover       { color: var(--gray-900); background: var(--gray-200); }
+.wh-tab-active      { background: #fff; color: var(--gray-900); font-weight: 600; box-shadow: var(--shadow-sm); }
+
+.wh-filters {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-left: auto;
+}
+
+.wh-search, .wh-select {
+  height: 36px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 0 12px;
+  font-size: 13px;
+  font-family: inherit;
+  background: #fff;
+  color: var(--gray-900);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.wh-search { min-width: 220px; flex: 1; }
+.wh-search:focus, .wh-select:focus {
+  outline: none;
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(14,165,233,.10);
+}
+
+/* Table */
+.wh-table-wrap {
+  background: var(--surface);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  overflow-x: auto;
+}
+
+.wh-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.wh-table thead th {
+  padding: 9px 14px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gray-400);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  border-bottom: var(--border);
+  white-space: nowrap;
+  background: var(--gray-50);
+}
+
+.wh-table tbody tr { transition: background var(--transition); }
+.wh-table tbody tr:last-child td { border-bottom: none; }
+.wh-table tbody td { padding: 11px 14px; border-bottom: var(--border); vertical-align: middle; }
+
+.wh-tr { cursor: pointer; }
+.wh-tr:hover { background: var(--gray-50); }
+
+.wh-tr-name { font-weight: 600; color: var(--gray-800); font-size: 13px; line-height: 1.3; }
+.wh-tr-sku  { font-size: 11px; color: var(--gray-400); margin-top: 2px; font-family: ui-monospace, monospace; }
+
+.wh-td-num  { text-align: right; white-space: nowrap; }
+.wh-td-unit { font-size: 11px; color: var(--gray-400); margin-left: 3px; }
+.wh-td-date { color: var(--gray-500); font-size: 12px; white-space: nowrap; }
+
+/* Chips */
+.wh-cat-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--cyan-dim);
+  color: var(--cyan);
+}
+
+.wh-type-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.wh-type-material  { background: var(--amber-dim);  color: var(--amber); }
+.wh-type-equipment { background: var(--cyan-dim);   color: var(--cyan);  }
+
+/* Qty + status */
+.wh-qty-val { font-weight: 700; font-size: 14px; }
+.wh-qty-ok   { color: var(--green); }
+.wh-qty-low  { color: var(--amber); }
+.wh-qty-zero { color: var(--red);   }
+
+.wh-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.wh-status-ok   { background: var(--green-dim); color: var(--green); }
+.wh-status-low  { background: var(--amber-dim); color: var(--amber); }
+.wh-status-zero { background: var(--red-dim);   color: var(--red);   }
+
+/* Empty state */
+.wh-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 72px 24px;
+  color: var(--gray-300);
+  font-size: 14px;
+  font-weight: 500;
+  background: var(--surface);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+.wh-empty-sub { font-size: 12px; color: var(--gray-300); font-weight: 400; }
+.wh-empty-sm  { padding: 32px 24px; }
+
+/* ── Детальная страница ────────────────────────────────────── */
+.wh-detail-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 24px 80px;
+}
+
+.wh-detail-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.wh-detail-name {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--gray-900);
+  line-height: 1.2;
+}
+
+.wh-sku-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: ui-monospace, monospace;
+  background: var(--gray-100);
+  color: var(--gray-600);
+  border: 1px solid var(--gray-200);
+}
+
+/* Stat cards */
+.wh-detail-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.wh-stat-card {
+  background: var(--surface);
+  border: var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  position: relative;
+}
+.wh-stat-card.wh-stat-low  { border-color: var(--amber); background: var(--amber-dim); }
+.wh-stat-card.wh-stat-zero { border-color: var(--red);   background: var(--red-dim);   }
+
+.wh-stat-label { font-size: 11px; font-weight: 600; color: var(--gray-400); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+.wh-stat-value { font-size: 22px; font-weight: 800; color: var(--gray-900); line-height: 1.1; }
+.wh-stat-unit  { font-size: 13px; font-weight: 500; color: var(--gray-400); }
+.wh-stat-warn  { font-size: 11px; font-weight: 600; color: var(--amber); margin-top: 4px; display: flex; align-items: center; gap: 3px; }
+.wh-stat-low .wh-stat-warn { color: var(--amber); }
+.wh-stat-zero .wh-stat-warn { color: var(--red); }
+.wh-stat-sup   { font-size: 14px; word-break: break-word; }
+
+/* Info block */
+.wh-detail-info {
+  background: var(--surface);
+  border: var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wh-detail-field {
+  font-size: 13px;
+  color: var(--gray-700);
+  line-height: 1.5;
+}
+
+.wh-field-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gray-400);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-right: 10px;
+}
+
+/* Section header */
+.wh-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  margin-top: 6px;
+}
+
+.wh-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gray-800);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Transaction table */
+.wh-tx-table .wh-tx-row:hover { background: var(--gray-50); }
+
+.wh-tx-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.wh-tx-receipt   { background: var(--green-dim);        color: var(--green); }
+.wh-tx-expense   { background: var(--red-dim);          color: var(--red);   }
+.wh-tx-writeoff  { background: rgba(245,158,11,.10);    color: var(--amber); }
+.wh-tx-transfer  { background: var(--cyan-dim);         color: var(--cyan);  }
+.wh-tx-inventory { background: rgba(139,92,246,.10);    color: #7C3AED;      }
+
+.wh-tx-pos { font-weight: 700; color: var(--green); }
+.wh-tx-neg { font-weight: 700; color: var(--red);   }
+
+.wh-tx-proj {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 8px;
+  font-size: 11px;
+  color: var(--gray-400);
+  font-style: italic;
+}
+
+.wh-tx-actions {
+  white-space: nowrap;
+  text-align: right;
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+.wh-tx-row:hover .wh-tx-actions { opacity: 1; }
+
+.wh-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--gray-200);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  color: var(--gray-400);
+  transition: all var(--transition);
+}
+.wh-icon-btn:hover        { background: var(--gray-100); color: var(--gray-700); border-color: var(--gray-300); }
+.wh-icon-btn-danger:hover { background: var(--red-dim);  color: var(--red);      border-color: var(--red);      }
+
+/* ── Модальные чипы типа операции ─────────────────────────── */
+.wh-tx-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.wh-tx-chip {
+  padding: 6px 14px;
+  border-radius: 99px;
+  border: 1.5px solid var(--gray-200);
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-600);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.wh-tx-chip:hover { border-color: var(--gray-400); color: var(--gray-900); }
+
+.wh-tx-chip-active.wh-tx-chip-receipt   { border-color: var(--green); background: var(--green-dim); color: var(--green); }
+.wh-tx-chip-active.wh-tx-chip-expense   { border-color: var(--red);   background: var(--red-dim);   color: var(--red);   }
+.wh-tx-chip-active.wh-tx-chip-writeoff  { border-color: var(--amber); background: var(--amber-dim); color: var(--amber); }
+.wh-tx-chip-active.wh-tx-chip-transfer  { border-color: var(--cyan);  background: var(--cyan-dim);  color: var(--cyan);  }
+.wh-tx-chip-active.wh-tx-chip-inventory { border-color: #7C3AED; background: rgba(139,92,246,.10); color: #7C3AED; }
+
+/* Modal item reference label */
+.wh-modal-item-ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--gray-50);
+  border: var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-700);
+  margin-bottom: 16px;
+}

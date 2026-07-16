@@ -26,7 +26,7 @@ const ERP_MODULES = [
   },
   {
     id: 'warehouse', label: 'Склад', subLabel: 'Складской учёт',
-    active: false,
+    active: true, hash: 'warehouse',
     icon: _platModIcon('<line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>'),
   },
   {
@@ -183,6 +183,20 @@ function updatePlatformSidebar(view) {
         Все проекты
       </a>`;
   }
+  else if (view === 'warehouse') {
+    html = `
+      ${_PLAT_BACK_BTN}
+      <div class="sidebar-section">Склад</div>
+      <a class="nav-item" data-nav="warehouse" href="#warehouse">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+          <line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/>
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+          <line x1="12" y1="22.08" x2="12" y2="12"/>
+        </svg>
+        Номенклатура
+      </a>`;
+  }
 
   nav.innerHTML = html;
 
@@ -198,13 +212,15 @@ function updatePlatformSidebar(view) {
 
 /* ── Определение контекста по state.view ──────────────────────── */
 function getPlatformContext(view) {
-  const PRODUCTION_VIEWS  = ['dashboard', 'projects', 'project', 'item', 'problems', 'ai', 'report', 'events'];
-  const CRM_VIEWS         = ['crm', 'crm-client'];
-  const SUPPLIERS_VIEWS   = ['suppliers', 'supplier'];
+  const PRODUCTION_VIEWS   = ['dashboard', 'projects', 'project', 'item', 'problems', 'ai', 'report', 'events'];
+  const CRM_VIEWS          = ['crm', 'crm-client'];
+  const SUPPLIERS_VIEWS    = ['suppliers', 'supplier'];
   const ERP_PROJECTS_VIEWS = ['erp-projects'];
+  const WAREHOUSE_VIEWS    = ['warehouse', 'warehouse-item'];
   if (CRM_VIEWS.includes(view))          return 'crm';
   if (SUPPLIERS_VIEWS.includes(view))    return 'suppliers';
   if (ERP_PROJECTS_VIEWS.includes(view)) return 'erp-projects';
+  if (WAREHOUSE_VIEWS.includes(view))    return 'warehouse';
   if (PRODUCTION_VIEWS.includes(view))   return 'production';
   return 'home';
 }
