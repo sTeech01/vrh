@@ -340,6 +340,26 @@ function renderWarehouseItem(el, itemId) {
   </div>`;
 }
 
+// ──── Единицы измерения ────────────────────────────────────────
+const WH_UNITS = [
+  { group: 'Штучные',      items: ['шт', 'пара', 'компл', 'упак', 'рул', 'бухта', 'кассета'] },
+  { group: 'Длина',        items: ['м', 'п.м', 'мм', 'см', 'км'] },
+  { group: 'Площадь',      items: ['м²'] },
+  { group: 'Объём',        items: ['м³', 'л', 'мл'] },
+  { group: 'Масса',        items: ['кг', 'г', 'т'] },
+  { group: 'Листовые',     items: ['лист', 'плита', 'панель'] },
+  { group: 'Фасовка',      items: ['мешок', 'ведро', 'канистра', 'баллон', 'тюбик'] },
+];
+
+function _whUnitOpts(selected) {
+  const sel = selected || 'шт';
+  return WH_UNITS.map(g =>
+    `<optgroup label="${_whEsc(g.group)}">${
+      g.items.map(u => `<option value="${_whEsc(u)}" ${u === sel ? 'selected' : ''}>${_whEsc(u)}</option>`).join('')
+    }</optgroup>`
+  ).join('');
+}
+
 // ──── Модалка: позиция (создание / редактирование) ─────────────
 let _whEditingItemId = null;
 
@@ -405,8 +425,7 @@ function _openWhItemModal(item) {
       </div>
       <div>
         <label class="mn-label">Единица измерения</label>
-        <input class="mn-input" id="wh-inp-unit" type="text" placeholder="шт / м / кг / л"
-               value="${_whEsc(item?.unit || 'шт')}">
+        <select class="mn-input" id="wh-inp-unit">${_whUnitOpts(item?.unit || 'шт')}</select>
       </div>
       <div>
         <label class="mn-label">Минимальный остаток</label>
