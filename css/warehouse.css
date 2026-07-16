@@ -355,6 +355,13 @@
 .wh-icon-btn-danger:hover { background: var(--red-dim);  color: var(--red);      border-color: var(--red);      }
 
 /* ── Модальные утилиты ────────────────────────────────────── */
+/* Скроллируемое тело модалки — футер всегда виден */
+.wh-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px 20px;
+}
+
 .wh-grid2 {
   display: grid;
   grid-template-columns: 1fr 1fr;

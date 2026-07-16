@@ -400,7 +400,7 @@ function _openWhItemModal(item) {
     <span class="modal-title">${item ? 'Редактировать позицию' : 'Новая позиция'}</span>
     <button class="modal-close" onclick="closeModal()">${iconSvg('x', 14)}</button>
   </div>
-  <div class="modal-body" style="padding:16px 20px 20px">
+  <div class="wh-modal-body">
     <div class="wh-grid2">
       <div>
         <label class="mn-label">Наименование *</label>
@@ -565,7 +565,7 @@ function _openTxModal(tx, itemId) {
     <span class="modal-title">${tx ? 'Редактировать операцию' : 'Новая операция'}</span>
     <button class="modal-close" onclick="closeModal()">${iconSvg('x', 14)}</button>
   </div>
-  <div class="modal-body" style="padding:16px 20px 20px">
+  <div class="wh-modal-body">
     ${item ? `<div class="wh-modal-item-ref">${iconSvg('folder', 13)} ${_whEsc(item.name)}</div>` : ''}
     <div style="margin-bottom:16px">
       <label class="mn-label">Тип операции</label>
