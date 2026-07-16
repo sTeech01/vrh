@@ -354,6 +354,23 @@
 .wh-icon-btn:hover        { background: var(--gray-100); color: var(--gray-700); border-color: var(--gray-300); }
 .wh-icon-btn-danger:hover { background: var(--red-dim);  color: var(--red);      border-color: var(--red);      }
 
+/* ── Модальные утилиты ────────────────────────────────────── */
+.wh-grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 16px;
+}
+
+.wh-modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  border-top: 1px solid var(--gray-100);
+  background: var(--gray-50);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
 /* ── Модальные чипы типа операции ─────────────────────────── */
 .wh-tx-chips {
   display: flex;

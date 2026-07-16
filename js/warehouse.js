@@ -376,12 +376,12 @@ function _openWhItemModal(item) {
   }
 
   box.innerHTML = `
-  <div class="mn-modal-header">
-    <span class="mn-modal-title">${item ? 'Редактировать позицию' : 'Новая позиция'}</span>
-    <button class="modal-close" onclick="closeModal()">${iconSvg('x', 16)}</button>
+  <div class="modal-header">
+    <span class="modal-title">${item ? 'Редактировать позицию' : 'Новая позиция'}</span>
+    <button class="modal-close" onclick="closeModal()">${iconSvg('x', 14)}</button>
   </div>
-  <div class="mn-modal-body" style="padding:20px 24px">
-    <div class="mn-grid2">
+  <div class="modal-body" style="padding:16px 20px 20px">
+    <div class="wh-grid2">
       <div>
         <label class="mn-label">Наименование *</label>
         <input class="mn-input" id="wh-inp-name" type="text" placeholder="Труба ПП 32мм"
@@ -429,7 +429,7 @@ function _openWhItemModal(item) {
                 placeholder="Внутренние заметки...">${_whEsc(item?.notes || '')}</textarea>
     </div>
   </div>
-  <div class="mn-modal-footer">
+  <div class="wh-modal-footer">
     ${item
       ? `<button class="mn-btn-danger" onclick="deleteWhItem('${_whEsc(item.id)}')">${iconSvg('trash', 14)} Удалить</button>`
       : '<div></div>'}
@@ -542,17 +542,17 @@ function _openTxModal(tx, itemId) {
   }
 
   box.innerHTML = `
-  <div class="mn-modal-header">
-    <span class="mn-modal-title">${tx ? 'Редактировать операцию' : 'Новая операция'}</span>
-    <button class="modal-close" onclick="closeModal()">${iconSvg('x', 16)}</button>
+  <div class="modal-header">
+    <span class="modal-title">${tx ? 'Редактировать операцию' : 'Новая операция'}</span>
+    <button class="modal-close" onclick="closeModal()">${iconSvg('x', 14)}</button>
   </div>
-  <div class="mn-modal-body" style="padding:20px 24px">
+  <div class="modal-body" style="padding:16px 20px 20px">
     ${item ? `<div class="wh-modal-item-ref">${iconSvg('folder', 13)} ${_whEsc(item.name)}</div>` : ''}
     <div style="margin-bottom:16px">
       <label class="mn-label">Тип операции</label>
       <div class="wh-tx-chips">${typeChips}</div>
     </div>
-    <div class="mn-grid2">
+    <div class="wh-grid2">
       <div>
         <label class="mn-label" id="wh-qty-label">${curType === 'inventory' ? 'Фактическое количество *' : 'Количество *'}</label>
         <input class="mn-input" id="wh-inp-qty" type="number" min="0" step="0.01"
@@ -578,7 +578,7 @@ function _openTxModal(tx, itemId) {
              placeholder="Комментарий к операции..." value="${_whEsc(tx?.comment || '')}">
     </div>
   </div>
-  <div class="mn-modal-footer">
+  <div class="wh-modal-footer">
     ${tx
       ? `<button class="mn-btn-danger" onclick="deleteTx('${_whEsc(tx.id)}','${_whEsc(itemId)}')">${iconSvg('trash', 14)} Удалить</button>`
       : '<div></div>'}
