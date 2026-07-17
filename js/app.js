@@ -763,6 +763,7 @@ function renderProject(el, projectId) {
       if (statusFilter === 'blocked'     && st !== ST.BLOCKED)  return false;
       if (statusFilter === 'in_progress' && st !== ST.IN_PROG)  return false;
       if (statusFilter === 'done'        && st !== ST.DONE)     return false;
+      if (statusFilter === 'pending'     && st !== ST.PENDING)  return false;
     }
     if (searchTerm && !i.name.toLowerCase().includes(searchTerm) &&
         !i.nameShort.toLowerCase().includes(searchTerm)) return false;
@@ -840,6 +841,7 @@ function renderProject(el, projectId) {
       <select class="filter-select" onchange="setFilter('status',this.value)">
         <option value="all"         ${state.filter.status==='all'        ?'selected':''}>Все статусы</option>
         <option value="in_progress" ${state.filter.status==='in_progress'?'selected':''}>В работе</option>
+        <option value="pending"     ${state.filter.status==='pending'    ?'selected':''}>Ожидает</option>
         <option value="overdue"     ${state.filter.status==='overdue'    ?'selected':''}>Просрочено</option>
         <option value="blocked"     ${state.filter.status==='blocked'    ?'selected':''}>Заблокировано</option>
         <option value="done"        ${state.filter.status==='done'       ?'selected':''}>Готово</option>
