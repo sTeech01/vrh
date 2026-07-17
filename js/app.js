@@ -1120,6 +1120,7 @@ function renderItem(el, projectId, itemId) {
       ? renderWorkflowDetail(item, project)
       : `
     ${purchaseHtml}
+    ${renderComponents(item)}
     ${historyHtml}
 
     <div class="card" style="padding:20px 24px;margin-top:16px">
@@ -1134,7 +1135,7 @@ function renderItem(el, projectId, itemId) {
       </div>
     </div>`}
 
-    ${renderComponents(item)}
+    ${isV2 ? renderComponents(item) : ''}
     ${renderMaterialsSection(item)}
   `;
 }
