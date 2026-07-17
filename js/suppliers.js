@@ -29,7 +29,6 @@ const SUP_EVENT_TYPES = [
 const SUP_TABS = [
   { key: 'main',     label: 'Основное' },
   { key: 'contacts', label: 'Контакты' },
-  { key: 'bank',     label: 'Реквизиты' },
   { key: 'docs',     label: 'Документы' },
   { key: 'history',  label: 'История' },
   { key: 'links',    label: 'Связанные объекты' },
@@ -309,7 +308,6 @@ function _supTabContent(s, tab) {
   switch (tab) {
     case 'main':     return _supTabMain(s);
     case 'contacts': return _supTabContacts(s);
-    case 'bank':     return _supTabBank(s);
     case 'docs':     return _supTabDocs(s);
     case 'history':  return _supTabHistory(s);
     case 'links':    return _supTabLinks(s);
