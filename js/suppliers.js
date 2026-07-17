@@ -91,6 +91,16 @@ function _supFmt(str) {
   return str;
 }
 
+function _supFmtPhone(raw) {
+  if (!raw) return '';
+  const d = raw.replace(/\D/g, '');
+  let local;
+  if (d.length === 11 && (d[0] === '7' || d[0] === '8')) local = d.slice(1);
+  else if (d.length === 10) local = d;
+  else return raw;
+  return `+7 (${local.slice(0,3)}) ${local.slice(3,6)}-${local.slice(6,8)}-${local.slice(8,10)}`;
+}
+
 // ── Фильтрация ────────────────────────────────────────────────────
 function _supFiltered() {
   const q = (_supFilter.search || '').trim().toLowerCase();
@@ -229,7 +239,7 @@ function _supCard(s) {
     <div class="sup-card-name">${_supEsc(s.short_name || s.full_name || 'Без названия')}</div>
     ${s.inn  ? `<div class="sup-card-meta">ИНН: ${_supEsc(s.inn)}</div>` : ''}
     ${s.city ? `<div class="sup-card-meta">${iconSvg('calendar',11)} ${_supEsc(s.city)}</div>` : ''}
-    ${firstC ? `<div class="sup-card-contact">${iconSvg('user',11)} ${_supEsc(firstC.name||'')}${firstC.phone?' · '+_supEsc(firstC.phone):''}</div>` : ''}
+    ${firstC ? `<div class="sup-card-contact">${iconSvg('user',11)} ${_supEsc(firstC.name||'')}${firstC.phone?' · '+_supEsc(_supFmtPhone(firstC.phone)):''}</div>` : ''}
     <div class="sup-card-footer">
       <span class="sup-card-cnt">${conts.length} конт.</span>
       ${lastEv ? `<span class="sup-card-last">${_supFmt(lastEv.event_date)}</span>` : ''}
@@ -251,7 +261,7 @@ function _supTableRow(s) {
     <td><span class="sup-type-badge">${_supEsc(getSupTypeLabel(s.org_type))}</span></td>
     <td>${_supEsc(s.inn || '—')}</td>
     <td>${_supEsc(s.city || '—')}</td>
-    <td>${_supEsc(firstC ? (firstC.name||'')+(firstC.phone?' · '+firstC.phone:'') : '—')}</td>
+    <td>${_supEsc(firstC ? (firstC.name||'')+(firstC.phone?' · '+_supFmtPhone(firstC.phone):'') : '—')}</td>
     <td><span class="sup-status-chip ${isActive?'sup-status-active':'sup-status-inactive'}">${isActive?'Активен':'Неактивен'}</span></td>
   </tr>`;
 }
@@ -371,8 +381,8 @@ function _supContactCardHtml(c, supplierId) {
       <button class="sup-icon-btn" onclick="openSupEditContactModal('${_supEsc(c.id)}','${_supEsc(supplierId)}')">${iconSvg('edit',14)}</button>
     </div>
     <div class="sup-contact-fields">
-      ${c.phone  ? `<div class="sup-contact-field"><span class="sup-contact-field-label">Тел.</span><a href="tel:${_supEsc(c.phone)}" class="sup-contact-field-val">${_supEsc(c.phone)}</a></div>` : ''}
-      ${c.phone2 ? `<div class="sup-contact-field"><span class="sup-contact-field-label">Тел. 2</span><a href="tel:${_supEsc(c.phone2)}" class="sup-contact-field-val">${_supEsc(c.phone2)}</a></div>` : ''}
+      ${c.phone  ? `<div class="sup-contact-field"><span class="sup-contact-field-label">Тел.</span><a href="tel:${_supEsc(c.phone)}" class="sup-contact-field-val">${_supEsc(_supFmtPhone(c.phone))}</a></div>` : ''}
+      ${c.phone2 ? `<div class="sup-contact-field"><span class="sup-contact-field-label">Тел. 2</span><a href="tel:${_supEsc(c.phone2)}" class="sup-contact-field-val">${_supEsc(_supFmtPhone(c.phone2))}</a></div>` : ''}
       ${c.email  ? `<div class="sup-contact-field"><span class="sup-contact-field-label">Email</span><a href="mailto:${_supEsc(c.email)}" class="sup-contact-field-val">${_supEsc(c.email)}</a></div>` : ''}
       ${c.telegram ? `<div class="sup-contact-field"><span class="sup-contact-field-label">Telegram</span><span class="sup-contact-field-val">${_supEsc(c.telegram)}</span></div>` : ''}
       ${c.whatsapp ? `<div class="sup-contact-field"><span class="sup-contact-field-label">WhatsApp</span><span class="sup-contact-field-val">${_supEsc(c.whatsapp)}</span></div>` : ''}
