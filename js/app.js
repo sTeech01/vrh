@@ -986,7 +986,7 @@ function itemTableRow(item, projectId) {
           ${formatDate(new Date(item.deadline))}${overdueNote}
         </div>
         ${(()=>{
-          if (!item.expected_delivery) return '';
+          if (!item.expected_delivery || item.purchaseStatus === PUR.RECEIVED) return '';
           const d = daysOverdue(item.expected_delivery);
           return d > 0
             ? `<div style="font-size:10px;color:#EF4444;font-weight:600;margin-top:2px">Поставка просрочена ${d} дн.</div>`
@@ -1080,7 +1080,7 @@ function renderItem(el, projectId, itemId) {
             })()}
             ${(()=>{
               if (!item.expected_delivery) return '';
-              const dly = daysOverdue(item.expected_delivery);
+              const dly = item.purchaseStatus === PUR.RECEIVED ? 0 : daysOverdue(item.expected_delivery);
               const txt = dly > 0
                 ? `<span style="color:#EF4444;font-weight:600">${formatDate(new Date(item.expected_delivery))} - Задержка ${dly} дн.</span>`
                 : `<span>${formatDate(new Date(item.expected_delivery))}</span>`;
@@ -1317,7 +1317,7 @@ function renderReport(el, projectId) {
                              : i.payment_status === 'invoiced' ? '<span style="color:#92400E">Счёт выставлен</span>'
                              : '—';
               const expDel   = i.expected_delivery || '';
-              const delayD   = expDel ? daysOverdue(expDel) : 0;
+              const delayD   = (expDel && i.purchaseStatus !== PUR.RECEIVED) ? daysOverdue(expDel) : 0;
               const expDelTxt = expDel
                 ? (delayD > 0
                     ? `<span style="color:#EF4444;font-weight:600">${formatDateShort(expDel)} +${delayD}дн.</span>`
