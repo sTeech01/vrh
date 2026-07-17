@@ -1036,12 +1036,8 @@ function renderItem(el, projectId, itemId) {
 
   const isV2 = isV2Project(item.projectId);
 
-  // Компоненты (только для v1 'own' изделий с данными)
-  const componentsHtml = isV2 ? '' : (item.type === 'own' && item.components?.length)
-    ? renderComponents(item)
-    : item.type === 'own'
-      ? ''
-      : renderPurchaseBlock(item);
+  // Блок закупки — только для v1 purchased
+  const purchaseHtml = (!isV2 && item.type === 'purchased') ? renderPurchaseBlock(item) : '';
 
   // История (только для v1)
   const historyHtml = isV2 ? '' : (item.history?.length)
@@ -1123,7 +1119,7 @@ function renderItem(el, projectId, itemId) {
     ${isV2
       ? renderWorkflowDetail(item, project)
       : `
-    ${componentsHtml}
+    ${purchaseHtml}
     ${historyHtml}
 
     <div class="card" style="padding:20px 24px;margin-top:16px">
@@ -1138,11 +1134,13 @@ function renderItem(el, projectId, itemId) {
       </div>
     </div>`}
 
+    ${renderComponents(item)}
     ${renderMaterialsSection(item)}
   `;
 }
 
 function renderComponents(item) {
+  if (!item.components) item.components = [];
   const rows = item.components.map(c => {
     const qty   = c.quantity;
     const done  = c.done;
@@ -1172,17 +1170,8 @@ function renderComponents(item) {
       </tr>`;
   }).join('');
 
-  return `
-    <div class="card" style="padding:20px 24px;margin-top:16px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-        <span style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.08em">
-          ${iconSvg('list',12)} Состав изделия по КД
-        </span>
-        <button class="btn-secondary" style="display:inline-flex;align-items:center;gap:5px;font-size:12px" onclick="openAddCompModal('${item.id}')">
-          ${iconSvg('plus',11)} Добавить подпозицию
-        </button>
-      </div>
-      <div style="overflow-x:auto">
+  const tableOrEmpty = item.components.length
+    ? `<div style="overflow-x:auto">
         <table class="items-table comp-table">
           <thead>
             <tr>
@@ -1197,7 +1186,20 @@ function renderComponents(item) {
           </thead>
           <tbody>${rows}</tbody>
         </table>
+      </div>`
+    : `<div style="padding:16px 0 4px;color:var(--gray-300);font-size:13px">Состав не заполнен — нажмите «Добавить» чтобы добавить позицию</div>`;
+
+  return `
+    <div class="card" style="padding:20px 24px;margin-top:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <span style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.08em">
+          ${iconSvg('list',12)} Состав изделия по КД
+        </span>
+        <button class="btn-secondary" style="display:inline-flex;align-items:center;gap:5px;font-size:12px" onclick="openAddCompModal('${item.id}')">
+          ${iconSvg('plus',11)} Добавить подпозицию
+        </button>
       </div>
+      ${tableOrEmpty}
     </div>`;
 }
 
@@ -2961,11 +2963,13 @@ function applyEdits() {
       });
     }
     if (edit.extraComponents) {
+      if (!item.components) item.components = [];
       edit.extraComponents.forEach(ec => {
         if (!item.components.find(c => c.id === ec.id)) item.components.push({ ...ec });
       });
     }
     if (edit.deletedComponents?.length) {
+      if (!item.components) item.components = [];
       item.components = item.components.filter(c => !edit.deletedComponents.includes(c.id));
     }
     if (edit.historyFull) {
@@ -3559,6 +3563,7 @@ function saveComp(itemId, compId) {
 
   const item = VRH_ITEMS.find(i => i.id === itemId);
   if (!item) return;
+  if (!item.components) item.components = [];
   if (!localEdits[itemId]) localEdits[itemId] = {};
 
   if (compId) {
@@ -3586,6 +3591,7 @@ window.saveComp = saveComp;
 function deleteComp(itemId, compId) {
   const item = VRH_ITEMS.find(i => i.id === itemId);
   if (!item) return;
+  if (!item.components) item.components = [];
   item.components = item.components.filter(c => c.id !== compId);
   if (!localEdits[itemId]) localEdits[itemId] = {};
   if (!localEdits[itemId].deletedComponents) localEdits[itemId].deletedComponents = [];
