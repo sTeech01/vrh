@@ -346,7 +346,6 @@ function _supTabMain(s) {
       <div class="sup-section-title">Адрес</div>
       <div class="sup-info-grid">
         ${_ii('Страна', s.country)}
-        ${_ii('Регион', s.region)}
         ${_ii('Город', s.city)}
         ${_ii('Юридический адрес', s.legal_address)}
         ${_ii('Фактический адрес', s.actual_address)}
@@ -539,7 +538,6 @@ function _supModalHtml(supplier, isEdit) {
       <div class="sup-form-section">Адрес</div>
       <div class="sup-form-grid">
         ${_sfi('sup-f-country', 'Страна', s.country || 'Россия')}
-        ${_sfi('sup-f-region',  'Регион', s.region)}
         ${_sfi('sup-f-city',    'Город',  s.city)}
         ${_sfi('sup-f-legal_address',  'Юридический адрес',  s.legal_address,  'text', true)}
         ${_sfi('sup-f-actual_address', 'Фактический адрес',  s.actual_address, 'text', true)}

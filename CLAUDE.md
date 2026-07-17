@@ -4,7 +4,7 @@
 - **Название:** Мини-MES система ВРХ Инжиниринг
 - **URL:** https://steech01.github.io/vrh/
 - **Репозиторий:** https://github.com/sTeech01/vrh (ветка `main` = GitHub Pages)
-- **Текущий деплой:** DEPLOY #136
+- **Текущий деплой:** DEPLOY #137
 - **Деплой:** `git add <files> && git commit -m "DEPLOY #NNN: ..." && git push`
 
 ## Файлы
