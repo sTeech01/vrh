@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #127';
+const APP_BUILD = 'DEPLOY #134';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -133,6 +133,7 @@ async function doLogout() {
   localEdits = {}; _customAssignees = []; _itemOrder = {}; _customProjects = []; _workflowStages = {};
   _crmClients = []; _crmHistory = {}; _crmContacts = {};
   if (typeof loadWarehouseData === 'function') loadWarehouseData([], [], []);
+  if (typeof loadTasksData === 'function') loadTasksData([], []);
   VRH_ITEMS.splice(_VRH_ITEMS_BASE_LEN);
   VRH_PROJECTS.splice(_VRH_PROJECTS_BASE_LEN);
   VRH_ITEMS.forEach(item => {
@@ -148,7 +149,8 @@ async function doLogout() {
 async function loadRemoteData() {
   const [ovRes, asRes, orRes, cpRes, wsRes, imRes, evRes, crmRes, crmHistRes,
          supRes, supContRes, supHistRes, supBankRes,
-         whItemsRes, whCatsRes, whTxRes] = await Promise.all([
+         whItemsRes, whCatsRes, whTxRes,
+         tkTasksRes, tkCommRes] = await Promise.all([
     _sb.from('item_overrides').select('*'),
     _sb.from('custom_assignees').select('*').order('id'),
     _sb.from('item_order').select('*'),
@@ -165,6 +167,8 @@ async function loadRemoteData() {
     _sb.from('inventory_items').select('*').order('created_at'),
     _sb.from('inventory_categories').select('*').order('name'),
     _sb.from('inventory_transactions').select('*').order('date', { ascending: false }),
+    _sb.from('manager_tasks').select('*').order('created_at'),
+    _sb.from('manager_task_comments').select('*').order('created_at'),
   ]);
   if (ovRes.data) {
     localEdits = {};
@@ -258,6 +262,11 @@ async function loadRemoteData() {
   // Загрузка Склада - данные живут в js/warehouse.js
   if (typeof loadWarehouseData === 'function') {
     loadWarehouseData(whItemsRes.data, whCatsRes.data, whTxRes.data);
+  }
+
+  // Загрузка Задач - данные живут в js/tasks.js
+  if (typeof loadTasksData === 'function') {
+    loadTasksData(tkTasksRes.data, tkCommRes.data);
   }
 }
 
@@ -460,6 +469,10 @@ function render() {
     case 'warehouse-item':
       renderWarehouseItem(content, state.projectId);
       updatePlatformSidebar('warehouse');
+      break;
+    case 'tasks':
+      renderTasksList(content);
+      updatePlatformSidebar('tasks');
       break;
     default: navigate('home');
   }

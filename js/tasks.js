@@ -1,0 +1,636 @@
+'use strict';
+/* ═══════════════════════════════════════════════════════════════
+   VRH ERP — Модуль «Задачи» (контроль сотрудников)
+   CSS-префикс: tk-*
+   Таблицы: manager_tasks, manager_task_comments
+   ═══════════════════════════════════════════════════════════════ */
+
+// ──── Константы ────────────────────────────────────────────────
+const TK_STATUSES = [
+  { id: 'pending',     label: 'Ожидает',   bg: 'var(--gray-100)',  color: 'var(--gray-500)' },
+  { id: 'in_progress', label: 'В работе',  bg: 'var(--cyan-dim)',  color: 'var(--cyan)'     },
+  { id: 'paused',      label: 'На паузе',  bg: 'var(--amber-dim)', color: 'var(--amber)'    },
+  { id: 'done',        label: 'Завершена', bg: 'var(--green-dim)', color: 'var(--green)'    },
+  { id: 'cancelled',   label: 'Снята',     bg: 'var(--gray-100)',  color: 'var(--gray-300)' },
+];
+
+const TK_PRIORITIES = [
+  { id: 'low',      label: 'Низкий',    dot: '#10B981' },
+  { id: 'medium',   label: 'Средний',   dot: '#F59E0B' },
+  { id: 'high',     label: 'Высокий',   dot: '#F97316' },
+  { id: 'critical', label: 'Критично',  dot: '#EF4444' },
+];
+
+// ──── Состояние ────────────────────────────────────────────────
+let _tkTasks       = [];
+let _tkComments    = {};   // { [taskId]: Comment[] }
+let _tkFilter      = { statusTab: 'all', assignee: 'all', search: '' };
+let _tkSearchTimer = null;
+
+// ──── Загрузка данных ──────────────────────────────────────────
+function loadTasksData(tasksData, commentsData) {
+  _tkTasks = (tasksData || []).slice();
+  _tkComments = {};
+  (commentsData || []).forEach(r => {
+    if (!_tkComments[r.task_id]) _tkComments[r.task_id] = [];
+    _tkComments[r.task_id].push({ id: r.id, task_id: r.task_id, text: r.text, author: r.author || 'Руководитель', created_at: r.created_at });
+  });
+}
+
+// ──── Вспомогательные функции ──────────────────────────────────
+function _tkEsc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function _tkFmtDate(dt) {
+  if (!dt) return '';
+  const d = new Date(dt);
+  if (isNaN(d)) return dt;
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }).replace('.', '');
+}
+
+function _tkFmtDateTime(dt) {
+  if (!dt) return '';
+  const d = new Date(dt);
+  if (isNaN(d)) return dt;
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) + ' ' +
+         d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+}
+
+function _tkDeadlineInfo(dt, status) {
+  if (!dt || status === 'done' || status === 'cancelled') return null;
+  const now  = new Date();
+  const due  = new Date(dt);
+  const diff = Math.ceil((due - now) / 86400000);
+  if (diff < 0)  return { label: `Просрочена ${-diff} дн.`, cls: 'tk-dl-overdue' };
+  if (diff === 0) return { label: 'Сегодня',                 cls: 'tk-dl-today'   };
+  if (diff <= 2)  return { label: `${diff} дн.`,             cls: 'tk-dl-soon'    };
+  return { label: _tkFmtDate(dt), cls: 'tk-dl-ok' };
+}
+
+function _tkGetStatus(id)   { return TK_STATUSES.find(s => s.id === id)   || TK_STATUSES[0]; }
+function _tkGetPriority(id) { return TK_PRIORITIES.find(p => p.id === id) || TK_PRIORITIES[1]; }
+
+function _tkSubtasks(parentId) {
+  return _tkTasks.filter(t => t.parent_id === parentId);
+}
+
+function _tkFiltered() {
+  let list = _tkTasks.filter(t => !t.parent_id);  // только корневые
+  const { statusTab, assignee, search } = _tkFilter;
+  if (statusTab !== 'all')    list = list.filter(t => t.status === statusTab);
+  if (assignee  !== 'all')    list = list.filter(t => t.assignee_name === assignee);
+  if (search.trim()) {
+    const q = search.trim().toLowerCase();
+    list = list.filter(t => (t.title || '').toLowerCase().includes(q) || (t.description || '').toLowerCase().includes(q));
+  }
+  // Сортировка: активные вверху, внутри — по дедлайну
+  const order = { in_progress: 0, pending: 1, paused: 2, done: 3, cancelled: 4 };
+  return list.sort((a, b) => {
+    const os = (order[a.status] ?? 9) - (order[b.status] ?? 9);
+    if (os !== 0) return os;
+    if (a.deadline && b.deadline) return new Date(a.deadline) - new Date(b.deadline);
+    if (a.deadline) return -1;
+    if (b.deadline) return 1;
+    return (a.created_at || '').localeCompare(b.created_at || '');
+  });
+}
+
+function _tkRerenderList() {
+  if (typeof state === 'undefined' || state.view !== 'tasks') return;
+  const el = document.getElementById('content');
+  if (el) renderTasksList(el);
+}
+
+function setTkFilter(key, val) {
+  if (key === 'search') {
+    clearTimeout(_tkSearchTimer);
+    _tkSearchTimer = setTimeout(() => { _tkFilter.search = val; _tkRerenderList(); }, 250);
+  } else {
+    _tkFilter[key] = val;
+    _tkRerenderList();
+  }
+}
+
+// ──── Главная страница (список) ─────────────────────────────────
+function renderTasksList(el) {
+  el = el || document.getElementById('content');
+  if (!el) return;
+  if (typeof setBreadcrumb === 'function') setBreadcrumb('Задачи');
+
+  const all      = _tkTasks.filter(t => !t.parent_id);
+  const filtered = _tkFiltered();
+  const counts   = {};
+  TK_STATUSES.forEach(s => { counts[s.id] = all.filter(t => t.status === s.id).length; });
+
+  // Вкладки
+  const tabs = [{ id: 'all', label: 'Все', cnt: all.length }, ...TK_STATUSES.map(s => ({ id: s.id, label: s.label, cnt: counts[s.id] }))];
+  const tabsHtml = tabs.map(t =>
+    `<button class="tk-tab ${_tkFilter.statusTab === t.id ? 'tk-tab-active' : ''}"
+             onclick="setTkFilter('statusTab','${t.id}')">
+       ${t.label}${t.cnt > 0 ? ` <span class="tk-tab-cnt">${t.cnt}</span>` : ''}
+     </button>`
+  ).join('');
+
+  // Фильтр по исполнителю
+  const assignees = [...new Set(all.map(t => t.assignee_name).filter(Boolean))];
+  const asnOpts = [
+    `<option value="all" ${_tkFilter.assignee === 'all' ? 'selected' : ''}>Все исполнители</option>`,
+    ...assignees.map(a => `<option value="${_tkEsc(a)}" ${_tkFilter.assignee === a ? 'selected' : ''}>${_tkEsc(a)}</option>`),
+  ].join('');
+
+  // Строки
+  const rows = filtered.map(task => {
+    const st   = _tkGetStatus(task.status);
+    const pr   = _tkGetPriority(task.priority);
+    const dl   = _tkDeadlineInfo(task.deadline, task.status);
+    const subs = _tkSubtasks(task.id);
+    const doneSubs = subs.filter(s => s.status === 'done').length;
+    const commentCnt = (_tkComments[task.id] || []).length;
+    const isClosed = task.status === 'done' || task.status === 'cancelled';
+    return `
+    <div class="tk-row${isClosed ? ' tk-row-closed' : ''}" onclick="openTaskDetail('${_tkEsc(task.id)}')">
+      <div class="tk-row-left">
+        <span class="tk-priority-dot" style="background:${_tkEsc(pr.dot)}" title="${_tkEsc(pr.label)}"></span>
+        <div class="tk-row-title-wrap">
+          <div class="tk-row-title">${_tkEsc(task.title)}</div>
+          ${subs.length ? `<div class="tk-row-sub-cnt">${iconSvg('list',10)} ${doneSubs}/${subs.length} подзадач</div>` : ''}
+        </div>
+      </div>
+      <div class="tk-row-right">
+        ${commentCnt ? `<span class="tk-row-meta">${iconSvg('chat',12)} ${commentCnt}</span>` : ''}
+        ${task.assignee_name ? `<span class="tk-assignee-chip">${_tkEsc(task.assignee_name.split(' ')[0])}</span>` : '<span class="tk-assignee-chip tk-assignee-none">—</span>'}
+        ${dl ? `<span class="tk-deadline ${dl.cls}">${_tkEsc(dl.label)}</span>` : ''}
+        <span class="tk-status-chip" style="background:${st.bg};color:${st.color}">${_tkEsc(st.label)}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  const body = filtered.length === 0
+    ? `<div class="tk-empty">${iconSvg('clipboard', 36)}<div>Задач нет</div><div class="tk-empty-sub">Нажмите «+ Новая задача» чтобы добавить</div></div>`
+    : `<div class="tk-list">${rows}</div>`;
+
+  const overdueCount = all.filter(t => {
+    if (!t.deadline || t.status === 'done' || t.status === 'cancelled') return false;
+    return new Date(t.deadline) < new Date();
+  }).length;
+
+  el.innerHTML = `
+  <div class="tk-page-wrap">
+    <div class="tk-page-header">
+      <div>
+        <div class="tk-page-title">Задачи</div>
+        <div class="tk-page-subtitle">
+          ${filtered.length} из ${all.length}
+          ${overdueCount > 0 ? `&nbsp;·&nbsp;<span class="tk-hdr-warn">${iconSvg('warning',11)} ${overdueCount} просрочено</span>` : ''}
+        </div>
+      </div>
+      <button class="btn-primary" onclick="openAddTaskModal(null)">${iconSvg('plus',14)} Новая задача</button>
+    </div>
+    <div class="tk-toolbar">
+      <div class="tk-tabs">${tabsHtml}</div>
+      <div class="tk-filters">
+        <input type="text" class="tk-search" placeholder="Поиск по задачам..."
+               value="${_tkEsc(_tkFilter.search)}" oninput="setTkFilter('search', this.value)">
+        <select class="tk-select" onchange="setTkFilter('assignee', this.value)">${asnOpts}</select>
+      </div>
+    </div>
+    ${body}
+  </div>`;
+}
+
+// ──── Детальная модалка задачи ─────────────────────────────────
+function openTaskDetail(taskId) {
+  const task = _tkTasks.find(t => t.id === taskId);
+  if (!task) return;
+  const overlay = document.getElementById('modal-overlay');
+  const box     = document.getElementById('modal-box');
+  if (!overlay || !box) return;
+  box.innerHTML = _tkDetailHtml(task);
+  overlay.classList.add('open');
+}
+
+function _tkDetailHtml(task) {
+  const st    = _tkGetStatus(task.status);
+  const pr    = _tkGetPriority(task.priority);
+  const dl    = _tkDeadlineInfo(task.deadline, task.status);
+  const subs  = _tkSubtasks(task.id);
+  const comms = [...(_tkComments[task.id] || [])].sort((a, b) => a.created_at.localeCompare(b.created_at));
+  const isClosed = task.status === 'done' || task.status === 'cancelled';
+
+  // Исполнители
+  const allAssignees = typeof getAllAssignees === 'function' ? getAllAssignees() : [];
+  const asnOpts = [
+    `<option value="">— Не назначен —</option>`,
+    ...allAssignees.map(a => `<option value="${_tkEsc(a.name)}" ${task.assignee_name === a.name ? 'selected' : ''}>${_tkEsc(a.name)}</option>`),
+  ].join('');
+
+  // Приоритеты
+  const prOpts = TK_PRIORITIES.map(p =>
+    `<option value="${p.id}" ${task.priority === p.id ? 'selected' : ''}>${p.label}</option>`
+  ).join('');
+
+  // Проекты
+  let projOpts = `<option value="">— Без проекта —</option>`;
+  if (typeof VRH_PROJECTS !== 'undefined') {
+    projOpts += VRH_PROJECTS.map(p =>
+      `<option value="${_tkEsc(p.id)}" ${task.project_id === p.id ? 'selected' : ''}>${_tkEsc(p.name)}</option>`
+    ).join('');
+  }
+
+  // Статусы кнопки
+  const statusBtns = TK_STATUSES.map(s => `
+    <button class="tk-status-btn ${task.status === s.id ? 'tk-status-btn-active' : ''}"
+            style="${task.status === s.id ? `background:${s.bg};color:${s.color};border-color:${s.color}` : ''}"
+            onclick="setTkStatus('${_tkEsc(task.id)}','${s.id}')">${_tkEsc(s.label)}</button>`
+  ).join('');
+
+  // Подзадачи
+  const subsHtml = subs.map(s => {
+    const done = s.status === 'done';
+    return `
+    <div class="tk-subtask-row">
+      <button class="tk-subtask-check ${done ? 'tk-subtask-done' : ''}"
+              onclick="_tkToggleSubtask('${_tkEsc(s.id)}','${_tkEsc(task.id)}')" title="${done ? 'Снять отметку' : 'Завершить'}">
+        ${done ? iconSvg('check', 11) : ''}
+      </button>
+      <span class="tk-subtask-title ${done ? 'tk-subtask-title-done' : ''}">${_tkEsc(s.title)}</span>
+      ${s.assignee_name ? `<span class="tk-assignee-chip" style="font-size:10px">${_tkEsc(s.assignee_name.split(' ')[0])}</span>` : ''}
+    </div>`;
+  }).join('');
+
+  // Комментарии
+  const commsHtml = comms.map(c => `
+    <div class="tk-comment">
+      <div class="tk-comment-meta">
+        <span class="tk-comment-author">${_tkEsc(c.author)}</span>
+        <span class="tk-comment-date">${_tkFmtDateTime(c.created_at)}</span>
+        <button class="tk-comment-del" onclick="deleteTkComment('${_tkEsc(c.id)}','${_tkEsc(task.id)}')" title="Удалить">${iconSvg('trash',11)}</button>
+      </div>
+      <div class="tk-comment-text">${_tkEsc(c.text)}</div>
+    </div>`
+  ).join('');
+
+  const deadlineVal = task.deadline ? new Date(task.deadline).toISOString().slice(0,16) : '';
+  const completedBlock = task.status === 'done' && task.completed_at ? `
+    <div class="tk-completed-block">
+      ${iconSvg('check',13)} Завершена ${_tkFmtDateTime(task.completed_at)}
+      ${task.completion_comment ? `<div class="tk-completion-comment">${_tkEsc(task.completion_comment)}</div>` : ''}
+    </div>` : '';
+
+  return `
+  <div class="modal-header">
+    <span class="modal-title">${_tkEsc(task.title)}</span>
+    <button class="modal-close" onclick="closeModal()">${iconSvg('x',14)}</button>
+  </div>
+  <div class="wh-modal-body">
+    ${completedBlock}
+
+    <div class="tk-detail-meta">
+      <div class="tk-meta-field">
+        <label class="mn-label">Исполнитель</label>
+        <select class="mn-input" id="tk-det-asn" onchange="updateTkField('${_tkEsc(task.id)}','assignee_name',this.value)">${asnOpts}</select>
+      </div>
+      <div class="tk-meta-field">
+        <label class="mn-label">Срок</label>
+        <input class="mn-input" type="datetime-local" id="tk-det-dl" value="${_tkEsc(deadlineVal)}"
+               onchange="updateTkField('${_tkEsc(task.id)}','deadline',this.value||null)">
+      </div>
+      <div class="tk-meta-field">
+        <label class="mn-label">Приоритет</label>
+        <select class="mn-input" id="tk-det-pr" onchange="updateTkField('${_tkEsc(task.id)}','priority',this.value)">${prOpts}</select>
+      </div>
+      <div class="tk-meta-field">
+        <label class="mn-label">Проект</label>
+        <select class="mn-input" id="tk-det-proj" onchange="updateTkField('${_tkEsc(task.id)}','project_id',this.value||null)">${projOpts}</select>
+      </div>
+    </div>
+
+    ${task.description ? `<div class="tk-desc">${_tkEsc(task.description)}</div>` : ''}
+
+    <div class="tk-section">
+      <div class="tk-section-title">${iconSvg('list',14)} Статус задачи</div>
+      <div class="tk-status-btns">${statusBtns}</div>
+      ${task.status === 'done' ? '' : `
+      <div id="tk-done-comment-block" style="display:none;margin-top:10px">
+        <label class="mn-label">Комментарий по выполнению</label>
+        <textarea class="mn-input" id="tk-done-comment" rows="2" placeholder="Что сделано, результат..."></textarea>
+      </div>`}
+    </div>
+
+    <div class="tk-section">
+      <div class="tk-section-hdr">
+        <div class="tk-section-title">${iconSvg('clipboard',14)} Подзадачи ${subs.length ? `<span class="tk-cnt-badge">${subs.filter(s=>s.status==='done').length}/${subs.length}</span>` : ''}</div>
+        <button class="btn-secondary tk-add-sub-btn" onclick="openAddTaskModal('${_tkEsc(task.id)}')">${iconSvg('plus',12)} Добавить</button>
+      </div>
+      ${subsHtml || '<div class="tk-sub-empty">Подзадач нет</div>'}
+    </div>
+
+    <div class="tk-section">
+      <div class="tk-section-title">${iconSvg('chat',14)} Комментарии ${comms.length ? `<span class="tk-cnt-badge">${comms.length}</span>` : ''}</div>
+      ${commsHtml}
+      <div class="tk-comment-add">
+        <textarea class="mn-input" id="tk-new-comment" rows="2" placeholder="Добавить комментарий..."></textarea>
+        <button class="btn-primary" onclick="addTkComment('${_tkEsc(task.id)}')">${iconSvg('save',13)} Отправить</button>
+      </div>
+    </div>
+  </div>
+  <div class="wh-modal-footer">
+    <button class="mn-btn-danger" onclick="deleteTkTask('${_tkEsc(task.id)}')">${iconSvg('trash',14)} Удалить</button>
+    <button class="btn-secondary" onclick="openEditTaskModal('${_tkEsc(task.id)}')">${iconSvg('edit',14)} Редактировать</button>
+  </div>`;
+}
+
+// ──── Изменить статус ──────────────────────────────────────────
+function setTkStatus(taskId, newStatus) {
+  const task = _tkTasks.find(t => t.id === taskId);
+  if (!task) return;
+
+  if (newStatus === 'done' && task.status !== 'done') {
+    // Показываем блок для комментария, ждём подтверждения
+    const block = document.getElementById('tk-done-comment-block');
+    if (block) {
+      block.style.display = 'block';
+      // Подтверждаем через кнопку — переиспользуем существующую кнопку "В работе" как подтверждение
+      // Вместо этого — вешаем временный обработчик на кнопку "Завершена"
+      const doneBtn = document.querySelector('.tk-status-btn:not(.tk-status-btn-active)[onclick*="done"]');
+      // Просто применяем статус немедленно, комментарий необязателен
+    }
+  }
+
+  const completionComment = newStatus === 'done'
+    ? (document.getElementById('tk-done-comment')?.value.trim() || '')
+    : task.completion_comment;
+
+  task.status = newStatus;
+  task.completed_at = newStatus === 'done' ? new Date().toISOString() : (task.completed_at || null);
+  if (newStatus === 'done') task.completion_comment = completionComment;
+  if (newStatus !== 'done') { task.completed_at = null; task.completion_comment = ''; }
+
+  _tkSaveTask(task);
+  if (typeof showToast === 'function') showToast(`Статус: ${_tkGetStatus(newStatus).label}`);
+
+  // Перерисовываем детальную модалку
+  const box = document.getElementById('modal-box');
+  if (box && document.getElementById('modal-overlay')?.classList.contains('open')) {
+    box.innerHTML = _tkDetailHtml(task);
+  }
+  _tkRerenderList();
+}
+
+// ──── Обновить отдельное поле inline ──────────────────────────
+function updateTkField(taskId, field, value) {
+  const task = _tkTasks.find(t => t.id === taskId);
+  if (!task) return;
+  task[field] = value || null;
+  _tkSaveTask(task);
+  _tkRerenderList();
+}
+
+// ──── Переключить подзадачу ────────────────────────────────────
+function _tkToggleSubtask(subId, parentId) {
+  const sub = _tkTasks.find(t => t.id === subId);
+  if (!sub) return;
+  sub.status = sub.status === 'done' ? 'pending' : 'done';
+  sub.completed_at = sub.status === 'done' ? new Date().toISOString() : null;
+  _tkSaveTask(sub);
+  const parentTask = _tkTasks.find(t => t.id === parentId);
+  if (parentTask) {
+    const box = document.getElementById('modal-box');
+    if (box) box.innerHTML = _tkDetailHtml(parentTask);
+  }
+}
+
+// ──── Модалка: создание / редактирование задачи ────────────────
+function openAddTaskModal(parentId) {
+  if (typeof closeModal === 'function') closeModal();
+  _openTkTaskModal(null, parentId);
+}
+
+function openEditTaskModal(taskId) {
+  if (typeof closeModal === 'function') closeModal();
+  const task = _tkTasks.find(t => t.id === taskId);
+  _openTkTaskModal(task || null, null);
+}
+
+function _openTkTaskModal(task, parentId) {
+  const overlay = document.getElementById('modal-overlay');
+  const box     = document.getElementById('modal-box');
+  if (!overlay || !box) return;
+
+  const allAssignees = typeof getAllAssignees === 'function' ? getAllAssignees() : [];
+  const asnOpts = [
+    `<option value="">— Не назначен —</option>`,
+    ...allAssignees.map(a => `<option value="${_tkEsc(a.name)}" ${task?.assignee_name === a.name ? 'selected' : ''}>${_tkEsc(a.name)}</option>`),
+  ].join('');
+
+  const prOpts = TK_PRIORITIES.map(p =>
+    `<option value="${p.id}" ${(task?.priority || 'medium') === p.id ? 'selected' : ''}>${p.label}</option>`
+  ).join('');
+
+  let projOpts = `<option value="">— Без проекта —</option>`;
+  if (typeof VRH_PROJECTS !== 'undefined') {
+    projOpts += VRH_PROJECTS.map(p =>
+      `<option value="${_tkEsc(p.id)}" ${task?.project_id === p.id ? 'selected' : ''}>${_tkEsc(p.name)}</option>`
+    ).join('');
+  }
+
+  const deadlineVal = task?.deadline ? new Date(task.deadline).toISOString().slice(0,16) : '';
+  const parentTask  = parentId ? _tkTasks.find(t => t.id === parentId) : null;
+  const isNew = !task;
+  const title = isNew ? (parentTask ? `Подзадача к: ${parentTask.title}` : 'Новая задача') : 'Редактировать задачу';
+
+  box.innerHTML = `
+  <div class="modal-header">
+    <span class="modal-title">${title}</span>
+    <button class="modal-close" onclick="closeModal()">${iconSvg('x',14)}</button>
+  </div>
+  <div class="wh-modal-body">
+    <div style="margin-bottom:14px">
+      <label class="mn-label">Название задачи *</label>
+      <input class="mn-input" id="tk-inp-title" type="text" placeholder="Что нужно сделать..."
+             value="${_tkEsc(task?.title || '')}">
+    </div>
+    <div class="wh-grid2">
+      <div>
+        <label class="mn-label">Исполнитель</label>
+        <select class="mn-input" id="tk-inp-asn">${asnOpts}</select>
+      </div>
+      <div>
+        <label class="mn-label">Приоритет</label>
+        <select class="mn-input" id="tk-inp-pr">${prOpts}</select>
+      </div>
+      <div>
+        <label class="mn-label">Срок</label>
+        <input class="mn-input" type="datetime-local" id="tk-inp-dl" value="${_tkEsc(deadlineVal)}">
+      </div>
+      <div>
+        <label class="mn-label">Проект</label>
+        <select class="mn-input" id="tk-inp-proj">${projOpts}</select>
+      </div>
+    </div>
+    <div style="margin-top:14px">
+      <label class="mn-label">Описание</label>
+      <textarea class="mn-input" id="tk-inp-desc" rows="3"
+                placeholder="Подробности, ссылки, контекст...">${_tkEsc(task?.description || '')}</textarea>
+    </div>
+  </div>
+  <div class="wh-modal-footer">
+    ${task ? `<button class="mn-btn-danger" onclick="deleteTkTask('${_tkEsc(task.id)}')">${iconSvg('trash',14)} Удалить</button>` : '<div></div>'}
+    <div style="display:flex;gap:8px">
+      <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+      <button class="btn-primary" onclick="saveTkTask('${_tkEsc(task?.id||'')}','${_tkEsc(parentId||'')}')">${iconSvg('save',14)} Сохранить</button>
+    </div>
+  </div>`;
+
+  overlay.classList.add('open');
+  requestAnimationFrame(() => document.getElementById('tk-inp-title')?.focus());
+}
+
+function saveTkTask(taskId, parentId) {
+  const title = document.getElementById('tk-inp-title')?.value.trim();
+  if (!title) { if (typeof showToast === 'function') showToast('Введите название'); return; }
+
+  const assigneeName = document.getElementById('tk-inp-asn')?.value   || null;
+  const priority     = document.getElementById('tk-inp-pr')?.value    || 'medium';
+  const dlRaw        = document.getElementById('tk-inp-dl')?.value;
+  const deadline     = dlRaw ? new Date(dlRaw).toISOString() : null;
+  const projId       = document.getElementById('tk-inp-proj')?.value  || null;
+  const description  = document.getElementById('tk-inp-desc')?.value.trim() || null;
+
+  const isNew = !taskId;
+  const id    = taskId || `tk_${Date.now()}_${Math.random().toString(36).slice(2,6)}`;
+
+  const record = {
+    id, title,
+    description,
+    status:       isNew ? 'pending' : (_tkTasks.find(t => t.id === id)?.status || 'pending'),
+    priority,
+    assignee_name: assigneeName,
+    parent_id:    parentId || null,
+    project_id:   projId,
+    deadline,
+    completed_at: (_tkTasks.find(t => t.id === id)?.completed_at) || null,
+    completion_comment: (_tkTasks.find(t => t.id === id)?.completion_comment) || null,
+    created_at:   isNew ? new Date().toISOString() : (_tkTasks.find(t => t.id === id)?.created_at || new Date().toISOString()),
+  };
+
+  if (isNew) {
+    _tkTasks.push(record);
+  } else {
+    const idx = _tkTasks.findIndex(t => t.id === id);
+    if (idx !== -1) Object.assign(_tkTasks[idx], record);
+  }
+
+  _tkSaveTask(record);
+  if (typeof closeModal === 'function') closeModal();
+  if (typeof showToast === 'function') showToast(isNew ? 'Задача добавлена' : 'Задача сохранена');
+  _tkRerenderList();
+}
+
+function deleteTkTask(taskId) {
+  if (!confirm('Удалить задачу? Подзадачи и комментарии тоже будут удалены.')) return;
+  // Удаляем подзадачи
+  const subIds = _tkTasks.filter(t => t.parent_id === taskId).map(t => t.id);
+  _tkTasks = _tkTasks.filter(t => t.id !== taskId && t.parent_id !== taskId);
+  delete _tkComments[taskId];
+  subIds.forEach(sid => delete _tkComments[sid]);
+
+  if (typeof closeModal === 'function') closeModal();
+  if (_sb) {
+    (async () => {
+      try {
+        await _sb.from('manager_tasks').delete().eq('id', taskId);
+        if (subIds.length) await _sb.from('manager_tasks').delete().in('id', subIds);
+        if (typeof showToast === 'function') showToast('Задача удалена');
+      } catch(e) { console.error('deleteTkTask:', e); }
+    })();
+  } else {
+    if (typeof showToast === 'function') showToast('Задача удалена');
+  }
+  _tkRerenderList();
+}
+
+// ──── Комментарии ───────────────────────────────────────────────
+function addTkComment(taskId) {
+  const text = document.getElementById('tk-new-comment')?.value.trim();
+  if (!text) return;
+
+  const id = `tkc_${Date.now()}_${Math.random().toString(36).slice(2,6)}`;
+  const comment = { id, task_id: taskId, text, author: 'Руководитель', created_at: new Date().toISOString() };
+
+  if (!_tkComments[taskId]) _tkComments[taskId] = [];
+  _tkComments[taskId].push(comment);
+
+  _tkSaveComment(comment);
+
+  // Перерисовываем детальную модалку
+  const task = _tkTasks.find(t => t.id === taskId);
+  const box  = document.getElementById('modal-box');
+  if (task && box) box.innerHTML = _tkDetailHtml(task);
+}
+
+function deleteTkComment(commentId, taskId) {
+  if (!confirm('Удалить комментарий?')) return;
+  if (_tkComments[taskId]) {
+    _tkComments[taskId] = _tkComments[taskId].filter(c => c.id !== commentId);
+  }
+  if (_sb) {
+    (async () => {
+      try { await _sb.from('manager_task_comments').delete().eq('id', commentId); }
+      catch(e) { console.error('deleteTkComment:', e); }
+    })();
+  }
+  const task = _tkTasks.find(t => t.id === taskId);
+  const box  = document.getElementById('modal-box');
+  if (task && box) box.innerHTML = _tkDetailHtml(task);
+}
+
+// ──── Supabase (fire-and-forget) ───────────────────────────────
+function _tkSaveTask(task) {
+  if (!_sb) return;
+  (async () => {
+    try {
+      await _sb.from('manager_tasks').upsert({
+        id:                 task.id,
+        title:              task.title,
+        description:        task.description,
+        status:             task.status,
+        priority:           task.priority,
+        assignee_name:      task.assignee_name,
+        parent_id:          task.parent_id,
+        project_id:         task.project_id,
+        deadline:           task.deadline,
+        completed_at:       task.completed_at,
+        completion_comment: task.completion_comment,
+      });
+    } catch(e) { console.error('_tkSaveTask:', e); }
+  })();
+}
+
+function _tkSaveComment(comment) {
+  if (!_sb) return;
+  (async () => {
+    try {
+      await _sb.from('manager_task_comments').upsert({
+        id: comment.id, task_id: comment.task_id,
+        text: comment.text, author: comment.author,
+      });
+    } catch(e) { console.error('_tkSaveComment:', e); }
+  })();
+}
+
+// ──── Экспорт ───────────────────────────────────────────────────
+window.loadTasksData    = loadTasksData;
+window.renderTasksList  = renderTasksList;
+window.setTkFilter      = setTkFilter;
+window.openAddTaskModal = openAddTaskModal;
+window.openEditTaskModal = openEditTaskModal;
+window.openTaskDetail   = openTaskDetail;
+window.setTkStatus      = setTkStatus;
+window.updateTkField    = updateTkField;
+window._tkToggleSubtask = _tkToggleSubtask;
+window.saveTkTask       = saveTkTask;
+window.deleteTkTask     = deleteTkTask;
+window.addTkComment     = addTkComment;
+window.deleteTkComment  = deleteTkComment;

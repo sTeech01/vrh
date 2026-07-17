@@ -1,0 +1,451 @@
+/* ============================================================
+   VRH ERP — Модуль «Задачи»
+   Суффикс: tk-*
+   ============================================================ */
+
+/* ── Страница (список) ─────────────────────────────────────── */
+.tk-page-wrap {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 32px 24px 80px;
+}
+
+.tk-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tk-page-title    { font-size: 22px; font-weight: 800; color: var(--gray-900); }
+.tk-page-subtitle {
+  font-size: 13px;
+  color: var(--gray-400);
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tk-hdr-warn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--red);
+  font-weight: 600;
+}
+
+/* ── Toolbar ─────────────────────────────────────────────── */
+.tk-toolbar {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  flex-direction: column;
+}
+
+.tk-tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--gray-100);
+  border-radius: var(--radius);
+  padding: 3px;
+  flex-wrap: wrap;
+}
+
+.tk-tab {
+  padding: 5px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gray-500);
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.tk-tab:hover     { color: var(--gray-900); background: var(--gray-200); }
+.tk-tab-active    { background: #fff; color: var(--gray-900); font-weight: 600; box-shadow: var(--shadow-sm); }
+.tk-tab-cnt {
+  background: var(--gray-200);
+  color: var(--gray-500);
+  border-radius: 99px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 700;
+}
+.tk-tab-active .tk-tab-cnt { background: var(--gray-900); color: #fff; }
+
+.tk-filters {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.tk-search, .tk-select {
+  height: 36px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 0 12px;
+  font-size: 13px;
+  font-family: inherit;
+  background: #fff;
+  color: var(--gray-900);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.tk-search { min-width: 200px; flex: 1; }
+.tk-select { min-width: 160px; }
+.tk-search:focus, .tk-select:focus {
+  outline: none;
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(14,165,233,.10);
+}
+
+/* ── Список задач ─────────────────────────────────────────── */
+.tk-list {
+  background: var(--surface);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.tk-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--gray-100);
+  cursor: pointer;
+  gap: 12px;
+  transition: background var(--transition);
+}
+.tk-row:last-child { border-bottom: none; }
+.tk-row:hover      { background: var(--gray-50); }
+.tk-row-closed     { opacity: .65; }
+
+.tk-row-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.tk-priority-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tk-row-title-wrap { min-width: 0; }
+.tk-row-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-900);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 460px;
+}
+.tk-row-closed .tk-row-title { text-decoration: line-through; color: var(--gray-400); }
+
+.tk-row-sub-cnt {
+  font-size: 11px;
+  color: var(--gray-400);
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.tk-row-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.tk-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  color: var(--gray-400);
+}
+
+.tk-assignee-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--gray-100);
+  color: var(--gray-600);
+  white-space: nowrap;
+}
+.tk-assignee-none { font-style: italic; font-weight: 400; }
+
+.tk-deadline {
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tk-dl-ok      { color: var(--gray-400); }
+.tk-dl-soon    { color: var(--amber); }
+.tk-dl-today   { color: var(--amber); font-weight: 700; }
+.tk-dl-overdue { color: var(--red); }
+
+.tk-status-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ── Пустой список ──────────────────────────────────────── */
+.tk-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 72px 24px;
+  color: var(--gray-300);
+  font-size: 14px;
+  font-weight: 500;
+  background: var(--surface);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+.tk-empty-sub { font-size: 12px; color: var(--gray-300); font-weight: 400; }
+
+/* ── Детальная модалка ───────────────────────────────────── */
+.tk-detail-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 16px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.tk-meta-field {}
+
+.tk-desc {
+  font-size: 13px;
+  color: var(--gray-700);
+  background: var(--gray-50);
+  border: var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+/* Блок завершения */
+.tk-completed-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px;
+  background: var(--green-dim);
+  border: 1px solid var(--green);
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--green);
+  margin-bottom: 16px;
+  align-items: flex-start;
+}
+.tk-completion-comment {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--gray-700);
+  background: rgba(255,255,255,.7);
+  border-radius: 6px;
+  padding: 6px 10px;
+  white-space: pre-wrap;
+}
+
+/* ── Секции детальной модалки ────────────────────────────── */
+.tk-section {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--gray-100);
+}
+.tk-section:last-child { border-bottom: none; margin-bottom: 0; }
+
+.tk-section-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.tk-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gray-600);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: 10px;
+}
+.tk-section-hdr .tk-section-title { margin-bottom: 0; }
+
+.tk-cnt-badge {
+  background: var(--gray-200);
+  color: var(--gray-600);
+  border-radius: 99px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.tk-add-sub-btn {
+  font-size: 12px;
+  padding: 4px 10px;
+  height: auto;
+}
+
+/* Кнопки статуса */
+.tk-status-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tk-status-btn {
+  padding: 6px 14px;
+  border-radius: 99px;
+  border: 1.5px solid var(--gray-200);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gray-600);
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: inherit;
+}
+.tk-status-btn:hover { border-color: var(--gray-400); color: var(--gray-900); }
+.tk-status-btn-active {
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Подзадачи ───────────────────────────────────────────── */
+.tk-subtask-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--gray-100);
+}
+.tk-subtask-row:last-child { border-bottom: none; }
+
+.tk-subtask-check {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 2px solid var(--gray-300);
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+  font-family: inherit;
+}
+.tk-subtask-done {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+
+.tk-subtask-title {
+  font-size: 13px;
+  color: var(--gray-800);
+  flex: 1;
+}
+.tk-subtask-title-done {
+  text-decoration: line-through;
+  color: var(--gray-400);
+}
+
+.tk-sub-empty {
+  font-size: 12px;
+  color: var(--gray-300);
+  font-style: italic;
+  padding: 4px 0;
+}
+
+/* ── Комментарии ─────────────────────────────────────────── */
+.tk-comment {
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--gray-100);
+}
+.tk-comment:last-of-type { border-bottom: none; margin-bottom: 8px; }
+
+.tk-comment-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.tk-comment-author { font-size: 12px; font-weight: 700; color: var(--gray-700); }
+.tk-comment-date   { font-size: 11px; color: var(--gray-400); }
+.tk-comment-del {
+  margin-left: auto;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--gray-300);
+  display: flex;
+  align-items: center;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: all var(--transition);
+  font-family: inherit;
+}
+.tk-comment-del:hover { color: var(--red); background: var(--red-dim); }
+
+.tk-comment-text {
+  font-size: 13px;
+  color: var(--gray-700);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  background: var(--gray-50);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+}
+
+.tk-comment-add {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+.tk-comment-add .btn-primary { align-self: flex-end; }
