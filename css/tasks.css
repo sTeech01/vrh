@@ -400,6 +400,42 @@
   padding: 4px 0;
 }
 
+.tk-subtask-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.tk-subtask-comment {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--green);
+  margin-top: 3px;
+  line-height: 1.4;
+  background: var(--green-dim);
+  border-radius: 4px;
+  padding: 3px 7px;
+}
+
+/* Инлайн-форма подтверждения выполнения подзадачи */
+.tk-sub-confirm-form {
+  margin: 0 0 8px 30px;
+  padding: 10px 12px;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tk-sub-confirm-btns {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 /* ── Комментарии ─────────────────────────────────────────── */
 .tk-comment {
   margin-bottom: 12px;

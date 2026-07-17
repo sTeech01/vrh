@@ -26,6 +26,7 @@ let _tkTasks       = [];
 let _tkComments    = {};   // { [taskId]: Comment[] }
 let _tkFilter      = { statusTab: 'all', assignee: 'all', search: '' };
 let _tkSearchTimer = null;
+let _tkSubPending  = null; // { subId, parentId } — ожидает ввода комментария при завершении
 
 // ──── Загрузка данных ──────────────────────────────────────────
 function loadTasksData(tasksData, commentsData) {
@@ -247,16 +248,31 @@ function _tkDetailHtml(task) {
 
   // Подзадачи
   const subsHtml = subs.map(s => {
-    const done = s.status === 'done';
-    return `
+    const done    = s.status === 'done';
+    const pending = _tkSubPending && _tkSubPending.subId === s.id;
+    const mainRow = `
     <div class="tk-subtask-row">
       <button class="tk-subtask-check ${done ? 'tk-subtask-done' : ''}"
-              onclick="_tkToggleSubtask('${_tkEsc(s.id)}','${_tkEsc(task.id)}')" title="${done ? 'Снять отметку' : 'Завершить'}">
+              onclick="_tkToggleSubtask('${_tkEsc(s.id)}','${_tkEsc(task.id)}')"
+              title="${done ? 'Снять отметку' : 'Отметить выполнение'}">
         ${done ? iconSvg('check', 11) : ''}
       </button>
-      <span class="tk-subtask-title ${done ? 'tk-subtask-title-done' : ''}">${_tkEsc(s.title)}</span>
+      <div class="tk-subtask-body">
+        <span class="tk-subtask-title ${done ? 'tk-subtask-title-done' : ''}">${_tkEsc(s.title)}</span>
+        ${s.completion_comment ? `<div class="tk-subtask-comment">${iconSvg('check',10)} ${_tkEsc(s.completion_comment)}</div>` : ''}
+      </div>
       ${s.assignee_name ? `<span class="tk-assignee-chip" style="font-size:10px">${_tkEsc(s.assignee_name.split(' ')[0])}</span>` : ''}
     </div>`;
+    const formRow = pending ? `
+    <div class="tk-sub-confirm-form">
+      <textarea class="mn-input" id="tk-sub-comment-${_tkEsc(s.id)}" rows="2"
+                placeholder="Комментарий по выполнению (обязательно)..."></textarea>
+      <div class="tk-sub-confirm-btns">
+        <button class="btn-secondary" onclick="cancelSubComplete('${_tkEsc(task.id)}')">${iconSvg('x',12)} Отмена</button>
+        <button class="btn-primary" onclick="confirmSubComplete('${_tkEsc(s.id)}','${_tkEsc(task.id)}')">${iconSvg('check',12)} Подтвердить</button>
+      </div>
+    </div>` : '';
+    return mainRow + formRow;
   }).join('');
 
   // Комментарии
@@ -391,9 +407,55 @@ function updateTkField(taskId, field, value) {
 function _tkToggleSubtask(subId, parentId) {
   const sub = _tkTasks.find(t => t.id === subId);
   if (!sub) return;
-  sub.status = sub.status === 'done' ? 'pending' : 'done';
-  sub.completed_at = sub.status === 'done' ? new Date().toISOString() : null;
+
+  if (sub.status === 'done') {
+    // Снять отметку — без комментария
+    sub.status = 'pending';
+    sub.completed_at = null;
+    sub.completion_comment = null;
+    _tkSaveTask(sub);
+    _tkSubPending = null;
+  } else {
+    // Отметить выполнение — показать форму для комментария
+    _tkSubPending = { subId, parentId };
+  }
+
+  const parentTask = _tkTasks.find(t => t.id === parentId);
+  if (parentTask) {
+    const box = document.getElementById('modal-box');
+    if (box) {
+      box.innerHTML = _tkDetailHtml(parentTask);
+      if (_tkSubPending) {
+        requestAnimationFrame(() => document.getElementById('tk-sub-comment-' + subId)?.focus());
+      }
+    }
+  }
+}
+
+function confirmSubComplete(subId, parentId) {
+  const comment = document.getElementById('tk-sub-comment-' + subId)?.value.trim();
+  if (!comment) {
+    if (typeof showToast === 'function') showToast('Введите комментарий по выполнению');
+    document.getElementById('tk-sub-comment-' + subId)?.focus();
+    return;
+  }
+  const sub = _tkTasks.find(t => t.id === subId);
+  if (!sub) return;
+  sub.status = 'done';
+  sub.completed_at = new Date().toISOString();
+  sub.completion_comment = comment;
   _tkSaveTask(sub);
+  _tkSubPending = null;
+  const parentTask = _tkTasks.find(t => t.id === parentId);
+  if (parentTask) {
+    const box = document.getElementById('modal-box');
+    if (box) box.innerHTML = _tkDetailHtml(parentTask);
+  }
+  _tkRerenderList();
+}
+
+function cancelSubComplete(parentId) {
+  _tkSubPending = null;
   const parentTask = _tkTasks.find(t => t.id === parentId);
   if (parentTask) {
     const box = document.getElementById('modal-box');
@@ -629,7 +691,9 @@ window.openEditTaskModal = openEditTaskModal;
 window.openTaskDetail   = openTaskDetail;
 window.setTkStatus      = setTkStatus;
 window.updateTkField    = updateTkField;
-window._tkToggleSubtask = _tkToggleSubtask;
+window._tkToggleSubtask  = _tkToggleSubtask;
+window.confirmSubComplete = confirmSubComplete;
+window.cancelSubComplete  = cancelSubComplete;
 window.saveTkTask       = saveTkTask;
 window.deleteTkTask     = deleteTkTask;
 window.addTkComment     = addTkComment;
