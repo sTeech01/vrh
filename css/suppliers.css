@@ -302,7 +302,7 @@
 .sup-info-comment { font-size: 14px; color: var(--gray-700); line-height: 1.6; background: var(--gray-50); border-radius: 8px; padding: 12px 14px; }
 
 /* ── Контакты ─────────────────────────────────────────────── */
-.sup-contacts-list { display: flex; flex-direction: column; gap: 12px; }
+.sup-contacts-list { display: flex; flex-direction: column; gap: 10px; }
 
 .sup-contact-card {
   border: 1px solid var(--gray-200);
@@ -318,11 +318,41 @@
   margin-bottom: 10px;
 }
 
-.sup-contact-name    { font-size: 14px; font-weight: 700; color: var(--gray-900); }
-.sup-contact-pos     { font-size: 12px; color: var(--gray-500); margin-top: 1px; }
-.sup-contact-fields  { display: flex; flex-wrap: wrap; gap: 10px 18px; font-size: 12px; color: var(--gray-600); }
-.sup-contact-fields span { display: flex; align-items: center; gap: 4px; }
-.sup-contact-comment { font-size: 12px; color: var(--gray-400); margin-top: 8px; }
+.sup-contact-info { flex: 1; min-width: 0; }
+.sup-contact-name { font-size: 14px; font-weight: 700; color: var(--gray-900); }
+.sup-contact-pos  { font-size: 12px; color: var(--cyan); font-weight: 600; margin-top: 2px; }
+
+.sup-contact-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.sup-contact-field {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.sup-contact-field-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gray-400);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  width: 56px;
+  flex-shrink: 0;
+}
+
+.sup-contact-field-val {
+  color: var(--gray-800);
+  font-weight: 500;
+  text-decoration: none;
+}
+a.sup-contact-field-val:hover { color: var(--cyan); text-decoration: underline; }
+
+.sup-contact-comment { font-size: 12px; color: var(--gray-400); margin-top: 8px; font-style: italic; }
 
 /* ── Банк ─────────────────────────────────────────────────── */
 .sup-banks-list { display: flex; flex-direction: column; gap: 12px; }

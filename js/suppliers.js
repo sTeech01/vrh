@@ -323,6 +323,11 @@ function _ii(label, value) {
 }
 
 function _supTabMain(s) {
+  const conts = _supContacts[s.id] || [];
+  const contactsRows = conts.length
+    ? conts.map(c => _supContactCardHtml(c, s.id)).join('')
+    : `<div class="sup-tab-empty">Контактные лица не добавлены</div>`;
+
   return `
   <div class="sup-tab-body">
     <div class="sup-tab-section">
@@ -347,31 +352,42 @@ function _supTabMain(s) {
         ${_ii('Фактический адрес', s.actual_address)}
       </div>
     </div>
+    <div class="sup-tab-section">
+      <div class="sup-section-header">
+        <div class="sup-section-title">Контактные лица</div>
+        <button class="btn-primary sup-btn-sm" onclick="openSupAddContactModal('${_supEsc(s.id)}')">${iconSvg('plus',12)} Добавить</button>
+      </div>
+      <div class="sup-contacts-list">${contactsRows}</div>
+    </div>
     ${s.comment ? `<div class="sup-tab-section"><div class="sup-section-title">Комментарий</div><div class="sup-info-comment">${_supEsc(s.comment)}</div></div>` : ''}
+  </div>`;
+}
+
+function _supContactCardHtml(c, supplierId) {
+  return `
+  <div class="sup-contact-card">
+    <div class="sup-contact-top">
+      <div class="sup-contact-info">
+        <div class="sup-contact-name">${_supEsc(c.name || '—')}</div>
+        ${c.position ? `<div class="sup-contact-pos">${_supEsc(c.position)}</div>` : ''}
+      </div>
+      <button class="sup-icon-btn" onclick="openSupEditContactModal('${_supEsc(c.id)}','${_supEsc(supplierId)}')">${iconSvg('edit',14)}</button>
+    </div>
+    <div class="sup-contact-fields">
+      ${c.phone  ? `<div class="sup-contact-field"><span class="sup-contact-field-label">Тел.</span><a href="tel:${_supEsc(c.phone)}" class="sup-contact-field-val">${_supEsc(c.phone)}</a></div>` : ''}
+      ${c.phone2 ? `<div class="sup-contact-field"><span class="sup-contact-field-label">Тел. 2</span><a href="tel:${_supEsc(c.phone2)}" class="sup-contact-field-val">${_supEsc(c.phone2)}</a></div>` : ''}
+      ${c.email  ? `<div class="sup-contact-field"><span class="sup-contact-field-label">Email</span><a href="mailto:${_supEsc(c.email)}" class="sup-contact-field-val">${_supEsc(c.email)}</a></div>` : ''}
+      ${c.telegram ? `<div class="sup-contact-field"><span class="sup-contact-field-label">Telegram</span><span class="sup-contact-field-val">${_supEsc(c.telegram)}</span></div>` : ''}
+      ${c.whatsapp ? `<div class="sup-contact-field"><span class="sup-contact-field-label">WhatsApp</span><span class="sup-contact-field-val">${_supEsc(c.whatsapp)}</span></div>` : ''}
+    </div>
+    ${c.comment ? `<div class="sup-contact-comment">${_supEsc(c.comment)}</div>` : ''}
   </div>`;
 }
 
 function _supTabContacts(s) {
   const conts = _supContacts[s.id] || [];
   const rows = conts.length
-    ? conts.map(c => `
-      <div class="sup-contact-card">
-        <div class="sup-contact-top">
-          <div>
-            <div class="sup-contact-name">${_supEsc(c.name || '—')}</div>
-            ${c.position ? `<div class="sup-contact-pos">${_supEsc(c.position)}</div>` : ''}
-          </div>
-          <button class="sup-icon-btn" onclick="openSupEditContactModal('${_supEsc(c.id)}','${_supEsc(s.id)}')">${iconSvg('edit',14)}</button>
-        </div>
-        <div class="sup-contact-fields">
-          ${c.phone    ? `<span>${iconSvg('user',11)} ${_supEsc(c.phone)}</span>`    : ''}
-          ${c.phone2   ? `<span>${iconSvg('user',11)} ${_supEsc(c.phone2)}</span>`   : ''}
-          ${c.email    ? `<span>${iconSvg('document',11)} ${_supEsc(c.email)}</span>`: ''}
-          ${c.telegram ? `<span>TG: ${_supEsc(c.telegram)}</span>`                  : ''}
-          ${c.whatsapp ? `<span>WA: ${_supEsc(c.whatsapp)}</span>`                  : ''}
-        </div>
-        ${c.comment ? `<div class="sup-contact-comment">${_supEsc(c.comment)}</div>` : ''}
-      </div>`).join('')
+    ? conts.map(c => _supContactCardHtml(c, s.id)).join('')
     : `<div class="sup-tab-empty">Контактные лица не добавлены</div>`;
 
   return `
