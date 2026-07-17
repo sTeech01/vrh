@@ -217,29 +217,30 @@ function _tkDetailHtml(task) {
   const dl    = _tkDeadlineInfo(task.deadline, task.status);
   const subs  = _tkSubtasks(task.id);
   const comms = [...(_tkComments[task.id] || [])].sort((a, b) => a.created_at.localeCompare(b.created_at));
-  const isClosed = task.status === 'done' || task.status === 'cancelled';
 
-  // Исполнители
-  const allAssignees = typeof getAllAssignees === 'function' ? getAllAssignees() : [];
-  const asnOpts = [
-    `<option value="">— Не назначен —</option>`,
-    ...allAssignees.map(a => `<option value="${_tkEsc(a.name)}" ${task.assignee_name === a.name ? 'selected' : ''}>${_tkEsc(a.name)}</option>`),
-  ].join('');
+  // Метаданные (только чтение)
+  const projName = (() => {
+    if (!task.project_id || typeof VRH_PROJECTS === 'undefined') return null;
+    return (VRH_PROJECTS.find(p => p.id === task.project_id) || {}).name || null;
+  })();
 
-  // Приоритеты
-  const prOpts = TK_PRIORITIES.map(p =>
-    `<option value="${p.id}" ${task.priority === p.id ? 'selected' : ''}>${p.label}</option>`
-  ).join('');
+  const metaItems = [
+    task.assignee_name
+      ? `<div class="tk-info-item"><span class="tk-info-label">${iconSvg('user',12)} Исполнитель</span><span class="tk-info-val">${_tkEsc(task.assignee_name)}</span></div>`
+      : `<div class="tk-info-item"><span class="tk-info-label">${iconSvg('user',12)} Исполнитель</span><span class="tk-info-val tk-info-empty">Не назначен</span></div>`,
+    `<div class="tk-info-item"><span class="tk-info-label">${iconSvg('warning',12)} Приоритет</span>
+       <span class="tk-info-val"><span class="tk-priority-dot" style="background:${_tkEsc(pr.dot)};width:7px;height:7px;display:inline-block;border-radius:50%;margin-right:5px;vertical-align:middle"></span>${_tkEsc(pr.label)}</span></div>`,
+    dl
+      ? `<div class="tk-info-item"><span class="tk-info-label">${iconSvg('calendar',12)} Срок</span><span class="tk-info-val ${dl.cls}">${_tkEsc(dl.label)}</span></div>`
+      : (task.deadline
+        ? `<div class="tk-info-item"><span class="tk-info-label">${iconSvg('calendar',12)} Срок</span><span class="tk-info-val">${_tkFmtDate(task.deadline)}</span></div>`
+        : `<div class="tk-info-item"><span class="tk-info-label">${iconSvg('calendar',12)} Срок</span><span class="tk-info-val tk-info-empty">Не указан</span></div>`),
+    projName
+      ? `<div class="tk-info-item"><span class="tk-info-label">${iconSvg('folder',12)} Проект</span><span class="tk-info-val">${_tkEsc(projName)}</span></div>`
+      : '',
+  ].filter(Boolean).join('');
 
-  // Проекты
-  let projOpts = `<option value="">— Без проекта —</option>`;
-  if (typeof VRH_PROJECTS !== 'undefined') {
-    projOpts += VRH_PROJECTS.map(p =>
-      `<option value="${_tkEsc(p.id)}" ${task.project_id === p.id ? 'selected' : ''}>${_tkEsc(p.name)}</option>`
-    ).join('');
-  }
-
-  // Статусы кнопки
+  // Статусы (кликабельные — это быстрое действие, не «редактирование»)
   const statusBtns = TK_STATUSES.map(s => `
     <button class="tk-status-btn ${task.status === s.id ? 'tk-status-btn-active' : ''}"
             style="${task.status === s.id ? `background:${s.bg};color:${s.color};border-color:${s.color}` : ''}"
@@ -287,7 +288,6 @@ function _tkDetailHtml(task) {
     </div>`
   ).join('');
 
-  const deadlineVal = task.deadline ? new Date(task.deadline).toISOString().slice(0,16) : '';
   const completedBlock = task.status === 'done' && task.completed_at ? `
     <div class="tk-completed-block">
       ${iconSvg('check',13)} Завершена ${_tkFmtDateTime(task.completed_at)}
@@ -296,42 +296,22 @@ function _tkDetailHtml(task) {
 
   return `
   <div class="modal-header">
-    <span class="modal-title">${_tkEsc(task.title)}</span>
+    <div style="display:flex;align-items:center;gap:10px;min-width:0">
+      <span class="tk-status-chip" style="background:${st.bg};color:${st.color};flex-shrink:0">${_tkEsc(st.label)}</span>
+      <span class="modal-title" style="font-size:15px">${_tkEsc(task.title)}</span>
+    </div>
     <button class="modal-close" onclick="closeModal()">${iconSvg('x',14)}</button>
   </div>
   <div class="wh-modal-body">
     ${completedBlock}
 
-    <div class="tk-detail-meta">
-      <div class="tk-meta-field">
-        <label class="mn-label">Исполнитель</label>
-        <select class="mn-input" id="tk-det-asn" onchange="updateTkField('${_tkEsc(task.id)}','assignee_name',this.value)">${asnOpts}</select>
-      </div>
-      <div class="tk-meta-field">
-        <label class="mn-label">Срок</label>
-        <input class="mn-input" type="datetime-local" id="tk-det-dl" value="${_tkEsc(deadlineVal)}"
-               onchange="updateTkField('${_tkEsc(task.id)}','deadline',this.value||null)">
-      </div>
-      <div class="tk-meta-field">
-        <label class="mn-label">Приоритет</label>
-        <select class="mn-input" id="tk-det-pr" onchange="updateTkField('${_tkEsc(task.id)}','priority',this.value)">${prOpts}</select>
-      </div>
-      <div class="tk-meta-field">
-        <label class="mn-label">Проект</label>
-        <select class="mn-input" id="tk-det-proj" onchange="updateTkField('${_tkEsc(task.id)}','project_id',this.value||null)">${projOpts}</select>
-      </div>
-    </div>
+    <div class="tk-info-grid">${metaItems}</div>
 
     ${task.description ? `<div class="tk-desc">${_tkEsc(task.description)}</div>` : ''}
 
     <div class="tk-section">
-      <div class="tk-section-title">${iconSvg('list',14)} Статус задачи</div>
+      <div class="tk-section-title">${iconSvg('list',14)} Статус</div>
       <div class="tk-status-btns">${statusBtns}</div>
-      ${task.status === 'done' ? '' : `
-      <div id="tk-done-comment-block" style="display:none;margin-top:10px">
-        <label class="mn-label">Комментарий по выполнению</label>
-        <textarea class="mn-input" id="tk-done-comment" rows="2" placeholder="Что сделано, результат..."></textarea>
-      </div>`}
     </div>
 
     <div class="tk-section">
@@ -353,7 +333,7 @@ function _tkDetailHtml(task) {
   </div>
   <div class="wh-modal-footer">
     <button class="mn-btn-danger" onclick="deleteTkTask('${_tkEsc(task.id)}')">${iconSvg('trash',14)} Удалить</button>
-    <button class="btn-secondary" onclick="openEditTaskModal('${_tkEsc(task.id)}')">${iconSvg('edit',14)} Редактировать</button>
+    <button class="btn-primary" onclick="openEditTaskModal('${_tkEsc(task.id)}')">${iconSvg('edit',14)} Редактировать</button>
   </div>`;
 }
 
