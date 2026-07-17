@@ -638,38 +638,47 @@ window.deleteSupplier = deleteSupplier;
 // ── МОДАЛКА: КОНТАКТ ─────────────────────────────────────────────
 function _supContactModalHtml(contact, supplierId, isEdit) {
   const c = contact || {};
-  const field = (id, label, value, type = 'text', placeholder = '') => `
-    <div>
-      <label class="mn-label">${label}</label>
-      <input id="${id}" class="mn-input" type="${type}" value="${_supEsc(value || '')}" placeholder="${placeholder}" autocomplete="off">
-    </div>`;
   return `
-  <div style="display:flex;flex-direction:column;max-height:85dvh;overflow:hidden">
-    <div class="modal-header">
-      <div class="modal-title" style="display:flex;align-items:center;gap:8px">
-        ${iconSvg('user', 15)}
-        ${isEdit ? 'Редактировать контакт' : 'Новый контакт'}
-      </div>
-      <button class="modal-close" onclick="closeModal()">${iconSvg('x', 14)}</button>
+  <div class="crm-modal crm-modal-md">
+    <div class="crm-modal-head">
+      <div class="crm-modal-title">${iconSvg('user', 15)} ${isEdit ? 'Редактировать контакт' : 'Новый контакт'}</div>
+      <button class="modal-close" onclick="closeModal()">${iconSvg('x', 16)}</button>
     </div>
-    <div class="wh-modal-body" style="display:flex;flex-direction:column;gap:14px">
-      ${field('sup-c-name',     'Имя *',              c.name,     'text', 'Иванов Иван Иванович')}
-      ${field('sup-c-position', 'Должность / Роль',   c.position, 'text', 'Директор, Технолог, ЛПР...')}
-      ${field('sup-c-phone',    'Телефон',             c.phone,    'tel',  '+7 (___) ___-__-__')}
-      ${field('sup-c-phone2',   'Доп. телефон',        c.phone2,   'tel',  '+7 (___) ___-__-__')}
-      ${field('sup-c-email',    'Email',               c.email,    'email','example@domain.ru')}
-      ${field('sup-c-telegram', 'Telegram',            c.telegram, 'text', '@username')}
-      ${field('sup-c-whatsapp', 'WhatsApp',            c.whatsapp, 'text', '+7...')}
+    <div class="crm-modal-body" style="display:flex;flex-direction:column;gap:10px">
+      <div>
+        <label class="mn-label">Имя *</label>
+        <input id="sup-c-name" class="mn-input" type="text" value="${_supEsc(c.name||'')}" placeholder="Иванов Иван Иванович" autocomplete="off">
+      </div>
+      <div>
+        <label class="mn-label">Должность / Роль</label>
+        <input id="sup-c-position" class="mn-input" type="text" value="${_supEsc(c.position||'')}" placeholder="Директор, Технолог, ЛПР...">
+      </div>
+      <div>
+        <label class="mn-label">Телефон</label>
+        <input id="sup-c-phone" class="mn-input" type="tel" value="${_supEsc(c.phone||'')}" placeholder="+7 (___) ___-__-__">
+      </div>
+      <div>
+        <label class="mn-label">Доп. телефон</label>
+        <input id="sup-c-phone2" class="mn-input" type="tel" value="${_supEsc(c.phone2||'')}" placeholder="+7 (___) ___-__-__">
+      </div>
+      <div>
+        <label class="mn-label">Email</label>
+        <input id="sup-c-email" class="mn-input" type="email" value="${_supEsc(c.email||'')}" placeholder="example@domain.ru">
+      </div>
+      <div>
+        <label class="mn-label">Telegram</label>
+        <input id="sup-c-telegram" class="mn-input" type="text" value="${_supEsc(c.telegram||'')}" placeholder="@username">
+      </div>
       <div>
         <label class="mn-label">Комментарий</label>
-        <textarea id="sup-c-comment" class="mn-input" rows="2" style="resize:vertical" placeholder="Примечание...">${_supEsc(c.comment || '')}</textarea>
+        <textarea id="sup-c-comment" class="mn-input" rows="2" style="resize:vertical" placeholder="Примечание...">${_supEsc(c.comment||'')}</textarea>
       </div>
     </div>
-    <div class="wh-modal-footer">
+    <div class="crm-modal-footer">
       ${isEdit ? `<button class="mn-btn-danger" onclick="deleteSupContact('${_supEsc(c.id)}','${_supEsc(supplierId)}')">${iconSvg('trash',14)} Удалить</button>` : '<div></div>'}
       <div style="display:flex;gap:8px">
         <button class="btn-secondary" onclick="closeModal()">Отмена</button>
-        <button class="btn-primary" onclick="saveSupContact('${_supEsc(supplierId)}',${isEdit ? `'${_supEsc(c.id)}'` : 'null'})">${isEdit ? 'Сохранить' : 'Добавить'}</button>
+        <button class="btn-primary" onclick="saveSupContact('${_supEsc(supplierId)}',${isEdit?`'${_supEsc(c.id)}'`:'null'})">${isEdit?'Сохранить':'Добавить'}</button>
       </div>
     </div>
   </div>`;
@@ -696,7 +705,6 @@ function saveSupContact(supplierId, contactId) {
     phone2:   _supReadField('sup-c-phone2'),
     email:    _supReadField('sup-c-email'),
     telegram: _supReadField('sup-c-telegram'),
-    whatsapp: _supReadField('sup-c-whatsapp'),
     comment:  _supReadField('sup-c-comment'),
   };
   if (!fields.name) { _supToast('Укажите имя контакта'); return; }
