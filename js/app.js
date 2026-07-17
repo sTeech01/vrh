@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #134';
+const APP_BUILD = 'DEPLOY #135';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -3653,47 +3653,49 @@ function openAddMatModal(itemId) {
   const nextOrder = mats.length > 0 ? Math.max(...mats.map(m => m.sort_order)) + 1 : 0;
 
   document.getElementById('modal-box').innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-      <div style="font-size:15px;font-weight:700">Добавить материал</div>
-      <button class="modal-close" onclick="closeModal()">${iconSvg('x',14)}</button>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:14px">
-      <div>
-        <label class="mn-label">Наименование *</label>
-        <input id="mat-name" class="mn-input" type="text" placeholder="Труба 40×40×3 AISI304" autocomplete="off">
+    <div style="display:flex;flex-direction:column;max-height:85dvh;overflow:hidden">
+      <div class="modal-header">
+        <div class="modal-title">Добавить материал</div>
+        <button class="modal-close" onclick="closeModal()">${iconSvg('x',14)}</button>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="wh-modal-body" style="display:flex;flex-direction:column;gap:14px">
         <div>
-          <label class="mn-label">Количество</label>
-          <input id="mat-qty" class="mn-input" type="number" step="0.001" min="0" placeholder="64.39">
+          <label class="mn-label">Наименование *</label>
+          <input id="mat-name" class="mn-input" type="text" placeholder="Труба 40×40×3 AISI304" autocomplete="off">
+        </div>
+        <div class="wh-grid2">
+          <div>
+            <label class="mn-label">Количество</label>
+            <input id="mat-qty" class="mn-input" type="number" step="0.001" min="0" placeholder="64.39">
+          </div>
+          <div>
+            <label class="mn-label">Единица</label>
+            <input id="mat-unit" class="mn-input" type="text" placeholder="м / шт. / кг / кв.м">
+          </div>
         </div>
         <div>
-          <label class="mn-label">Единица</label>
-          <input id="mat-unit" class="mn-input" type="text" placeholder="м / шт. / кг / кв.м">
+          <label class="mn-label">В наличии</label>
+          <div style="display:flex;gap:8px;margin-top:6px">
+            <label class="mat-radio-label mat-radio-active" id="mat-have-no-lbl">
+              <input type="radio" name="mat-have" value="0" checked onchange="document.getElementById('mat-have-no-lbl').classList.add('mat-radio-active');document.getElementById('mat-have-yes-lbl').classList.remove('mat-radio-active')">
+              Нет
+            </label>
+            <label class="mat-radio-label" id="mat-have-yes-lbl">
+              <input type="radio" name="mat-have" value="1" onchange="document.getElementById('mat-have-yes-lbl').classList.add('mat-radio-active');document.getElementById('mat-have-no-lbl').classList.remove('mat-radio-active')">
+              Есть
+            </label>
+          </div>
         </div>
-      </div>
-      <div>
-        <label class="mn-label">В наличии</label>
-        <div style="display:flex;gap:8px;margin-top:6px">
-          <label class="mat-radio-label" id="mat-have-no-lbl">
-            <input type="radio" name="mat-have" value="0" checked onchange="document.getElementById('mat-have-no-lbl').classList.add('mat-radio-active');document.getElementById('mat-have-yes-lbl').classList.remove('mat-radio-active')">
-            Нет
-          </label>
-          <label class="mat-radio-label" id="mat-have-yes-lbl">
-            <input type="radio" name="mat-have" value="1" onchange="document.getElementById('mat-have-yes-lbl').classList.add('mat-radio-active');document.getElementById('mat-have-no-lbl').classList.remove('mat-radio-active')">
-            Есть
-          </label>
+        <div>
+          <label class="mn-label">Примечание</label>
+          <textarea id="mat-notes" class="mn-input" rows="2" placeholder="Поставщик, артикул, комментарий..." style="resize:vertical"></textarea>
         </div>
+        <input type="hidden" id="mat-sort-order" value="${nextOrder}">
       </div>
-      <div>
-        <label class="mn-label">Примечание</label>
-        <textarea id="mat-notes" class="mn-input" rows="2" placeholder="Поставщик, артикул, комментарий..." style="resize:vertical"></textarea>
+      <div class="wh-modal-footer">
+        <button class="btn-primary" onclick="saveMat('${itemId}', null)">Добавить</button>
+        <button class="btn-secondary" onclick="closeModal()">Отмена</button>
       </div>
-      <input type="hidden" id="mat-sort-order" value="${nextOrder}">
-    </div>
-    <div style="display:flex;gap:8px;margin-top:20px">
-      <button class="btn-primary" onclick="saveMat('${itemId}', null)">Добавить</button>
-      <button class="btn-secondary" onclick="closeModal()">Отмена</button>
     </div>
   `;
   document.getElementById('modal-overlay').classList.add('open');
@@ -3708,49 +3710,51 @@ function openEditMatModal(matId, itemId) {
   if (!mat) return;
 
   document.getElementById('modal-box').innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-      <div style="font-size:15px;font-weight:700">Редактировать материал</div>
-      <button class="modal-close" onclick="closeModal()">${iconSvg('x',14)}</button>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:14px">
-      <div>
-        <label class="mn-label">Наименование *</label>
-        <input id="mat-name" class="mn-input" type="text" value="${mat.name}" autocomplete="off">
+    <div style="display:flex;flex-direction:column;max-height:85dvh;overflow:hidden">
+      <div class="modal-header">
+        <div class="modal-title">Редактировать материал</div>
+        <button class="modal-close" onclick="closeModal()">${iconSvg('x',14)}</button>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="wh-modal-body" style="display:flex;flex-direction:column;gap:14px">
         <div>
-          <label class="mn-label">Количество</label>
-          <input id="mat-qty" class="mn-input" type="number" step="0.001" min="0" value="${mat.qty ?? ''}">
+          <label class="mn-label">Наименование *</label>
+          <input id="mat-name" class="mn-input" type="text" value="${mat.name}" autocomplete="off">
+        </div>
+        <div class="wh-grid2">
+          <div>
+            <label class="mn-label">Количество</label>
+            <input id="mat-qty" class="mn-input" type="number" step="0.001" min="0" value="${mat.qty ?? ''}">
+          </div>
+          <div>
+            <label class="mn-label">Единица</label>
+            <input id="mat-unit" class="mn-input" type="text" value="${mat.unit ?? ''}">
+          </div>
         </div>
         <div>
-          <label class="mn-label">Единица</label>
-          <input id="mat-unit" class="mn-input" type="text" value="${mat.unit ?? ''}">
+          <label class="mn-label">В наличии</label>
+          <div style="display:flex;gap:8px;margin-top:6px">
+            <label class="mat-radio-label${!mat.have ? ' mat-radio-active' : ''}" id="mat-have-no-lbl">
+              <input type="radio" name="mat-have" value="0" ${!mat.have ? 'checked' : ''} onchange="document.getElementById('mat-have-no-lbl').classList.add('mat-radio-active');document.getElementById('mat-have-yes-lbl').classList.remove('mat-radio-active')">
+              Нет
+            </label>
+            <label class="mat-radio-label${mat.have ? ' mat-radio-active' : ''}" id="mat-have-yes-lbl">
+              <input type="radio" name="mat-have" value="1" ${mat.have ? 'checked' : ''} onchange="document.getElementById('mat-have-yes-lbl').classList.add('mat-radio-active');document.getElementById('mat-have-no-lbl').classList.remove('mat-radio-active')">
+              Есть
+            </label>
+          </div>
         </div>
-      </div>
-      <div>
-        <label class="mn-label">В наличии</label>
-        <div style="display:flex;gap:8px;margin-top:6px">
-          <label class="mat-radio-label${!mat.have ? ' mat-radio-active' : ''}" id="mat-have-no-lbl">
-            <input type="radio" name="mat-have" value="0" ${!mat.have ? 'checked' : ''} onchange="document.getElementById('mat-have-no-lbl').classList.add('mat-radio-active');document.getElementById('mat-have-yes-lbl').classList.remove('mat-radio-active')">
-            Нет
-          </label>
-          <label class="mat-radio-label${mat.have ? ' mat-radio-active' : ''}" id="mat-have-yes-lbl">
-            <input type="radio" name="mat-have" value="1" ${mat.have ? 'checked' : ''} onchange="document.getElementById('mat-have-yes-lbl').classList.add('mat-radio-active');document.getElementById('mat-have-no-lbl').classList.remove('mat-radio-active')">
-            Есть
-          </label>
+        <div>
+          <label class="mn-label">Примечание</label>
+          <textarea id="mat-notes" class="mn-input" rows="2" style="resize:vertical">${mat.notes ?? ''}</textarea>
         </div>
+        <input type="hidden" id="mat-sort-order" value="${mat.sort_order}">
       </div>
-      <div>
-        <label class="mn-label">Примечание</label>
-        <textarea id="mat-notes" class="mn-input" rows="2" style="resize:vertical">${mat.notes ?? ''}</textarea>
-      </div>
-      <input type="hidden" id="mat-sort-order" value="${mat.sort_order}">
-    </div>
-    <div style="display:flex;gap:8px;justify-content:space-between;margin-top:20px">
-      <button class="btn-primary" onclick="saveMat('${itemId}', '${matId}')">Сохранить</button>
-      <div style="display:flex;gap:8px">
-        <button class="btn-secondary" onclick="closeModal()">Отмена</button>
-        <button class="mn-btn-danger" onclick="deleteMat('${matId}','${itemId}')">Удалить</button>
+      <div class="wh-modal-footer">
+        <button class="btn-primary" onclick="saveMat('${itemId}', '${matId}')">Сохранить</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+          <button class="mn-btn-danger" onclick="deleteMat('${matId}','${itemId}')">Удалить</button>
+        </div>
       </div>
     </div>
   `;
