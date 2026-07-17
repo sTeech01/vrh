@@ -191,6 +191,13 @@
 .sup-tr-name { font-weight: 600; color: var(--gray-900); }
 .sup-tr-sub  { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
 
+.sup-tr-contact-cell {
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ── Пустые состояния ─────────────────────────────────────── */
 .sup-empty {
   text-align: center;

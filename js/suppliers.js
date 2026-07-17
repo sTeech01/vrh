@@ -261,7 +261,7 @@ function _supTableRow(s) {
     <td><span class="sup-type-badge">${_supEsc(getSupTypeLabel(s.org_type))}</span></td>
     <td>${_supEsc(s.inn || '—')}</td>
     <td>${_supEsc(s.city || '—')}</td>
-    <td>${_supEsc(firstC ? (firstC.name||'')+(firstC.phone?' · '+_supFmtPhone(firstC.phone):'') : '—')}</td>
+    <td class="sup-tr-contact-cell">${_supEsc(firstC ? (firstC.name||'')+(firstC.phone?' · '+_supFmtPhone(firstC.phone):'') : '—')}</td>
     <td><span class="sup-status-chip ${isActive?'sup-status-active':'sup-status-inactive'}">${isActive?'Активен':'Неактивен'}</span></td>
   </tr>`;
 }
