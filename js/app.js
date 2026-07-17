@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #141';
+const APP_BUILD = 'DEPLOY #142';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -3068,22 +3068,6 @@ function saveHistoryEdit(itemId, idx) {
   render();
 }
 window.saveHistoryEdit = saveHistoryEdit;
-
-function exportData() {
-  const data = {
-    exportDate: new Date().toISOString(),
-    projects: VRH_PROJECTS,
-    items: VRH_ITEMS,
-    edits: localEdits,
-  };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `vrh_production_${new Date().toISOString().split('T')[0]}.json`;
-  a.click();
-  showToast('Данные экспортированы');
-}
-window.exportData = exportData;
 
 // =============================================================
 // WORKFLOW v2 - STAGE UI
