@@ -628,29 +628,39 @@ window.deleteSupplier = deleteSupplier;
 // ── МОДАЛКА: КОНТАКТ ─────────────────────────────────────────────
 function _supContactModalHtml(contact, supplierId, isEdit) {
   const c = contact || {};
+  const field = (id, label, value, type = 'text', placeholder = '') => `
+    <div>
+      <label class="mn-label">${label}</label>
+      <input id="${id}" class="mn-input" type="${type}" value="${_supEsc(value || '')}" placeholder="${placeholder}" autocomplete="off">
+    </div>`;
   return `
-  <div class="sup-modal">
-    <div class="crm-modal-head">
-      <div class="crm-modal-title">${isEdit ? 'Редактирование контакта' : 'Новый контакт'}</div>
-      <button class="modal-close" onclick="closeModal()">${iconSvg('x',16)}</button>
+  <div style="display:flex;flex-direction:column;max-height:85dvh;overflow:hidden">
+    <div class="modal-header">
+      <div class="modal-title" style="display:flex;align-items:center;gap:8px">
+        ${iconSvg('user', 15)}
+        ${isEdit ? 'Редактировать контакт' : 'Новый контакт'}
+      </div>
+      <button class="modal-close" onclick="closeModal()">${iconSvg('x', 14)}</button>
     </div>
-    <div class="crm-modal-body">
-      <div class="sup-form-grid">
-        ${_sfi('sup-c-name',     'Имя *',          c.name,     'text', true)}
-        ${_sfi('sup-c-position', 'Должность',       c.position, 'text', true)}
-        ${_sfi('sup-c-phone',    'Телефон',         c.phone)}
-        ${_sfi('sup-c-phone2',   'Доп. телефон',    c.phone2)}
-        ${_sfi('sup-c-email',    'Email',            c.email)}
-        ${_sfi('sup-c-telegram', 'Telegram',         c.telegram)}
-        ${_sfi('sup-c-whatsapp', 'WhatsApp',         c.whatsapp)}
-        ${_sfta('sup-c-comment', 'Комментарий', c.comment, true)}
+    <div class="wh-modal-body" style="display:flex;flex-direction:column;gap:14px">
+      ${field('sup-c-name',     'Имя *',              c.name,     'text', 'Иванов Иван Иванович')}
+      ${field('sup-c-position', 'Должность / Роль',   c.position, 'text', 'Директор, Технолог, ЛПР...')}
+      ${field('sup-c-phone',    'Телефон',             c.phone,    'tel',  '+7 (___) ___-__-__')}
+      ${field('sup-c-phone2',   'Доп. телефон',        c.phone2,   'tel',  '+7 (___) ___-__-__')}
+      ${field('sup-c-email',    'Email',               c.email,    'email','example@domain.ru')}
+      ${field('sup-c-telegram', 'Telegram',            c.telegram, 'text', '@username')}
+      ${field('sup-c-whatsapp', 'WhatsApp',            c.whatsapp, 'text', '+7...')}
+      <div>
+        <label class="mn-label">Комментарий</label>
+        <textarea id="sup-c-comment" class="mn-input" rows="2" style="resize:vertical" placeholder="Примечание...">${_supEsc(c.comment || '')}</textarea>
       </div>
     </div>
-    <div class="crm-modal-footer">
-      ${isEdit ? `<button class="mn-btn-danger" onclick="deleteSupContact('${_supEsc(c.id)}','${_supEsc(supplierId)}')">${iconSvg('trash',14)} Удалить</button>` : ''}
-      <div style="flex:1"></div>
-      <button class="btn-secondary" onclick="closeModal()">Отмена</button>
-      <button class="btn-primary" onclick="saveSupContact('${_supEsc(supplierId)}',${isEdit?`'${_supEsc(c.id)}'`:'null'})">${isEdit ? 'Сохранить' : 'Добавить'}</button>
+    <div class="wh-modal-footer">
+      ${isEdit ? `<button class="mn-btn-danger" onclick="deleteSupContact('${_supEsc(c.id)}','${_supEsc(supplierId)}')">${iconSvg('trash',14)} Удалить</button>` : '<div></div>'}
+      <div style="display:flex;gap:8px">
+        <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+        <button class="btn-primary" onclick="saveSupContact('${_supEsc(supplierId)}',${isEdit ? `'${_supEsc(c.id)}'` : 'null'})">${isEdit ? 'Сохранить' : 'Добавить'}</button>
+      </div>
     </div>
   </div>`;
 }
