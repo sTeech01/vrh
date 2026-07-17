@@ -3478,10 +3478,14 @@ function _compModalHtml(title, saveCall, c) {
           <label class="mn-label">Наименование *</label>
           <input id="comp-name" class="mn-input" type="text" value="${c.name || ''}" placeholder="Узел, деталь, материал..." autocomplete="off">
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
           <div>
             <label class="mn-label">Количество *</label>
             <input id="comp-qty" class="mn-input" type="number" min="0" step="0.001" value="${c.quantity ?? ''}">
+          </div>
+          <div>
+            <label class="mn-label">Готово</label>
+            <input id="comp-done" class="mn-input" type="number" min="0" step="0.001" value="${c.done ?? 0}" placeholder="0">
           </div>
           <div>
             <label class="mn-label">Единица</label>
@@ -3535,6 +3539,8 @@ function saveComp(itemId, compId) {
   if (!name) { alert('Введите наименование'); return; }
   const qty   = parseFloat(document.getElementById('comp-qty')?.value);
   if (isNaN(qty) || qty < 0) { alert('Укажите количество'); return; }
+  const doneRaw = parseFloat(document.getElementById('comp-done')?.value);
+  const done  = isNaN(doneRaw) ? 0 : Math.min(Math.max(0, doneRaw), qty);
   const unit  = document.getElementById('comp-unit')?.value.trim() || '';
   const notes = document.getElementById('comp-notes')?.value.trim() || '';
 
@@ -3545,14 +3551,14 @@ function saveComp(itemId, compId) {
   if (compId) {
     // Редактирование существующего
     const comp = item.components.find(c => c.id === compId);
-    if (comp) { comp.name = name; comp.quantity = qty; comp.unit = unit; comp.notes = notes; }
+    if (comp) { comp.name = name; comp.quantity = qty; comp.unit = unit; comp.notes = notes; comp.done = done; }
     if (!localEdits[itemId].components) localEdits[itemId].components = [];
     const ec = localEdits[itemId].components.find(x => x.id === compId);
-    if (ec) { ec.name = name; ec.quantity = qty; ec.unit = unit; ec.notes = notes; }
-    else localEdits[itemId].components.push({ id: compId, name, quantity: qty, unit, notes });
+    if (ec) { ec.name = name; ec.quantity = qty; ec.unit = unit; ec.notes = notes; ec.done = done; }
+    else localEdits[itemId].components.push({ id: compId, name, quantity: qty, unit, notes, done });
   } else {
     // Добавление нового
-    const newComp = { id: `comp_${Date.now()}`, name, quantity: qty, unit, done: 0, optional: false, notes };
+    const newComp = { id: `comp_${Date.now()}`, name, quantity: qty, unit, done, optional: false, notes };
     item.components.push(newComp);
     if (!localEdits[itemId].extraComponents) localEdits[itemId].extraComponents = [];
     localEdits[itemId].extraComponents.push({ ...newComp });
