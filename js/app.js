@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #144';
+const APP_BUILD = 'DEPLOY #145';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -2936,7 +2936,7 @@ function applyEdits() {
     if (!edit) return;
     if (edit.nameShort        !== undefined)  item.nameShort        = edit.nameShort;
     if (edit.quantity         !== undefined)  item.quantity         = edit.quantity;
-    if (edit.doneCount        !== undefined)  item.doneCount        = edit.doneCount;
+    if (edit.doneCount !== undefined && !isV2Project(item.projectId)) item.doneCount = edit.doneCount;
     if (edit.purchaseStatus   !== undefined)  item.purchaseStatus   = edit.purchaseStatus;
     if (edit.notes            !== undefined)  item.notes            = edit.notes;
     if (edit.deadline         !== undefined)  item.deadline         = edit.deadline;
