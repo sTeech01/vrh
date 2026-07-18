@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #143';
+const APP_BUILD = 'DEPLOY #144';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -3914,6 +3914,7 @@ function saveEventToStorage(ev) {
       await _sb.from('events').upsert({
         id: ev.id, item_id: ev.item_id || null, project_id: ev.project_id || null,
         title: ev.title, event_date: ev.event_date, type: ev.type, done: ev.done,
+        comment: ev.comment || null,
       });
     } catch(e) { console.error('saveEventToStorage error:', e); }
   })();
