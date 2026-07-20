@@ -186,7 +186,10 @@ function renderTasksList(el) {
           ${overdueCount > 0 ? `&nbsp;·&nbsp;<span class="tk-hdr-warn">${iconSvg('warning',11)} ${overdueCount} просрочено</span>` : ''}
         </div>
       </div>
-      <button class="btn-primary" onclick="openAddTaskModal(null)">${iconSvg('plus',14)} Новая задача</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn-secondary" onclick="exportTkByAssignee()">${iconSvg('save',14)} Выгрузить</button>
+        <button class="btn-primary" onclick="openAddTaskModal(null)">${iconSvg('plus',14)} Новая задача</button>
+      </div>
     </div>
     <div class="tk-toolbar">
       <div class="tk-tabs">${tabsHtml}</div>
@@ -661,7 +664,85 @@ function _tkSaveComment(comment) {
   })();
 }
 
-// ──── Экспорт ───────────────────────────────────────────────────
+// ──── Выгрузка по исполнителям ─────────────────────────────────
+function exportTkByAssignee() {
+  const roots = _tkTasks.filter(t => !t.parent_id);
+  if (!roots.length) { if (typeof showToast === 'function') showToast('Нет задач для выгрузки'); return; }
+
+  const fmtDate = dt => {
+    if (!dt) return '';
+    const d = new Date(dt);
+    return isNaN(d) ? '' : d.toLocaleDateString('ru-RU');
+  };
+  const statusLabel   = id => TK_STATUSES.find(s => s.id === id)?.label   || id;
+  const priorityLabel = id => TK_PRIORITIES.find(p => p.id === id)?.label || id;
+  const projectName   = id => {
+    if (!id || typeof VRH_PROJECTS === 'undefined') return '';
+    return VRH_PROJECTS.find(p => p.id === id)?.name || id;
+  };
+  const csvCell = v => `"${String(v || '').replace(/"/g, '""')}"`;
+  const row = arr => arr.map(csvCell).join(';');
+
+  const bom = '﻿';
+  const header = row(['Исполнитель', 'Задача', 'Статус', 'Приоритет', 'Срок', 'Проект', 'Описание', 'Подзадачи (вып/всего)']);
+
+  // Группировка по исполнителю
+  const groups = {};
+  roots.forEach(t => {
+    const key = t.assignee_name || '— Без исполнителя —';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(t);
+  });
+
+  const lines = [header];
+  Object.keys(groups).sort((a, b) => {
+    if (a === '— Без исполнителя —') return 1;
+    if (b === '— Без исполнителя —') return -1;
+    return a.localeCompare(b, 'ru');
+  }).forEach(assignee => {
+    lines.push(row([assignee, '', '', '', '', '', '', ''])); // строка-разделитель исполнителя
+    groups[assignee].forEach(t => {
+      const subs = _tkTasks.filter(s => s.parent_id === t.id);
+      const doneSubs = subs.filter(s => s.status === 'done').length;
+      const subCell = subs.length ? `${doneSubs}/${subs.length}` : '';
+      lines.push(row([
+        assignee,
+        t.title,
+        statusLabel(t.status),
+        priorityLabel(t.priority),
+        fmtDate(t.deadline),
+        projectName(t.project_id),
+        t.description || '',
+        subCell,
+      ]));
+      // Подзадачи отдельными строками с отступом
+      subs.forEach(s => {
+        lines.push(row([
+          '',
+          `  ↳ ${s.title}`,
+          statusLabel(s.status),
+          '',
+          fmtDate(s.deadline),
+          '',
+          s.completion_comment || '',
+          '',
+        ]));
+      });
+    });
+    lines.push(''); // пустая строка между исполнителями
+  });
+
+  const csv = lines.join('\n');
+  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `zadachi_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  if (typeof showToast === 'function') showToast('CSV выгружен');
+}
+window.exportTkByAssignee = exportTkByAssignee;
+
+// ──── window exports ─────────────────────────────────────────────
 window.loadTasksData    = loadTasksData;
 window.renderTasksList  = renderTasksList;
 window.setTkFilter      = setTkFilter;
