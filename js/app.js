@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #156';
+const APP_BUILD = 'DEPLOY #157';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -2899,7 +2899,7 @@ function renderAssigneesPage(el) {
     const prof = _assigneeProfiles[a.name] || {};
     const sn   = a.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
     const initials = a.name.trim().split(/\s+/).map(w => w[0]).slice(0,2).join('').toUpperCase();
-    const sub = [prof.title, prof.company].filter(Boolean).join(' · ');
+    const sub = prof.title || '';
     return `
     <div class="asgn-row" onclick="openAssigneeCard('${sn}')" style="cursor:pointer">
       <div class="asgn-avatar" style="background:${p.bg};color:${p.color}">${initials}</div>
