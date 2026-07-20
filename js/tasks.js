@@ -461,10 +461,7 @@ function _openTkTaskModal(task, parentId) {
   if (!overlay || !box) return;
 
   const allAssignees = typeof getAllAssignees === 'function' ? getAllAssignees() : [];
-  const asnOpts = [
-    `<option value="">— Не назначен —</option>`,
-    ...allAssignees.map(a => `<option value="${_tkEsc(a.name)}" ${task?.assignee_name === a.name ? 'selected' : ''}>${_tkEsc(a.name)}</option>`),
-  ].join('');
+  const asnDatalist = allAssignees.map(a => `<option value="${_tkEsc(a.name)}">`).join('');
 
   const prOpts = TK_PRIORITIES.map(p =>
     `<option value="${p.id}" ${(task?.priority || 'medium') === p.id ? 'selected' : ''}>${p.label}</option>`
@@ -496,7 +493,9 @@ function _openTkTaskModal(task, parentId) {
     <div class="wh-grid2">
       <div>
         <label class="mn-label">Исполнитель</label>
-        <select class="mn-input" id="tk-inp-asn">${asnOpts}</select>
+        <input class="mn-input" id="tk-inp-asn" type="text" list="tk-asn-list"
+               value="${_tkEsc(task?.assignee_name || '')}" placeholder="Введите имя...">
+        <datalist id="tk-asn-list">${asnDatalist}</datalist>
       </div>
       <div>
         <label class="mn-label">Приоритет</label>
