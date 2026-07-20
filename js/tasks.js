@@ -769,15 +769,41 @@ function setTkAssignee(taskId, name) {
 function _tkPositionPicker(picker, anchor) {
   picker.style.position = 'fixed';
   picker.style.zIndex   = '9999';
-  const r = anchor.getBoundingClientRect();
+  // Прячем за экран чтобы измерить реальную высоту до отображения
+  picker.style.top  = '-9999px';
+  picker.style.left = '-9999px';
+  picker.style.maxHeight = '';
+
+  const r  = anchor.getBoundingClientRect();
   const vw = window.innerWidth;
   const vh = window.innerHeight;
+  const pw = Math.max(picker.offsetWidth, 160);
+  const ph = picker.offsetHeight;
+
   let top  = r.bottom + 4;
   let left = r.left;
+
   // Не выходить за правый край
-  if (left + 160 > vw - 8) left = vw - 160 - 8;
-  // Если снизу мало места — открыть вверх
-  if (top + 200 > vh - 8) top = r.top - 200 - 4;
+  if (left + pw > vw - 8) left = vw - pw - 8;
+  if (left < 8) left = 8;
+
+  // Если снизу не влезает — открыть вверх
+  const spaceBelow = vh - r.bottom - 8;
+  const spaceAbove = r.top - 8;
+  if (ph > spaceBelow && spaceAbove > spaceBelow) {
+    top = Math.max(8, r.top - ph - 4);
+    // Если и вверху не влезает — ограничить высоту и добавить скролл
+    if (ph > spaceAbove) {
+      picker.style.maxHeight = spaceAbove + 'px';
+      picker.style.overflowY = 'auto';
+      top = 8;
+    }
+  } else if (ph > spaceBelow) {
+    // Снизу не влезает, вверх тоже недостаточно — ограничить высоту
+    picker.style.maxHeight = spaceBelow + 'px';
+    picker.style.overflowY = 'auto';
+  }
+
   picker.style.top  = top  + 'px';
   picker.style.left = left + 'px';
 }
