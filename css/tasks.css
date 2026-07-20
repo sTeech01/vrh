@@ -195,6 +195,8 @@
   white-space: nowrap;
 }
 .tk-assignee-none { font-style: italic; font-weight: 400; }
+.tk-assignee-chip-btn { cursor: pointer; user-select: none; transition: opacity .15s; }
+.tk-assignee-chip-btn:hover { opacity: .8; }
 
 .tk-deadline {
   font-size: 11px;

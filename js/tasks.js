@@ -172,7 +172,8 @@ function renderTasksList(el) {
       </div>
       <div class="tk-row-right">
         ${commentCnt ? `<span class="tk-row-meta">${iconSvg('chat',12)} ${commentCnt}</span>` : ''}
-        ${task.assignee_name ? `<span class="tk-assignee-chip" style="${_tkAssigneeStyle(task.assignee_name)}">${_tkEsc(task.assignee_name.split(' ')[0])}</span>` : '<span class="tk-assignee-chip tk-assignee-none">—</span>'}
+        <span class="tk-assignee-chip tk-assignee-chip-btn${task.assignee_name ? '' : ' tk-assignee-none'}" style="${task.assignee_name ? _tkAssigneeStyle(task.assignee_name) : ''}"
+              onclick="event.stopPropagation();openTkAssigneePicker('${_tkEsc(task.id)}',this)">${task.assignee_name ? _tkEsc(task.assignee_name.split(' ')[0]) : '—'} ▾</span>
         ${dl ? `<span class="tk-deadline ${dl.cls}">${_tkEsc(dl.label)}</span>` : ''}
         <span class="tk-status-chip tk-status-chip-btn" style="background:${st.bg};color:${st.color}"
               onclick="event.stopPropagation();openTkStatusPicker('${_tkEsc(task.id)}',this)">${_tkEsc(st.label)} ▾</span>
@@ -697,13 +698,8 @@ function openTkStatusPicker(taskId, anchor) {
     </div>`).join('');
 
   document.body.appendChild(picker);
+  _tkPositionPicker(picker, anchor);
 
-  // Позиционирование под anchor
-  const r = anchor.getBoundingClientRect();
-  picker.style.top  = (r.bottom + window.scrollY + 4) + 'px';
-  picker.style.left = (r.left  + window.scrollX) + 'px';
-
-  // Закрытие по клику вне
   setTimeout(() => {
     document.addEventListener('click', closeTkStatusPicker, { once: true });
   }, 0);
@@ -711,8 +707,86 @@ function openTkStatusPicker(taskId, anchor) {
 function closeTkStatusPicker() {
   document.getElementById('tk-status-picker')?.remove();
 }
-window.openTkStatusPicker  = openTkStatusPicker;
-window.closeTkStatusPicker = closeTkStatusPicker;
+
+// ──── Быстрая смена исполнителя ─────────────────────────────────
+function openTkAssigneePicker(taskId, anchor) {
+  document.getElementById('tk-assignee-picker')?.remove();
+  document.getElementById('tk-status-picker')?.remove();
+
+  const task = _tkTasks.find(t => t.id === taskId);
+  if (!task) return;
+
+  const assignees = typeof getAllAssignees === 'function' ? getAllAssignees() : [];
+
+  const picker = document.createElement('div');
+  picker.id = 'tk-assignee-picker';
+  picker.className = 'tk-status-picker';
+
+  const noneItem = `
+    <div class="tk-status-picker-item${!task.assignee_name ? ' active' : ''}"
+         onclick="closeTkAssigneePicker();setTkAssignee('${taskId}','')">
+      <span class="tk-status-picker-dot" style="background:var(--gray-300)"></span>
+      Без исполнителя
+    </div>`;
+
+  const assigneeItems = assignees.map(a => {
+    const pal = (typeof ASSIGNEE_PALETTE !== 'undefined') ? ASSIGNEE_PALETTE[a.colorIdx % ASSIGNEE_PALETTE.length] : null;
+    const dotColor = pal ? pal.color : '#888';
+    const isActive = task.assignee_name === a.name;
+    return `
+    <div class="tk-status-picker-item${isActive ? ' active' : ''}"
+         onclick="closeTkAssigneePicker();setTkAssignee('${taskId}','${_tkEsc(a.name)}')">
+      <span class="tk-status-picker-dot" style="background:${dotColor}"></span>
+      ${_tkEsc(a.name)}
+    </div>`;
+  }).join('');
+
+  picker.innerHTML = noneItem + assigneeItems;
+  document.body.appendChild(picker);
+  _tkPositionPicker(picker, anchor);
+
+  setTimeout(() => {
+    document.addEventListener('click', closeTkAssigneePicker, { once: true });
+  }, 0);
+}
+function closeTkAssigneePicker() {
+  document.getElementById('tk-assignee-picker')?.remove();
+}
+function setTkAssignee(taskId, name) {
+  const task = _tkTasks.find(t => t.id === taskId);
+  if (!task) return;
+  task.assignee_name = name || null;
+  _tkSaveTask(task);
+  if (typeof showToast === 'function') showToast(name ? `Исполнитель: ${name}` : 'Исполнитель снят');
+  const box = document.getElementById('modal-box');
+  if (box && document.getElementById('modal-overlay')?.classList.contains('open')) {
+    box.innerHTML = _tkDetailHtml(task);
+  }
+  _tkRerenderList();
+}
+
+// Позиционирование floating picker под anchor (fixed, без выхода за края)
+function _tkPositionPicker(picker, anchor) {
+  picker.style.position = 'fixed';
+  picker.style.zIndex   = '9999';
+  const r = anchor.getBoundingClientRect();
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  let top  = r.bottom + 4;
+  let left = r.left;
+  // Не выходить за правый край
+  if (left + 160 > vw - 8) left = vw - 160 - 8;
+  // Если снизу мало места — открыть вверх
+  if (top + 200 > vh - 8) top = r.top - 200 - 4;
+  picker.style.top  = top  + 'px';
+  picker.style.left = left + 'px';
+}
+
+window.openTkStatusPicker   = openTkStatusPicker;
+window.closeTkStatusPicker  = closeTkStatusPicker;
+window.openTkAssigneePicker = openTkAssigneePicker;
+window.closeTkAssigneePicker = closeTkAssigneePicker;
+window.setTkAssignee        = setTkAssignee;
 
 // ──── Выгрузка по исполнителям ─────────────────────────────────
 function exportTkByAssignee() {
