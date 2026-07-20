@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #152';
+const APP_BUILD = 'DEPLOY #153';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -2874,17 +2874,15 @@ function renderAssigneesPage(el) {
   }).join('');
 
   el.innerHTML = `
-  <div class="view-inner">
-    <div style="max-width:600px;margin:0 auto;padding:28px 24px 80px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
-        <div>
-          <h1 style="font-size:24px;font-weight:700;margin:0">Исполнители</h1>
-          <div style="color:var(--gray-400);font-size:13px;margin-top:2px">${all.length} ${all.length === 1 ? 'сотрудник' : all.length < 5 ? 'сотрудника' : 'сотрудников'}</div>
-        </div>
-        <button class="btn-primary" onclick="openAssigneeModal(null,null)">${iconSvg('plus',16)} Добавить</button>
+  <div style="max-width:600px;margin:0 auto;padding:28px 24px 80px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+      <div>
+        <h1 style="font-size:24px;font-weight:700;margin:0">Исполнители</h1>
+        <div style="color:var(--gray-400);font-size:13px;margin-top:2px">${all.length} ${all.length === 1 ? 'сотрудник' : all.length < 5 ? 'сотрудника' : 'сотрудников'}</div>
       </div>
-      ${all.length === 0 ? `<div style="text-align:center;color:var(--gray-400);padding:48px 0">${iconSvg('user',36)}<div style="margin-top:12px">Нет исполнителей</div></div>` : `<div class="asgn-list">${rows}</div>`}
+      <button class="btn-primary" onclick="openAssigneeModal(null,null)">${iconSvg('plus',16)} Добавить</button>
     </div>
+    ${all.length === 0 ? `<div style="text-align:center;color:var(--gray-400);padding:48px 0">${iconSvg('user',36)}<div style="margin-top:12px">Нет исполнителей</div></div>` : `<div class="asgn-list">${rows}</div>`}
   </div>`;
 }
 

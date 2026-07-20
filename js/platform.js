@@ -213,6 +213,18 @@ function updatePlatformSidebar(view) {
         Все задачи
       </a>`;
   }
+  else if (view === 'assignees') {
+    html = `
+      ${_PLAT_BACK_BTN}
+      <div class="sidebar-section">Исполнители</div>
+      <a class="nav-item" data-nav="assignees" href="#assignees">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+          <line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
+        </svg>
+        Все исполнители
+      </a>`;
+  }
 
   nav.innerHTML = html;
 
@@ -234,11 +246,13 @@ function getPlatformContext(view) {
   const ERP_PROJECTS_VIEWS = ['erp-projects'];
   const WAREHOUSE_VIEWS    = ['warehouse', 'warehouse-item'];
   const TASKS_VIEWS        = ['tasks'];
+  const ASSIGNEES_VIEWS    = ['assignees'];
   if (CRM_VIEWS.includes(view))          return 'crm';
   if (SUPPLIERS_VIEWS.includes(view))    return 'suppliers';
   if (ERP_PROJECTS_VIEWS.includes(view)) return 'erp-projects';
   if (WAREHOUSE_VIEWS.includes(view))    return 'warehouse';
   if (TASKS_VIEWS.includes(view))        return 'tasks';
+  if (ASSIGNEES_VIEWS.includes(view))    return 'assignees';
   if (PRODUCTION_VIEWS.includes(view))   return 'production';
   return 'home';
 }
