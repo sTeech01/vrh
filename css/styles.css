@@ -2552,10 +2552,30 @@ details.mn-details[open] > summary::after { transform:rotate(90deg); }
 .mat-radio-label:hover { border-color: var(--accent); }
 
 /* ── Страница «Исполнители» ── */
+/* ── Список исполнителей ── */
 .asgn-list { display: flex; flex-direction: column; gap: 6px; }
-.asgn-row  { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
-.asgn-chip { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 99px; font-size: 13px; font-weight: 600; white-space: nowrap; }
-.asgn-row-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.asgn-row  { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; transition: background .12s; }
+.asgn-row:hover { background: var(--gray-50); }
+.asgn-avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+.asgn-info { flex: 1; min-width: 0; }
+.asgn-name { font-size: 14px; font-weight: 600; }
+.asgn-sub  { font-size: 12px; color: var(--gray-400); margin-top: 1px; }
+.asgn-row-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.asgn-icon-btn { width: 32px; height: 32px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface); color: var(--gray-500); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .12s, color .12s, border-color .12s; }
+.asgn-icon-btn:hover { background: var(--gray-100); color: var(--gray-700); }
+.asgn-icon-btn-danger:hover { background: #FEE2E2; color: #DC2626; border-color: #FCA5A5; }
+
+/* ── Карточка исполнителя (модалка) ── */
+.asgn-card-body { padding: 20px; }
+.asgn-card-top  { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.asgn-card-avatar { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; flex-shrink: 0; }
+.asgn-card-name  { font-size: 17px; font-weight: 700; }
+.asgn-card-title { font-size: 13px; color: var(--gray-500); margin-top: 2px; }
+.asgn-card-fields { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--border); padding-top: 14px; }
+.asgn-card-field { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--gray-700); }
+.asgn-card-icon  { color: var(--gray-400); flex-shrink: 0; }
+
+/* ── Цветовой пикер ── */
 .asgn-color-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
 .asgn-color-swatch { width: 28px; height: 28px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; transition: transform .12s, border-color .12s; }
 .asgn-color-swatch:hover { transform: scale(1.15); }

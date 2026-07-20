@@ -4,13 +4,14 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #154';
+const APP_BUILD = 'DEPLOY #155';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
 const _SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwdWptdmZ6Ym9hdXRxZXN2d2liIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzODA2NTYsImV4cCI6MjA5Nzk1NjY1Nn0.S49aTm3RWhcbOsiE8-QYzFSaXTkafapXqbeds8P0TwE';
 let _sb = null;
-let _customAssignees = [];
+let _customAssignees   = [];
+let _assigneeProfiles  = {}; // { [name]: { phone, email, title, company } }
 let _itemOrder = {};
 let _customProjects = [];
 let _workflowStages = {}; // { [item_id]: Stage[] }
@@ -132,7 +133,7 @@ async function doLogin() {
 
 async function doLogout() {
   await _sb.auth.signOut();
-  localEdits = {}; _customAssignees = []; _itemOrder = {}; _customProjects = []; _workflowStages = {};
+  localEdits = {}; _customAssignees = []; _assigneeProfiles = {}; _itemOrder = {}; _customProjects = []; _workflowStages = {};
   _crmClients = []; _crmHistory = {}; _crmContacts = {};
   if (typeof loadWarehouseData === 'function') loadWarehouseData([], [], []);
   if (typeof loadTasksData === 'function') loadTasksData([], []);
@@ -174,7 +175,15 @@ async function loadRemoteData() {
   ]);
   if (ovRes.data) {
     localEdits = {};
-    ovRes.data.forEach(r => { localEdits[r.item_id] = r.data; });
+    _assigneeProfiles = {};
+    ovRes.data.forEach(r => {
+      if (r.item_id.startsWith('_ap_')) {
+        const name = r.item_id.slice(4);
+        _assigneeProfiles[name] = r.data || {};
+      } else {
+        localEdits[r.item_id] = r.data;
+      }
+    });
   }
   if (asRes.data) {
     _customAssignees = asRes.data.map(r => ({ name: r.name, colorIdx: r.color_idx }));
@@ -2857,24 +2866,54 @@ window.deleteAssignee        = deleteAssignee;
 // =============================================================
 // СТРАНИЦА «ИСПОЛНИТЕЛИ»
 // =============================================================
+
+function _apKey(name) { return '_ap_' + name; }
+
+function saveAssigneeProfile(name, profile) {
+  _assigneeProfiles[name] = profile;
+  if (!_sb) return;
+  (async () => {
+    try {
+      await _sb.from('item_overrides').upsert({
+        item_id: _apKey(name), data: profile, updated_at: new Date().toISOString()
+      });
+    } catch(e) { console.error('saveAssigneeProfile:', e); }
+  })();
+}
+
+function deleteAssigneeProfile(name) {
+  delete _assigneeProfiles[name];
+  if (!_sb) return;
+  (async () => {
+    try { await _sb.from('item_overrides').delete().eq('item_id', _apKey(name)); } catch(e) {}
+  })();
+}
+
 function renderAssigneesPage(el) {
   const all = getAllAssignees();
 
   const rows = all.map(a => {
-    const p = ASSIGNEE_PALETTE[a.colorIdx % ASSIGNEE_PALETTE.length];
-    const safeName = a.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    const p    = ASSIGNEE_PALETTE[a.colorIdx % ASSIGNEE_PALETTE.length];
+    const prof = _assigneeProfiles[a.name] || {};
+    const sn   = a.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    const initials = a.name.trim().split(/\s+/).map(w => w[0]).slice(0,2).join('').toUpperCase();
+    const sub = [prof.title, prof.company].filter(Boolean).join(' · ');
     return `
-    <div class="asgn-row">
-      <span class="asgn-chip" style="background:${p.bg};color:${p.color}">${a.name}</span>
+    <div class="asgn-row" onclick="openAssigneeCard('${sn}')" style="cursor:pointer">
+      <div class="asgn-avatar" style="background:${p.bg};color:${p.color}">${initials}</div>
+      <div class="asgn-info">
+        <div class="asgn-name">${a.name}</div>
+        ${sub ? `<div class="asgn-sub">${sub}</div>` : ''}
+      </div>
       <div class="asgn-row-actions">
-        <button class="btn-secondary" style="padding:6px 14px;font-size:13px" onclick="openAssigneeModal('${safeName}',${a.colorIdx})">${iconSvg('edit',14)} Изменить</button>
-        <button class="mn-btn-danger" onclick="deleteAssigneeFromPage('${safeName}')">${iconSvg('trash',14)}</button>
+        <button class="asgn-icon-btn" title="Изменить" onclick="event.stopPropagation();openAssigneeModal('${sn}',${a.colorIdx})">${iconSvg('edit',15)}</button>
+        <button class="asgn-icon-btn asgn-icon-btn-danger" title="Удалить" onclick="event.stopPropagation();deleteAssigneeFromPage('${sn}')">${iconSvg('trash',15)}</button>
       </div>
     </div>`;
   }).join('');
 
   el.innerHTML = `
-  <div style="max-width:600px;margin:0 auto;padding:28px 24px 80px">
+  <div style="max-width:640px;margin:0 auto;padding:28px 24px 80px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
       <div>
         <h1 style="font-size:24px;font-weight:700;margin:0">Исполнители</h1>
@@ -2882,33 +2921,97 @@ function renderAssigneesPage(el) {
       </div>
       <button class="btn-primary" onclick="openAssigneeModal(null,null)">${iconSvg('plus',16)} Добавить</button>
     </div>
-    ${all.length === 0 ? `<div style="text-align:center;color:var(--gray-400);padding:48px 0">${iconSvg('user',36)}<div style="margin-top:12px">Нет исполнителей</div></div>` : `<div class="asgn-list">${rows}</div>`}
+    ${all.length === 0
+      ? `<div style="text-align:center;color:var(--gray-400);padding:48px 0">${iconSvg('user',36)}<div style="margin-top:12px">Нет исполнителей</div></div>`
+      : `<div class="asgn-list">${rows}</div>`}
   </div>`;
 }
 
+function openAssigneeCard(name) {
+  const a    = getAllAssignees().find(x => x.name === name);
+  if (!a) return;
+  const p    = ASSIGNEE_PALETTE[a.colorIdx % ASSIGNEE_PALETTE.length];
+  const prof = _assigneeProfiles[name] || {};
+  const sn   = name.replace(/'/g, "\\'");
+  const initials = name.trim().split(/\s+/).map(w => w[0]).slice(0,2).join('').toUpperCase();
+
+  const field = (icon, val) => val
+    ? `<div class="asgn-card-field"><span class="asgn-card-icon">${iconSvg(icon,14)}</span><span>${val}</span></div>`
+    : '';
+
+  document.getElementById('modal-box').innerHTML = `
+    <div class="modal-header">
+      <span>Профиль</span>
+      <button class="modal-close" onclick="closeModal()">${iconSvg('x',18)}</button>
+    </div>
+    <div class="asgn-card-body">
+      <div class="asgn-card-top">
+        <div class="asgn-card-avatar" style="background:${p.bg};color:${p.color}">${initials}</div>
+        <div>
+          <div class="asgn-card-name">${name}</div>
+          ${prof.title ? `<div class="asgn-card-title">${prof.title}</div>` : ''}
+        </div>
+      </div>
+      <div class="asgn-card-fields">
+        ${field('user',    prof.company)}
+        ${field('chat',    prof.phone)}
+        ${field('document',prof.email)}
+      </div>
+      <div style="padding:16px 20px 4px;display:flex;gap:8px">
+        <button class="btn-primary" style="flex:1" onclick="closeModal();openAssigneeModal('${sn}',${a.colorIdx})">${iconSvg('edit',14)} Редактировать</button>
+      </div>
+    </div>`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
 function openAssigneeModal(name, colorIdx) {
-  const isEdit = name !== null && name !== undefined;
-  const selIdx = colorIdx !== null && colorIdx !== undefined ? colorIdx : 0;
+  const isEdit = name !== null && name !== undefined && name !== '';
+  const selIdx = (colorIdx !== null && colorIdx !== undefined) ? colorIdx : 0;
+  const prof   = isEdit ? (_assigneeProfiles[name] || {}) : {};
 
   const swatches = ASSIGNEE_PALETTE.map((p, i) => `
     <button type="button" class="asgn-color-swatch${i === selIdx ? ' selected' : ''}"
             style="background:${p.color}" data-idx="${i}"
             onclick="asgnSelectColor(${i})"></button>`).join('');
 
+  const esc = v => (v || '').replace(/"/g, '&quot;');
+
   document.getElementById('modal-box').innerHTML = `
     <div class="modal-header">
-      <span>${isEdit ? 'Изменить исполнителя' : 'Новый исполнитель'}</span>
+      <span>${isEdit ? 'Редактировать' : 'Новый исполнитель'}</span>
       <button class="modal-close" onclick="closeModal()">${iconSvg('x',18)}</button>
     </div>
-    <div style="padding:20px 24px 24px;display:flex;flex-direction:column;gap:16px">
-      <div>
-        <label class="mn-label">Имя / должность</label>
-        <input id="asgn-modal-name" class="mn-input" type="text" placeholder="Иванов А.В." autocomplete="off"
-               value="${isEdit ? name.replace(/"/g,'&quot;') : ''}">
+    <div style="padding:20px 24px 24px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="grid-column:1/-1">
+          <label class="mn-label">Отображаемое имя <span style="color:#EF4444">*</span></label>
+          <input id="asgn-modal-name" class="mn-input" type="text" placeholder="Иванов А.В." autocomplete="off"
+                 value="${esc(isEdit ? name : '')}">
+        </div>
+        <div>
+          <label class="mn-label">Телефон</label>
+          <input id="asgn-modal-phone" class="mn-input" type="tel" placeholder="+7 (900) 000-00-00"
+                 value="${esc(prof.phone)}">
+        </div>
+        <div>
+          <label class="mn-label">Email</label>
+          <input id="asgn-modal-email" class="mn-input" type="email" placeholder="ivan@example.com"
+                 value="${esc(prof.email)}">
+        </div>
+        <div>
+          <label class="mn-label">Должность</label>
+          <input id="asgn-modal-title" class="mn-input" type="text" placeholder="Инженер-технолог"
+                 value="${esc(prof.title)}">
+        </div>
+        <div>
+          <label class="mn-label">Компания</label>
+          <input id="asgn-modal-company" class="mn-input" type="text" placeholder="ООО Пример"
+                 value="${esc(prof.company)}">
+        </div>
       </div>
       <div>
         <label class="mn-label">Цвет</label>
-        <div class="asgn-color-row" id="asgn-color-row">${swatches}</div>
+        <div class="asgn-color-row">${swatches}</div>
         <input type="hidden" id="asgn-modal-color" value="${selIdx}">
       </div>
       <div id="asgn-modal-error" style="display:none;color:#EF4444;font-size:12px"></div>
@@ -2930,22 +3033,26 @@ function asgnSelectColor(idx) {
 }
 
 function saveAssigneeModal(oldName) {
-  const nameEl  = document.getElementById('asgn-modal-name');
-  const colorEl = document.getElementById('asgn-modal-color');
-  const errEl   = document.getElementById('asgn-modal-error');
-  const newName = nameEl?.value.trim();
-  const colorIdx = parseInt(colorEl?.value ?? '0', 10);
+  const newName  = document.getElementById('asgn-modal-name')?.value.trim();
+  const colorIdx = parseInt(document.getElementById('asgn-modal-color')?.value ?? '0', 10);
+  const errEl    = document.getElementById('asgn-modal-error');
 
   if (!newName) { if (errEl) { errEl.textContent = 'Введите имя'; errEl.style.display = 'block'; } return; }
 
-  const custom  = loadAssignees();
-  const all     = getAllAssignees();
+  const profile = {
+    phone:   document.getElementById('asgn-modal-phone')?.value.trim()   || '',
+    email:   document.getElementById('asgn-modal-email')?.value.trim()   || '',
+    title:   document.getElementById('asgn-modal-title')?.value.trim()   || '',
+    company: document.getElementById('asgn-modal-company')?.value.trim() || '',
+  };
+
+  const custom    = loadAssignees();
+  const all       = getAllAssignees();
   const isDefault = n => ASSIGNEE_DEFAULTS.some(d => d.name === n);
 
   if (oldName) {
-    // Редактирование
     if (newName !== oldName) {
-      // Подавляем старое имя если это default
+      // Подавляем/удаляем старое имя
       if (isDefault(oldName)) {
         const ti = custom.findIndex(a => a.name === oldName);
         if (ti !== -1) custom[ti].colorIdx = -1; else custom.push({ name: oldName, colorIdx: -1 });
@@ -2953,7 +3060,9 @@ function saveAssigneeModal(oldName) {
         const ci = custom.findIndex(a => a.name === oldName);
         if (ci !== -1) custom.splice(ci, 1);
       }
-      // Переносим задачи на новое имя
+      // Переносим профиль и задачи
+      const oldProf = _assigneeProfiles[oldName];
+      if (oldProf) { saveAssigneeProfile(newName, { ...oldProf, ...profile }); deleteAssigneeProfile(oldName); }
       VRH_ITEMS.forEach(item => {
         if (item.assignee === oldName) {
           item.assignee = newName;
@@ -2962,27 +3071,25 @@ function saveAssigneeModal(oldName) {
           saveEditsToStorage(item.id);
         }
       });
+    } else {
+      saveAssigneeProfile(newName, profile);
     }
-    // Обновляем цвет или добавляем как custom
+    // Обновляем colorIdx
     if (isDefault(newName) && newName === oldName) {
-      // меняем цвет дефолтного — добавляем tombstone + новый custom с новым цветом
       const ti = custom.findIndex(a => a.name === newName && a.colorIdx !== -1);
-      if (ti !== -1) { custom[ti].colorIdx = colorIdx; } else { custom.push({ name: newName, colorIdx }); }
-      // Нужно подавить исходный default?.. Нет — просто перезаписываем colorIdx в custom record
-      // Убедимся что нет tombstone
+      if (ti !== -1) custom[ti].colorIdx = colorIdx; else custom.push({ name: newName, colorIdx });
       const tbi = custom.findIndex(a => a.name === newName && a.colorIdx === -1);
       if (tbi !== -1) custom.splice(tbi, 1);
     } else {
       const ci = custom.findIndex(a => a.name === newName && a.colorIdx !== -1);
-      if (ci !== -1) custom[ci].colorIdx = colorIdx;
-      else custom.push({ name: newName, colorIdx });
+      if (ci !== -1) custom[ci].colorIdx = colorIdx; else custom.push({ name: newName, colorIdx });
     }
   } else {
-    // Добавление нового
     if (all.find(a => a.name === newName)) {
       if (errEl) { errEl.textContent = 'Исполнитель с таким именем уже есть'; errEl.style.display = 'block'; } return;
     }
     custom.push({ name: newName, colorIdx });
+    saveAssigneeProfile(newName, profile);
   }
 
   saveAssignees(custom);
@@ -2993,7 +3100,7 @@ function saveAssigneeModal(oldName) {
 
 function deleteAssigneeFromPage(name) {
   if (!confirm(`Удалить исполнителя «${name}»?`)) return;
-  const custom  = loadAssignees();
+  const custom    = loadAssignees();
   const isDefault = ASSIGNEE_DEFAULTS.some(d => d.name === name);
   if (isDefault) {
     const ei = custom.findIndex(a => a.name === name);
@@ -3002,16 +3109,18 @@ function deleteAssigneeFromPage(name) {
     const ci = custom.findIndex(a => a.name === name);
     if (ci !== -1) custom.splice(ci, 1);
   }
+  deleteAssigneeProfile(name);
   saveAssignees(custom);
   if (typeof showToast === 'function') showToast('Исполнитель удалён');
   closeModal();
   render();
 }
 
-window.renderAssigneesPage  = renderAssigneesPage;
-window.openAssigneeModal    = openAssigneeModal;
-window.asgnSelectColor      = asgnSelectColor;
-window.saveAssigneeModal    = saveAssigneeModal;
+window.renderAssigneesPage    = renderAssigneesPage;
+window.openAssigneeCard       = openAssigneeCard;
+window.openAssigneeModal      = openAssigneeModal;
+window.asgnSelectColor        = asgnSelectColor;
+window.saveAssigneeModal      = saveAssigneeModal;
 window.deleteAssigneeFromPage = deleteAssigneeFromPage;
 
 // =============================================================
