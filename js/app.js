@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #155';
+const APP_BUILD = 'DEPLOY #156';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -2657,6 +2657,8 @@ window.saveNewProject = saveNewProject;
 function closeModal(e) {
   if (e && e.target !== e.currentTarget) return;
   document.getElementById('modal-overlay').classList.remove('open');
+  const box = document.getElementById('modal-box');
+  if (box) box.style.maxWidth = '';
 }
 window.closeModal = closeModal;
 
@@ -2935,31 +2937,31 @@ function openAssigneeCard(name) {
   const sn   = name.replace(/'/g, "\\'");
   const initials = name.trim().split(/\s+/).map(w => w[0]).slice(0,2).join('').toUpperCase();
 
-  const field = (icon, val) => val
-    ? `<div class="asgn-card-field"><span class="asgn-card-icon">${iconSvg(icon,14)}</span><span>${val}</span></div>`
+  const row = (label, val) => val
+    ? `<div class="asgn-card-field"><span class="asgn-card-label">${label}</span><span class="asgn-card-val">${val}</span></div>`
     : '';
 
-  document.getElementById('modal-box').innerHTML = `
-    <div class="modal-header">
-      <span>Профиль</span>
-      <button class="modal-close" onclick="closeModal()">${iconSvg('x',18)}</button>
+  const hasFields = prof.title || prof.company || prof.phone || prof.email;
+
+  const box = document.getElementById('modal-box');
+  box.style.maxWidth = '360px';
+  box.innerHTML = `
+    <div class="modal-header" style="padding:12px 16px">
+      <span style="font-size:14px">Профиль</span>
+      <button class="modal-close" onclick="closeModal()">${iconSvg('x',16)}</button>
     </div>
-    <div class="asgn-card-body">
+    <div style="padding:16px">
       <div class="asgn-card-top">
         <div class="asgn-card-avatar" style="background:${p.bg};color:${p.color}">${initials}</div>
-        <div>
-          <div class="asgn-card-name">${name}</div>
-          ${prof.title ? `<div class="asgn-card-title">${prof.title}</div>` : ''}
-        </div>
+        <div class="asgn-card-name">${name}</div>
       </div>
-      <div class="asgn-card-fields">
-        ${field('user',    prof.company)}
-        ${field('chat',    prof.phone)}
-        ${field('document',prof.email)}
-      </div>
-      <div style="padding:16px 20px 4px;display:flex;gap:8px">
-        <button class="btn-primary" style="flex:1" onclick="closeModal();openAssigneeModal('${sn}',${a.colorIdx})">${iconSvg('edit',14)} Редактировать</button>
-      </div>
+      ${hasFields ? `<div class="asgn-card-fields">
+        ${row('Должность', prof.title)}
+        ${row('Компания',  prof.company)}
+        ${row('Телефон',   prof.phone)}
+        ${row('Email',     prof.email)}
+      </div>` : `<div style="color:var(--gray-400);font-size:13px;padding:8px 0">Контактные данные не заполнены</div>`}
+      <button class="btn-primary" style="width:100%;margin-top:14px" onclick="closeModal();openAssigneeModal('${sn}',${a.colorIdx})">${iconSvg('edit',14)} Редактировать</button>
     </div>`;
   document.getElementById('modal-overlay').classList.add('open');
 }
