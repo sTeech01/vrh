@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #157';
+const APP_BUILD = 'DEPLOY #158';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -464,6 +464,8 @@ window.closeMobileMore  = closeMobileMore;
 function render() {
   const content = document.getElementById('content');
   if (!content) return;
+
+  if (state.view !== 'assignees') _asgnSearch = '';
 
   const _prevFocusId = document.activeElement?.id;
   const _prevSelStart = document.activeElement?.selectionStart ?? null;
@@ -2891,10 +2893,21 @@ function deleteAssigneeProfile(name) {
   })();
 }
 
+let _asgnSearch = '';
+
 function renderAssigneesPage(el) {
   const all = getAllAssignees();
+  const q   = _asgnSearch.toLowerCase();
+  const filtered = q
+    ? all.filter(a => {
+        const prof = _assigneeProfiles[a.name] || {};
+        return a.name.toLowerCase().includes(q)
+          || (prof.title   || '').toLowerCase().includes(q)
+          || (prof.company || '').toLowerCase().includes(q);
+      })
+    : all;
 
-  const rows = all.map(a => {
+  const rows = filtered.map(a => {
     const p    = ASSIGNEE_PALETTE[a.colorIdx % ASSIGNEE_PALETTE.length];
     const prof = _assigneeProfiles[a.name] || {};
     const sn   = a.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
@@ -2914,20 +2927,43 @@ function renderAssigneesPage(el) {
     </div>`;
   }).join('');
 
+  const countLabel = q
+    ? `${filtered.length} из ${all.length}`
+    : `${all.length} ${all.length === 1 ? 'сотрудник' : all.length < 5 ? 'сотрудника' : 'сотрудников'}`;
+
   el.innerHTML = `
   <div style="max-width:640px;margin:0 auto;padding:28px 24px 80px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
       <div>
         <h1 style="font-size:24px;font-weight:700;margin:0">Исполнители</h1>
-        <div style="color:var(--gray-400);font-size:13px;margin-top:2px">${all.length} ${all.length === 1 ? 'сотрудник' : all.length < 5 ? 'сотрудника' : 'сотрудников'}</div>
+        <div style="color:var(--gray-400);font-size:13px;margin-top:2px">${countLabel}</div>
       </div>
       <button class="btn-primary" onclick="openAssigneeModal(null,null)">${iconSvg('plus',16)} Добавить</button>
     </div>
-    ${all.length === 0
-      ? `<div style="text-align:center;color:var(--gray-400);padding:48px 0">${iconSvg('user',36)}<div style="margin-top:12px">Нет исполнителей</div></div>`
+    <div style="position:relative;margin-bottom:16px">
+      <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--gray-400);pointer-events:none">${iconSvg('list',15)}</span>
+      <input id="asgn-search" class="mn-input" type="search" placeholder="Поиск по имени, должности, компании..."
+             value="${_asgnSearch.replace(/"/g,'&quot;')}"
+             style="padding-left:36px;width:100%"
+             oninput="setAsgnSearch(this.value)">
+    </div>
+    ${filtered.length === 0
+      ? `<div style="text-align:center;color:var(--gray-400);padding:48px 0">${iconSvg('user',36)}<div style="margin-top:12px">${q ? 'Ничего не найдено' : 'Нет исполнителей'}</div></div>`
       : `<div class="asgn-list">${rows}</div>`}
   </div>`;
 }
+
+function setAsgnSearch(val) {
+  _asgnSearch = val;
+  const el = document.getElementById('content');
+  if (el) renderAssigneesPage(el);
+  // Восстановить фокус
+  requestAnimationFrame(() => {
+    const inp = document.getElementById('asgn-search');
+    if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+  });
+}
+window.setAsgnSearch = setAsgnSearch;
 
 function openAssigneeCard(name) {
   const a    = getAllAssignees().find(x => x.name === name);
