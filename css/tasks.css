@@ -117,6 +117,33 @@
   border-radius: var(--radius-lg);
   overflow: hidden;
 }
+.tk-list-archive { margin-top: 0; border-radius: 0 0 var(--radius-lg) var(--radius-lg); border-top: none; }
+
+/* ── Архив ── */
+.tk-archive-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px;
+  margin-top: 8px;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-500);
+  cursor: pointer;
+  user-select: none;
+  transition: background .12s;
+}
+.tk-archive-header:hover { background: var(--gray-50); }
+.tk-archive-arrow {
+  font-size: 10px;
+  color: var(--gray-400);
+  transition: transform .2s;
+  display: inline-block;
+}
+.tk-archive-arrow.open { transform: rotate(90deg); }
 
 .tk-row {
   display: flex;

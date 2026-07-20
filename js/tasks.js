@@ -27,6 +27,7 @@ let _tkComments    = {};   // { [taskId]: Comment[] }
 let _tkFilter      = { statusTab: 'all', assignee: 'all', search: '' };
 let _tkSearchTimer = null;
 let _tkSubPending  = null; // { subId, parentId } — ожидает ввода комментария при завершении
+let _tkArchiveOpen = false;
 
 // ──── Загрузка данных ──────────────────────────────────────────
 function loadTasksData(tasksData, commentsData) {
@@ -152,15 +153,21 @@ function renderTasksList(el) {
     ...assignees.map(a => `<option value="${_tkEsc(a)}" ${_tkFilter.assignee === a ? 'selected' : ''}>${_tkEsc(a)}</option>`),
   ].join('');
 
-  // Строки
-  const rows = filtered.map(task => {
+  const ARCHIVE_STATUSES = new Set(['done', 'cancelled']);
+  const browsingArchive  = ARCHIVE_STATUSES.has(_tkFilter.statusTab);
+
+  // Разделяем на активные и архивные (только когда не смотрим архив напрямую)
+  const activeFiltered  = browsingArchive ? filtered : filtered.filter(t => !ARCHIVE_STATUSES.has(t.status));
+  const archiveFiltered = browsingArchive ? [] : filtered.filter(t => ARCHIVE_STATUSES.has(t.status));
+
+  const _mkRow = task => {
     const st   = _tkGetStatus(task.status);
     const pr   = _tkGetPriority(task.priority);
     const dl   = _tkDeadlineInfo(task.deadline, task.status);
     const subs = _tkSubtasks(task.id);
     const doneSubs = subs.filter(s => s.status === 'done').length;
     const commentCnt = (_tkComments[task.id] || []).length;
-    const isClosed = task.status === 'done' || task.status === 'cancelled';
+    const isClosed = ARCHIVE_STATUSES.has(task.status);
     return `
     <div class="tk-row${isClosed ? ' tk-row-closed' : ''}" onclick="openTaskDetail('${_tkEsc(task.id)}')">
       <div class="tk-row-left">
@@ -179,11 +186,25 @@ function renderTasksList(el) {
               onclick="event.stopPropagation();openTkStatusPicker('${_tkEsc(task.id)}',this)">${_tkEsc(st.label)} ▾</span>
       </div>
     </div>`;
-  }).join('');
+  };
 
-  const body = filtered.length === 0
+  const activeRows  = activeFiltered.map(_mkRow).join('');
+  const archiveRows = archiveFiltered.map(_mkRow).join('');
+
+  // Секция архива
+  const archiveSection = archiveFiltered.length === 0 ? '' : `
+    <div class="tk-archive-header" onclick="toggleTkArchive()">
+      <span class="tk-archive-arrow${_tkArchiveOpen ? ' open' : ''}">▶</span>
+      ${iconSvg('check', 14)}
+      <span>Архив</span>
+      <span class="tk-tab-cnt" style="margin-left:4px">${archiveFiltered.length}</span>
+    </div>
+    ${_tkArchiveOpen ? `<div class="tk-list tk-list-archive">${archiveRows}</div>` : ''}`;
+
+  const isEmpty = activeFiltered.length === 0 && archiveFiltered.length === 0;
+  const body = isEmpty
     ? `<div class="tk-empty">${iconSvg('clipboard', 36)}<div>Задач нет</div><div class="tk-empty-sub">Нажмите «+ Новая задача» чтобы добавить</div></div>`
-    : `<div class="tk-list">${rows}</div>`;
+    : `${activeFiltered.length ? `<div class="tk-list">${activeRows}</div>` : ''}${archiveSection}`;
 
   const overdueCount = all.filter(t => {
     if (!t.deadline || t.status === 'done' || t.status === 'cancelled') return false;
@@ -196,7 +217,7 @@ function renderTasksList(el) {
       <div>
         <div class="tk-page-title">Задачи</div>
         <div class="tk-page-subtitle">
-          ${filtered.length} из ${all.length}
+          ${browsingArchive ? filtered.length : activeFiltered.length} из ${all.filter(t => !ARCHIVE_STATUSES.has(t.status)).length}
           ${overdueCount > 0 ? `&nbsp;·&nbsp;<span class="tk-hdr-warn">${iconSvg('warning',11)} ${overdueCount} просрочено</span>` : ''}
         </div>
       </div>
@@ -808,6 +829,11 @@ function _tkPositionPicker(picker, anchor) {
   picker.style.left = left + 'px';
 }
 
+function toggleTkArchive() {
+  _tkArchiveOpen = !_tkArchiveOpen;
+  _tkRerenderList();
+}
+window.toggleTkArchive      = toggleTkArchive;
 window.openTkStatusPicker   = openTkStatusPicker;
 window.closeTkStatusPicker  = closeTkStatusPicker;
 window.openTkAssigneePicker = openTkAssigneePicker;
