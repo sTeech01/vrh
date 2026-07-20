@@ -2550,3 +2550,13 @@ details.mn-details[open] > summary::after { transform:rotate(90deg); }
 .mat-radio-label input[type="radio"] { display: none; }
 .mat-radio-active { border-color: var(--accent); color: var(--accent); background: var(--cyan-dim); }
 .mat-radio-label:hover { border-color: var(--accent); }
+
+/* ── Страница «Исполнители» ── */
+.asgn-list { display: flex; flex-direction: column; gap: 6px; }
+.asgn-row  { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+.asgn-chip { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 99px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.asgn-row-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.asgn-color-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.asgn-color-swatch { width: 28px; height: 28px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; transition: transform .12s, border-color .12s; }
+.asgn-color-swatch:hover { transform: scale(1.15); }
+.asgn-color-swatch.selected { border-color: var(--surface); box-shadow: 0 0 0 2px currentColor; }

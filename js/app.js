@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #151';
+const APP_BUILD = 'DEPLOY #152';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -394,7 +394,7 @@ function updateActiveNav() {
     el.classList.toggle('active', isActive);
   });
   // Кнопка «Ещё» — активна если текущий вид принадлежит этому меню
-  const moreViews = ['dashboard', 'problems', 'ai', 'events', 'suppliers', 'supplier', 'warehouse', 'warehouse-item'];
+  const moreViews = ['dashboard', 'problems', 'ai', 'events', 'suppliers', 'supplier', 'warehouse', 'warehouse-item', 'assignees'];
   const moreBtn = document.getElementById('mobile-more-btn');
   if (moreBtn) moreBtn.classList.toggle('active', moreViews.includes(state.view));
 }
@@ -511,6 +511,11 @@ function render() {
     case 'tasks':
       renderTasksList(content);
       updatePlatformSidebar('tasks');
+      break;
+    case 'assignees':
+      renderAssigneesPage(content);
+      setBreadcrumb('Исполнители');
+      updatePlatformSidebar('assignees');
       break;
     default: navigate('home');
   }
@@ -2677,10 +2682,13 @@ function getAllAssignees() {
   const suppressed = new Set(custom.filter(a => a.colorIdx === -1).map(a => a.name));
   const customVisible = custom.filter(a => a.colorIdx !== -1);
   const defaultNames = new Set(ASSIGNEE_DEFAULTS.map(a => a.name));
-  return [
+  const merged = [
     ...ASSIGNEE_DEFAULTS.filter(a => !suppressed.has(a.name)),
     ...customVisible.filter(a => !defaultNames.has(a.name)),
   ];
+  // Дедупликация по имени — оставляем первое вхождение
+  const seen = new Set();
+  return merged.filter(a => { if (seen.has(a.name)) return false; seen.add(a.name); return true; });
 }
 function assigneeStyle(a) {
   const p = ASSIGNEE_PALETTE[a.colorIdx % ASSIGNEE_PALETTE.length];
@@ -2845,6 +2853,168 @@ window.confirmAddAssignee    = confirmAddAssignee;
 window.showEditAssigneeInput = showEditAssigneeInput;
 window.confirmEditAssignee   = confirmEditAssignee;
 window.deleteAssignee        = deleteAssignee;
+
+// =============================================================
+// СТРАНИЦА «ИСПОЛНИТЕЛИ»
+// =============================================================
+function renderAssigneesPage(el) {
+  const all = getAllAssignees();
+
+  const rows = all.map(a => {
+    const p = ASSIGNEE_PALETTE[a.colorIdx % ASSIGNEE_PALETTE.length];
+    const safeName = a.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    return `
+    <div class="asgn-row">
+      <span class="asgn-chip" style="background:${p.bg};color:${p.color}">${a.name}</span>
+      <div class="asgn-row-actions">
+        <button class="btn-secondary" style="padding:6px 14px;font-size:13px" onclick="openAssigneeModal('${safeName}',${a.colorIdx})">${iconSvg('edit',14)} Изменить</button>
+        <button class="mn-btn-danger" onclick="deleteAssigneeFromPage('${safeName}')">${iconSvg('trash',14)}</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+  <div class="view-inner">
+    <div style="max-width:600px;margin:0 auto;padding:28px 24px 80px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+        <div>
+          <h1 style="font-size:24px;font-weight:700;margin:0">Исполнители</h1>
+          <div style="color:var(--gray-400);font-size:13px;margin-top:2px">${all.length} ${all.length === 1 ? 'сотрудник' : all.length < 5 ? 'сотрудника' : 'сотрудников'}</div>
+        </div>
+        <button class="btn-primary" onclick="openAssigneeModal(null,null)">${iconSvg('plus',16)} Добавить</button>
+      </div>
+      ${all.length === 0 ? `<div style="text-align:center;color:var(--gray-400);padding:48px 0">${iconSvg('user',36)}<div style="margin-top:12px">Нет исполнителей</div></div>` : `<div class="asgn-list">${rows}</div>`}
+    </div>
+  </div>`;
+}
+
+function openAssigneeModal(name, colorIdx) {
+  const isEdit = name !== null && name !== undefined;
+  const selIdx = colorIdx !== null && colorIdx !== undefined ? colorIdx : 0;
+
+  const swatches = ASSIGNEE_PALETTE.map((p, i) => `
+    <button type="button" class="asgn-color-swatch${i === selIdx ? ' selected' : ''}"
+            style="background:${p.color}" data-idx="${i}"
+            onclick="asgnSelectColor(${i})"></button>`).join('');
+
+  document.getElementById('modal-box').innerHTML = `
+    <div class="modal-header">
+      <span>${isEdit ? 'Изменить исполнителя' : 'Новый исполнитель'}</span>
+      <button class="modal-close" onclick="closeModal()">${iconSvg('x',18)}</button>
+    </div>
+    <div style="padding:20px 24px 24px;display:flex;flex-direction:column;gap:16px">
+      <div>
+        <label class="mn-label">Имя / должность</label>
+        <input id="asgn-modal-name" class="mn-input" type="text" placeholder="Иванов А.В." autocomplete="off"
+               value="${isEdit ? name.replace(/"/g,'&quot;') : ''}">
+      </div>
+      <div>
+        <label class="mn-label">Цвет</label>
+        <div class="asgn-color-row" id="asgn-color-row">${swatches}</div>
+        <input type="hidden" id="asgn-modal-color" value="${selIdx}">
+      </div>
+      <div id="asgn-modal-error" style="display:none;color:#EF4444;font-size:12px"></div>
+      <div style="display:flex;gap:10px;margin-top:4px">
+        ${isEdit ? `<button class="mn-btn-danger" style="margin-right:auto" onclick="deleteAssigneeFromPage('${name.replace(/'/g, "\\'")}')">${iconSvg('trash',14)} Удалить</button>` : ''}
+        <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+        <button class="btn-primary" onclick="saveAssigneeModal('${isEdit ? name.replace(/'/g, "\\'") : ''}')">${iconSvg('save',14)} Сохранить</button>
+      </div>
+    </div>`;
+  document.getElementById('modal-overlay').classList.add('open');
+  document.getElementById('asgn-modal-name').focus();
+}
+
+function asgnSelectColor(idx) {
+  document.getElementById('asgn-modal-color').value = idx;
+  document.querySelectorAll('.asgn-color-swatch').forEach((el, i) => {
+    el.classList.toggle('selected', i === idx);
+  });
+}
+
+function saveAssigneeModal(oldName) {
+  const nameEl  = document.getElementById('asgn-modal-name');
+  const colorEl = document.getElementById('asgn-modal-color');
+  const errEl   = document.getElementById('asgn-modal-error');
+  const newName = nameEl?.value.trim();
+  const colorIdx = parseInt(colorEl?.value ?? '0', 10);
+
+  if (!newName) { if (errEl) { errEl.textContent = 'Введите имя'; errEl.style.display = 'block'; } return; }
+
+  const custom  = loadAssignees();
+  const all     = getAllAssignees();
+  const isDefault = n => ASSIGNEE_DEFAULTS.some(d => d.name === n);
+
+  if (oldName) {
+    // Редактирование
+    if (newName !== oldName) {
+      // Подавляем старое имя если это default
+      if (isDefault(oldName)) {
+        const ti = custom.findIndex(a => a.name === oldName);
+        if (ti !== -1) custom[ti].colorIdx = -1; else custom.push({ name: oldName, colorIdx: -1 });
+      } else {
+        const ci = custom.findIndex(a => a.name === oldName);
+        if (ci !== -1) custom.splice(ci, 1);
+      }
+      // Переносим задачи на новое имя
+      VRH_ITEMS.forEach(item => {
+        if (item.assignee === oldName) {
+          item.assignee = newName;
+          if (!localEdits[item.id]) localEdits[item.id] = {};
+          localEdits[item.id].assignee = newName;
+          saveEditsToStorage(item.id);
+        }
+      });
+    }
+    // Обновляем цвет или добавляем как custom
+    if (isDefault(newName) && newName === oldName) {
+      // меняем цвет дефолтного — добавляем tombstone + новый custom с новым цветом
+      const ti = custom.findIndex(a => a.name === newName && a.colorIdx !== -1);
+      if (ti !== -1) { custom[ti].colorIdx = colorIdx; } else { custom.push({ name: newName, colorIdx }); }
+      // Нужно подавить исходный default?.. Нет — просто перезаписываем colorIdx в custom record
+      // Убедимся что нет tombstone
+      const tbi = custom.findIndex(a => a.name === newName && a.colorIdx === -1);
+      if (tbi !== -1) custom.splice(tbi, 1);
+    } else {
+      const ci = custom.findIndex(a => a.name === newName && a.colorIdx !== -1);
+      if (ci !== -1) custom[ci].colorIdx = colorIdx;
+      else custom.push({ name: newName, colorIdx });
+    }
+  } else {
+    // Добавление нового
+    if (all.find(a => a.name === newName)) {
+      if (errEl) { errEl.textContent = 'Исполнитель с таким именем уже есть'; errEl.style.display = 'block'; } return;
+    }
+    custom.push({ name: newName, colorIdx });
+  }
+
+  saveAssignees(custom);
+  closeModal();
+  if (typeof showToast === 'function') showToast(oldName ? 'Исполнитель обновлён' : 'Исполнитель добавлен');
+  render();
+}
+
+function deleteAssigneeFromPage(name) {
+  if (!confirm(`Удалить исполнителя «${name}»?`)) return;
+  const custom  = loadAssignees();
+  const isDefault = ASSIGNEE_DEFAULTS.some(d => d.name === name);
+  if (isDefault) {
+    const ei = custom.findIndex(a => a.name === name);
+    if (ei !== -1) custom[ei].colorIdx = -1; else custom.push({ name, colorIdx: -1 });
+  } else {
+    const ci = custom.findIndex(a => a.name === name);
+    if (ci !== -1) custom.splice(ci, 1);
+  }
+  saveAssignees(custom);
+  if (typeof showToast === 'function') showToast('Исполнитель удалён');
+  closeModal();
+  render();
+}
+
+window.renderAssigneesPage  = renderAssigneesPage;
+window.openAssigneeModal    = openAssigneeModal;
+window.asgnSelectColor      = asgnSelectColor;
+window.saveAssigneeModal    = saveAssigneeModal;
+window.deleteAssigneeFromPage = deleteAssigneeFromPage;
 
 // =============================================================
 // NAME TOOLTIP
