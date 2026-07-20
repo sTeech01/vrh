@@ -174,7 +174,8 @@ function renderTasksList(el) {
         ${commentCnt ? `<span class="tk-row-meta">${iconSvg('chat',12)} ${commentCnt}</span>` : ''}
         ${task.assignee_name ? `<span class="tk-assignee-chip" style="${_tkAssigneeStyle(task.assignee_name)}">${_tkEsc(task.assignee_name.split(' ')[0])}</span>` : '<span class="tk-assignee-chip tk-assignee-none">—</span>'}
         ${dl ? `<span class="tk-deadline ${dl.cls}">${_tkEsc(dl.label)}</span>` : ''}
-        <span class="tk-status-chip" style="background:${st.bg};color:${st.color}">${_tkEsc(st.label)}</span>
+        <span class="tk-status-chip tk-status-chip-btn" style="background:${st.bg};color:${st.color}"
+              onclick="event.stopPropagation();openTkStatusPicker('${_tkEsc(task.id)}',this)">${_tkEsc(st.label)} ▾</span>
       </div>
     </div>`;
   }).join('');
@@ -675,6 +676,43 @@ function _tkSaveComment(comment) {
     } catch(e) { console.error('_tkSaveComment:', e); }
   })();
 }
+
+// ──── Быстрая смена статуса ────────────────────────────────────
+function openTkStatusPicker(taskId, anchor) {
+  document.getElementById('tk-status-picker')?.remove();
+
+  const task = _tkTasks.find(t => t.id === taskId);
+  if (!task) return;
+
+  const picker = document.createElement('div');
+  picker.id = 'tk-status-picker';
+  picker.className = 'tk-status-picker';
+
+  picker.innerHTML = TK_STATUSES.map(s => `
+    <div class="tk-status-picker-item${task.status === s.id ? ' active' : ''}"
+         style="color:${s.color}"
+         onclick="closeTkStatusPicker();setTkStatus('${taskId}','${s.id}')">
+      <span class="tk-status-picker-dot" style="background:${s.color}"></span>
+      ${s.label}
+    </div>`).join('');
+
+  document.body.appendChild(picker);
+
+  // Позиционирование под anchor
+  const r = anchor.getBoundingClientRect();
+  picker.style.top  = (r.bottom + window.scrollY + 4) + 'px';
+  picker.style.left = (r.left  + window.scrollX) + 'px';
+
+  // Закрытие по клику вне
+  setTimeout(() => {
+    document.addEventListener('click', closeTkStatusPicker, { once: true });
+  }, 0);
+}
+function closeTkStatusPicker() {
+  document.getElementById('tk-status-picker')?.remove();
+}
+window.openTkStatusPicker  = openTkStatusPicker;
+window.closeTkStatusPicker = closeTkStatusPicker;
 
 // ──── Выгрузка по исполнителям ─────────────────────────────────
 function exportTkByAssignee() {

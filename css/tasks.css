@@ -216,6 +216,46 @@
   white-space: nowrap;
 }
 
+.tk-status-chip-btn {
+  cursor: pointer;
+  user-select: none;
+  transition: opacity .15s;
+}
+.tk-status-chip-btn:hover { opacity: .8; }
+
+/* ── Пикер статуса ───────────────────────────────────────── */
+.tk-status-picker {
+  position: absolute;
+  z-index: 9999;
+  background: var(--surface);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg, 0 8px 24px rgba(0,0,0,.12));
+  padding: 4px;
+  min-width: 140px;
+}
+
+.tk-status-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .12s;
+}
+.tk-status-picker-item:hover { background: var(--gray-100); }
+.tk-status-picker-item.active { font-weight: 700; background: var(--gray-100); }
+
+.tk-status-picker-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
 /* ── Пустой список ──────────────────────────────────────── */
 .tk-empty {
   display: flex;
