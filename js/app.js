@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #149';
+const APP_BUILD = 'DEPLOY #150';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -106,6 +106,8 @@ async function initApp() {
 function showLoginScreen() {
   document.getElementById('app').style.display = 'none';
   document.getElementById('mobile-nav').style.display = 'none';
+  document.getElementById('mobile-more-overlay')?.classList.remove('open');
+  document.getElementById('mobile-more-sheet')?.classList.remove('open');
   document.getElementById('login-screen').style.display = 'flex';
 }
 
@@ -384,13 +386,17 @@ function setupNavigation() {
 function updateActiveNav() {
   document.querySelectorAll('[data-nav]').forEach(el => {
     const isActive = el.dataset.nav === state.view ||
-      (state.view === 'project'    && el.dataset.nav === 'projects') ||
-      (state.view === 'item'       && el.dataset.nav === 'projects') ||
-      (state.view === 'crm-client'    && el.dataset.nav === 'crm') ||
-      (state.view === 'supplier'      && el.dataset.nav === 'suppliers') ||
+      (state.view === 'project'        && el.dataset.nav === 'projects') ||
+      (state.view === 'item'           && el.dataset.nav === 'projects') ||
+      (state.view === 'crm-client'     && el.dataset.nav === 'crm') ||
+      (state.view === 'supplier'       && el.dataset.nav === 'suppliers') ||
       (state.view === 'warehouse-item' && el.dataset.nav === 'warehouse');
     el.classList.toggle('active', isActive);
   });
+  // Кнопка «Ещё» — активна если текущий вид принадлежит этому меню
+  const moreViews = ['dashboard', 'problems', 'ai', 'events', 'suppliers', 'supplier', 'warehouse', 'warehouse-item'];
+  const moreBtn = document.getElementById('mobile-more-btn');
+  if (moreBtn) moreBtn.classList.toggle('active', moreViews.includes(state.view));
 }
 
 function updateProblemsBadge() {
@@ -401,6 +407,13 @@ function updateProblemsBadge() {
     badge.textContent = total;
     badge.style.display = total > 0 ? 'inline-block' : 'none';
   }
+  // Синхронизируем бейдж в меню «Ещё»
+  const moreBadge = document.getElementById('more-problems-badge');
+  if (moreBadge) {
+    moreBadge.textContent = total;
+    moreBadge.style.display = total > 0 ? 'inline-flex' : 'none';
+  }
+  _updateMoreBtnDot();
 }
 
 function toggleMobileSidebar() {
@@ -412,6 +425,31 @@ function closeMobileSidebar() {
   document.getElementById('sidebar-overlay')?.classList.remove('open');
 }
 window.toggleMobileSidebar = toggleMobileSidebar;
+
+// ── Mobile More Menu ─────────────────────────────────────────────
+function toggleMobileMore() {
+  const overlay = document.getElementById('mobile-more-overlay');
+  const sheet   = document.getElementById('mobile-more-sheet');
+  if (!overlay || !sheet) return;
+  const isOpen = overlay.classList.contains('open');
+  overlay.classList.toggle('open', !isOpen);
+  sheet.classList.toggle('open', !isOpen);
+}
+function closeMobileMore() {
+  document.getElementById('mobile-more-overlay')?.classList.remove('open');
+  document.getElementById('mobile-more-sheet')?.classList.remove('open');
+}
+function _updateMoreBtnDot() {
+  const dot = document.querySelector('#mobile-more-btn .mobile-nav-more-dot');
+  if (!dot) return;
+  const evBadge   = document.getElementById('events-badge');
+  const probBadge = document.getElementById('problems-badge');
+  const hasAlert  = (evBadge   && evBadge.style.display   !== 'none' && evBadge.textContent   !== '0') ||
+                    (probBadge  && probBadge.style.display !== 'none' && probBadge.textContent !== '0');
+  dot.style.display = hasAlert ? 'block' : 'none';
+}
+window.toggleMobileMore = toggleMobileMore;
+window.closeMobileMore  = closeMobileMore;
 
 // ── Master Render ───────────────────────────────────────────────
 function render() {
@@ -3905,6 +3943,13 @@ function _updateEventsBadge() {
   const urgent = _getAllEvents().filter(e => !e.done && daysOverdue(e.event_date) >= -7).length;
   badge.textContent = urgent;
   badge.style.display = urgent > 0 ? '' : 'none';
+  // Синхронизируем бейдж в меню «Ещё»
+  const moreBadge = document.getElementById('more-events-badge');
+  if (moreBadge) {
+    moreBadge.textContent = urgent;
+    moreBadge.style.display = urgent > 0 ? 'inline-flex' : 'none';
+  }
+  _updateMoreBtnDot();
 }
 
 function saveEventToStorage(ev) {

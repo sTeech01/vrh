@@ -1872,9 +1872,8 @@ details.mn-details[open] > summary::after { transform:rotate(90deg); }
   #toast { bottom: 72px; font-size: 12px; }
 
   /* ── Platform home grid ─────────────────────────────────── */
-  .plat-modules-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
-  .plat-module-card  { padding: 16px 14px !important; min-height: 100px !important; }
-  .plat-module-name  { font-size: 14px !important; }
+  /* Переопределение platform.css (560px → 1 col): сохраняем 2 колонки на телефоне */
+  .plat-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
 
   /* ── Suppliers ──────────────────────────────────────────── */
   .sup-list-wrap    { padding: 14px 12px 80px; }
