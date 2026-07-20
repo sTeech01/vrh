@@ -72,6 +72,18 @@ function _tkDeadlineInfo(dt, status) {
 function _tkGetStatus(id)   { return TK_STATUSES.find(s => s.id === id)   || TK_STATUSES[0]; }
 function _tkGetPriority(id) { return TK_PRIORITIES.find(p => p.id === id) || TK_PRIORITIES[1]; }
 
+function _tkAssigneeStyle(name) {
+  if (!name || typeof ASSIGNEE_PALETTE === 'undefined') return '';
+  const all = typeof getAllAssignees === 'function' ? getAllAssignees() : [];
+  const found = all.find(a => a.name === name);
+  if (found) return `background:${ASSIGNEE_PALETTE[found.colorIdx % ASSIGNEE_PALETTE.length].bg};color:${ASSIGNEE_PALETTE[found.colorIdx % ASSIGNEE_PALETTE.length].color}`;
+  // Хэш-цвет для имён не из справочника
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
+  const p = ASSIGNEE_PALETTE[Math.abs(h) % ASSIGNEE_PALETTE.length];
+  return `background:${p.bg};color:${p.color}`;
+}
+
 function _tkSubtasks(parentId) {
   return _tkTasks.filter(t => t.parent_id === parentId);
 }
@@ -160,7 +172,7 @@ function renderTasksList(el) {
       </div>
       <div class="tk-row-right">
         ${commentCnt ? `<span class="tk-row-meta">${iconSvg('chat',12)} ${commentCnt}</span>` : ''}
-        ${task.assignee_name ? `<span class="tk-assignee-chip">${_tkEsc(task.assignee_name.split(' ')[0])}</span>` : '<span class="tk-assignee-chip tk-assignee-none">—</span>'}
+        ${task.assignee_name ? `<span class="tk-assignee-chip" style="${_tkAssigneeStyle(task.assignee_name)}">${_tkEsc(task.assignee_name.split(' ')[0])}</span>` : '<span class="tk-assignee-chip tk-assignee-none">—</span>'}
         ${dl ? `<span class="tk-deadline ${dl.cls}">${_tkEsc(dl.label)}</span>` : ''}
         <span class="tk-status-chip" style="background:${st.bg};color:${st.color}">${_tkEsc(st.label)}</span>
       </div>
@@ -229,7 +241,7 @@ function _tkDetailHtml(task) {
 
   const metaItems = [
     task.assignee_name
-      ? `<div class="tk-info-item"><span class="tk-info-label">${iconSvg('user',12)} Исполнитель</span><span class="tk-info-val">${_tkEsc(task.assignee_name)}</span></div>`
+      ? `<div class="tk-info-item"><span class="tk-info-label">${iconSvg('user',12)} Исполнитель</span><span class="tk-info-val"><span class="tk-assignee-chip" style="${_tkAssigneeStyle(task.assignee_name)}">${_tkEsc(task.assignee_name)}</span></span></div>`
       : `<div class="tk-info-item"><span class="tk-info-label">${iconSvg('user',12)} Исполнитель</span><span class="tk-info-val tk-info-empty">Не назначен</span></div>`,
     `<div class="tk-info-item"><span class="tk-info-label">${iconSvg('warning',12)} Приоритет</span>
        <span class="tk-info-val"><span class="tk-priority-dot" style="background:${_tkEsc(pr.dot)};width:7px;height:7px;display:inline-block;border-radius:50%;margin-right:5px;vertical-align:middle"></span>${_tkEsc(pr.label)}</span></div>`,
@@ -265,7 +277,7 @@ function _tkDetailHtml(task) {
         <span class="tk-subtask-title ${done ? 'tk-subtask-title-done' : ''}">${_tkEsc(s.title)}</span>
         ${s.completion_comment ? `<div class="tk-subtask-comment">${iconSvg('check',10)} ${_tkEsc(s.completion_comment)}</div>` : ''}
       </div>
-      ${s.assignee_name ? `<span class="tk-assignee-chip" style="font-size:10px">${_tkEsc(s.assignee_name.split(' ')[0])}</span>` : ''}
+      ${s.assignee_name ? `<span class="tk-assignee-chip" style="font-size:10px;${_tkAssigneeStyle(s.assignee_name)}">${_tkEsc(s.assignee_name.split(' ')[0])}</span>` : ''}
     </div>`;
     const formRow = pending ? `
     <div class="tk-sub-confirm-form">
