@@ -597,3 +597,416 @@
   margin-top: 10px;
 }
 .tk-comment-add .btn-primary { align-self: flex-end; }
+
+/* ═══════════════════════════════════════════════════════════════
+   Отчёт (rp-*)
+   ═══════════════════════════════════════════════════════════════ */
+
+.rp-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 24px 80px;
+}
+
+.rp-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 28px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.rp-page-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--gray-900);
+}
+
+.rp-page-date {
+  font-size: 12px;
+  color: var(--gray-400);
+  margin-top: 3px;
+}
+
+/* ── KPI-карточки ──────────────────────────────────────────── */
+.rp-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 680px) {
+  .rp-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.rp-kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px 16px;
+}
+
+.rp-kpi-danger {
+  border-color: var(--red);
+  background: var(--red-dim);
+}
+
+.rp-kpi-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gray-400);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 6px;
+}
+
+.rp-kpi-value {
+  font-size: 38px;
+  font-weight: 800;
+  color: var(--gray-900);
+  line-height: 1;
+  margin-bottom: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.rp-kpi-unit {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--gray-400);
+  margin-left: 2px;
+}
+
+.rp-kv-blue { color: var(--cyan);     }
+.rp-kv-gray { color: var(--gray-500); }
+.rp-kv-red  { color: var(--red);      }
+
+.rp-kpi-bar {
+  height: 4px;
+  background: var(--gray-100);
+  border-radius: 2px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.rp-kpi-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width .6s ease;
+}
+
+.rp-kpi-sub {
+  font-size: 11px;
+  color: var(--gray-400);
+}
+
+/* ── Секции ─────────────────────────────────────────────────── */
+.rp-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+  margin-bottom: 14px;
+}
+
+.rp-section-danger {
+  border-color: var(--red);
+  border-left-width: 3px;
+}
+
+.rp-section-ok {
+  border-color: var(--green);
+}
+
+.rp-section-hdr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gray-800);
+  margin-bottom: 16px;
+}
+
+.rp-ok-text {
+  font-size: 13px;
+  color: var(--green);
+}
+
+.rp-badge {
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 2px;
+}
+.rp-badge-green { background: var(--green-dim); color: var(--green); }
+.rp-badge-blue  { background: var(--cyan-dim);  color: var(--cyan);  }
+.rp-badge-red   { background: var(--red-dim);   color: var(--red);   }
+
+/* ── Достижения ─────────────────────────────────────────────── */
+.rp-achiev-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.rp-achiev-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--green-dim);
+  border: 1px solid rgba(16,185,129,.18);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+
+.rp-achiev-icon {
+  color: var(--green);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.rp-achiev-body   { min-width: 0; }
+.rp-achiev-title  { font-size: 13px; font-weight: 600; color: var(--gray-800); }
+.rp-achiev-meta   { font-size: 11px; color: var(--gray-500); margin-top: 2px; }
+.rp-achiev-comment {
+  font-size: 11px;
+  color: var(--gray-600);
+  margin-top: 5px;
+  font-style: italic;
+  background: rgba(255,255,255,.55);
+  border-radius: 4px;
+  padding: 4px 8px;
+  line-height: 1.5;
+}
+
+/* ── Группы (В работе по исполнителю) ─────────────────────── */
+.rp-group {
+  margin-bottom: 16px;
+}
+.rp-group:last-child { margin-bottom: 0; }
+
+.rp-group-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--gray-400);
+  margin-bottom: 4px;
+  padding-left: 4px;
+}
+
+/* ── Строки задач (общие) ───────────────────────────────────── */
+.rp-task-row, .rp-next-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.rp-task-row:hover, .rp-next-row:hover { background: var(--gray-50); }
+
+.rp-pr-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.rp-task-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-800);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rp-dl { font-size: 11px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+
+/* ── Проблемы ───────────────────────────────────────────────── */
+.rp-prob-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 4px;
+  border-bottom: 1px solid var(--gray-100);
+  cursor: pointer;
+  transition: background var(--transition);
+  border-radius: 4px;
+}
+.rp-prob-row:last-child { border-bottom: none; }
+.rp-prob-row:hover { background: var(--gray-50); }
+
+.rp-prob-tag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  padding: 2px 8px;
+  border-radius: 99px;
+  flex-shrink: 0;
+}
+.rp-tag-red   { background: var(--red-dim);   color: var(--red);   }
+.rp-tag-amber { background: var(--amber-dim); color: var(--amber); }
+
+.rp-prob-who {
+  font-size: 11px;
+  color: var(--gray-400);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Риски ──────────────────────────────────────────────────── */
+.rp-risk-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border-radius: var(--radius);
+  margin-bottom: 7px;
+  font-size: 13px;
+  color: var(--gray-700);
+}
+.rp-risk-row:last-child { margin-bottom: 0; }
+.rp-risk-high   { background: var(--red-dim);   border-left: 3px solid var(--red);   }
+.rp-risk-medium { background: var(--amber-dim); border-left: 3px solid var(--amber); }
+
+.rp-risk-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.rp-risk-high   .rp-risk-dot { background: var(--red);   }
+.rp-risk-medium .rp-risk-dot { background: var(--amber); }
+
+/* ── Загрузка сотрудников ───────────────────────────────────── */
+.rp-load-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 11px;
+}
+.rp-load-row:last-of-type { margin-bottom: 0; }
+
+.rp-load-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-800);
+  min-width: 110px;
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+.rp-load-bar-wrap { flex: 1; min-width: 0; }
+
+.rp-load-bar {
+  height: 8px;
+  background: var(--gray-100);
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+}
+
+.rp-load-seg {
+  height: 100%;
+  transition: width .5s ease;
+}
+.rp-load-seg-blue { background: var(--cyan); }
+.rp-load-seg-gray { background: var(--gray-200); }
+
+.rp-load-meta {
+  font-size: 12px;
+  color: var(--gray-500);
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 100px;
+  text-align: right;
+}
+
+.rp-load-overdue { color: var(--red); font-weight: 600; }
+
+.rp-load-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--gray-400);
+  margin-top: 12px;
+}
+
+.rp-load-leg-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* ── Следующие действия ─────────────────────────────────────── */
+.rp-next-num {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--gray-200);
+  color: var(--gray-600);
+  font-size: 10px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rp-next-who {
+  font-size: 11px;
+  color: var(--gray-400);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.rp-status-chip {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 99px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Итог руководителю ──────────────────────────────────────── */
+.rp-summary-box {
+  background: var(--gray-50);
+  border: 1px solid var(--cyan);
+  border-radius: var(--radius-lg);
+  padding: 22px 26px;
+  margin-top: 4px;
+}
+
+.rp-summary-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gray-800);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rp-summary-text p {
+  font-size: 14px;
+  color: var(--gray-700);
+  line-height: 1.75;
+  margin: 0 0 8px;
+}
+.rp-summary-text p:last-child { margin-bottom: 0; }

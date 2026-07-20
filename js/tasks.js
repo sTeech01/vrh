@@ -918,6 +918,292 @@ function exportTkByAssignee() {
 }
 window.exportTkByAssignee = exportTkByAssignee;
 
+// ──── Отчёт руководителя ──────────────────────────────────────
+function renderTaskReport(el) {
+  el = el || document.getElementById('content');
+  if (!el) return;
+  if (typeof setBreadcrumb === 'function') setBreadcrumb('Отчёт');
+
+  const now          = new Date();
+  const sevenDaysAgo = new Date(now - 7 * 86400000);
+
+  const roots   = _tkTasks.filter(t => !t.parent_id);
+  const active  = roots.filter(t => !['done','cancelled'].includes(t.status));
+  const done    = roots.filter(t => t.status === 'done');
+  const inProg  = roots.filter(t => t.status === 'in_progress');
+  const pending = roots.filter(t => t.status === 'pending');
+  const paused  = roots.filter(t => t.status === 'paused');
+
+  const overdue    = active.filter(t => t.deadline && new Date(t.deadline) < now);
+  const critical   = active.filter(t => t.priority === 'critical');
+  const noAssignee = active.filter(t => !t.assignee_name);
+
+  const total = roots.filter(t => t.status !== 'cancelled').length;
+  const pct   = total > 0 ? Math.round(done.length / total * 100) : 0;
+
+  // Достижения за 7 дней
+  const achievements = done
+    .filter(t => t.completed_at && new Date(t.completed_at) >= sevenDaysAgo)
+    .sort((a,b) => new Date(b.completed_at) - new Date(a.completed_at))
+    .slice(0, 6);
+
+  // Проблемы — дедупликация по id
+  const probRaw = [
+    ...overdue.map(t => ({ task:t, type:'overdue' })),
+    ...paused.map(t => ({ task:t, type:'paused' })),
+    ...critical.filter(t => !overdue.find(o => o.id === t.id) && t.status !== 'paused').map(t => ({ task:t, type:'critical' })),
+  ];
+  const _seenProb = new Set();
+  const problems  = probRaw.filter(p => { if (_seenProb.has(p.task.id)) return false; _seenProb.add(p.task.id); return true; });
+
+  // Риски
+  const risks = [];
+  if (overdue.length > 0)    risks.push({ level:'high',   text: `${overdue.length} задач просрочено — требуют немедленного внимания` });
+  if (critical.length > 0)   risks.push({ level:'high',   text: `${critical.length} задач с критическим приоритетом в активной работе` });
+  if (paused.length > 0)     risks.push({ level:'medium', text: `${paused.length} задач на паузе — вероятно ждут внешнего решения` });
+  if (noAssignee.length > 0) risks.push({ level:'medium', text: `${noAssignee.length} активных задач без назначенного исполнителя` });
+
+  // Загрузка сотрудников
+  const assigneeLoad = {};
+  active.forEach(t => {
+    const key = t.assignee_name || '— Без исполнителя —';
+    if (!assigneeLoad[key]) assigneeLoad[key] = { name:key, inProg:0, pending:0, overdue:0, total:0 };
+    assigneeLoad[key].total++;
+    if (t.status === 'in_progress') assigneeLoad[key].inProg++;
+    if (t.status === 'pending')     assigneeLoad[key].pending++;
+    if (t.deadline && new Date(t.deadline) < now) assigneeLoad[key].overdue++;
+  });
+  const loadList = Object.values(assigneeLoad).sort((a,b) => b.total - a.total);
+  const maxLoad  = Math.max(1, ...loadList.map(a => a.total));
+
+  // Следующие действия
+  const prOrder = { critical:0, high:1, medium:2, low:3 };
+  const nextActions = [...inProg, ...pending]
+    .sort((a,b) => {
+      const ps = (prOrder[a.priority]??2) - (prOrder[b.priority]??2);
+      if (ps !== 0) return ps;
+      if (a.deadline && b.deadline) return new Date(a.deadline) - new Date(b.deadline);
+      if (a.deadline) return -1;
+      if (b.deadline) return 1;
+      return 0;
+    })
+    .slice(0, 7);
+
+  // Авто-резюме
+  const summaryParts = [];
+  if (done.length > 0)
+    summaryParts.push(`Выполнено ${done.length} из ${total} задач — прогресс составляет ${pct}%.`);
+  if (inProg.length > 0)
+    summaryParts.push(`Сейчас в активной работе ${inProg.length} задач${achievements.length > 0 ? `, за последние 7 дней закрыто ${achievements.length}` : ''}.`);
+  if (overdue.length > 0)
+    summaryParts.push(`Просрочено ${overdue.length} задач — это основной риск, требующий немедленного внимания руководителя.`);
+  else
+    summaryParts.push('Просроченных задач нет — работа идёт в плановом режиме.');
+  if (paused.length > 0)
+    summaryParts.push(`${paused.length} задач приостановлено: вероятно требуют разблокировки или внешнего решения.`);
+  if (noAssignee.length > 0)
+    summaryParts.push(`${noAssignee.length} задач не назначены на исполнителя — рекомендуется распределить ответственность.`);
+  if (critical.length > 0)
+    summaryParts.push(`${critical.length} задач имеют критический приоритет — должны обрабатываться в первую очередь.`);
+  if (loadList.length > 0) {
+    const top = loadList[0];
+    summaryParts.push(`Наибольшая нагрузка у ${top.name}: ${top.total} активных задач${top.overdue > 0 ? `, из них ${top.overdue} просрочено` : ''}.`);
+  }
+  if (nextActions.length > 0)
+    summaryParts.push(`Приоритет следующего периода: ${nextActions.slice(0,3).map(t => `«${t.title}»`).join(', ')}.`);
+
+  // ── Хелперы рендера ────────────────────────────────────────────
+  const fmtDateShort = dt => {
+    if (!dt) return '';
+    const d = new Date(dt);
+    return isNaN(d) ? '' : d.toLocaleDateString('ru-RU', { day:'numeric', month:'short' }).replace('.','');
+  };
+
+  const reportDate = now.toLocaleDateString('ru-RU', { day:'numeric', month:'long', year:'numeric' }) +
+    ', ' + now.toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' });
+
+  // ── KPI-карточки ───────────────────────────────────────────────
+  const kpiHtml = `
+    <div class="rp-kpi-grid">
+      <div class="rp-kpi-card">
+        <div class="rp-kpi-label">Прогресс</div>
+        <div class="rp-kpi-value">${pct}<span class="rp-kpi-unit">%</span></div>
+        <div class="rp-kpi-bar"><div class="rp-kpi-bar-fill" style="width:${pct}%;background:var(--green)"></div></div>
+        <div class="rp-kpi-sub">${done.length} из ${total} задач выполнено</div>
+      </div>
+      <div class="rp-kpi-card">
+        <div class="rp-kpi-label">В работе</div>
+        <div class="rp-kpi-value rp-kv-blue">${inProg.length}</div>
+        <div class="rp-kpi-sub">Активных задач</div>
+      </div>
+      <div class="rp-kpi-card">
+        <div class="rp-kpi-label">Ожидают</div>
+        <div class="rp-kpi-value rp-kv-gray">${pending.length}</div>
+        <div class="rp-kpi-sub">В очереди</div>
+      </div>
+      <div class="rp-kpi-card${overdue.length > 0 ? ' rp-kpi-danger' : ''}">
+        <div class="rp-kpi-label">Просрочено</div>
+        <div class="rp-kpi-value rp-kv-red">${overdue.length}</div>
+        <div class="rp-kpi-sub">${overdue.length > 0 ? 'Требуют внимания' : 'Всё в срок'}</div>
+      </div>
+    </div>`;
+
+  // ── Достижения ─────────────────────────────────────────────────
+  const achievHtml = achievements.length === 0 ? '' : `
+    <div class="rp-section">
+      <div class="rp-section-hdr">
+        ${iconSvg('check', 15)}
+        <span>Достижения за 7 дней</span>
+        <span class="rp-badge rp-badge-green">${achievements.length}</span>
+      </div>
+      <div class="rp-achiev-grid">
+        ${achievements.map(t => `
+          <div class="rp-achiev-card">
+            <div class="rp-achiev-icon">${iconSvg('check', 12)}</div>
+            <div class="rp-achiev-body">
+              <div class="rp-achiev-title">${_tkEsc(t.title)}</div>
+              <div class="rp-achiev-meta">${t.assignee_name ? _tkEsc(t.assignee_name) + ' · ' : ''}${fmtDateShort(t.completed_at)}</div>
+              ${t.completion_comment ? `<div class="rp-achiev-comment">${_tkEsc(t.completion_comment)}</div>` : ''}
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+
+  // ── В работе — сгруппировано по исполнителю ────────────────────
+  const inProgMap = {};
+  inProg.forEach(t => {
+    const key = t.assignee_name || '— Без исполнителя —';
+    if (!inProgMap[key]) inProgMap[key] = [];
+    inProgMap[key].push(t);
+  });
+  const inProgHtml = inProg.length === 0 ? '' : `
+    <div class="rp-section">
+      <div class="rp-section-hdr">
+        ${iconSvg('refresh', 15)}
+        <span>Работа в процессе</span>
+        <span class="rp-badge rp-badge-blue">${inProg.length}</span>
+      </div>
+      ${Object.entries(inProgMap).map(([asgn, tasks]) => `
+        <div class="rp-group">
+          <div class="rp-group-label">${_tkEsc(asgn)}</div>
+          ${tasks.map(t => {
+            const dl = _tkDeadlineInfo(t.deadline, t.status);
+            const pr = _tkGetPriority(t.priority);
+            return `<div class="rp-task-row" onclick="navigate('tasks');setTimeout(()=>openTaskDetail('${_tkEsc(t.id)}'),150)">
+              <span class="rp-pr-dot" style="background:${pr.dot}" title="${_tkEsc(pr.label)}"></span>
+              <span class="rp-task-title">${_tkEsc(t.title)}</span>
+              ${dl ? `<span class="rp-dl ${dl.cls}">${_tkEsc(dl.label)}</span>` : ''}
+            </div>`;
+          }).join('')}
+        </div>`).join('')}
+    </div>`;
+
+  // ── Проблемы и блокировки ──────────────────────────────────────
+  const typeLabel = { overdue:'Просрочена', paused:'На паузе', critical:'Критично' };
+  const typeCls   = { overdue:'rp-tag-red', paused:'rp-tag-amber', critical:'rp-tag-red' };
+  const probHtml = problems.length === 0
+    ? `<div class="rp-section rp-section-ok">
+         <div class="rp-section-hdr">${iconSvg('check',15)}<span>Блокировок не выявлено</span></div>
+         <div class="rp-ok-text">Все активные задачи в нормальном статусе</div>
+       </div>`
+    : `<div class="rp-section rp-section-danger">
+         <div class="rp-section-hdr">
+           ${iconSvg('warning', 15)}
+           <span>Проблемы и блокировки</span>
+           <span class="rp-badge rp-badge-red">${problems.length}</span>
+         </div>
+         ${problems.map(({ task:t, type }) => {
+           const dl = _tkDeadlineInfo(t.deadline, t.status);
+           return `<div class="rp-prob-row" onclick="navigate('tasks');setTimeout(()=>openTaskDetail('${_tkEsc(t.id)}'),150)">
+             <span class="rp-prob-tag ${typeCls[type]}">${typeLabel[type]}</span>
+             <span class="rp-task-title">${_tkEsc(t.title)}</span>
+             ${t.assignee_name ? `<span class="rp-prob-who">${_tkEsc(t.assignee_name)}</span>` : ''}
+             ${dl ? `<span class="rp-dl ${dl.cls}">${_tkEsc(dl.label)}</span>` : ''}
+           </div>`;
+         }).join('')}
+       </div>`;
+
+  // ── Риски ──────────────────────────────────────────────────────
+  const risksHtml = risks.length === 0 ? '' : `
+    <div class="rp-section">
+      <div class="rp-section-hdr">${iconSvg('alert', 15)}<span>Риски</span></div>
+      ${risks.map(r => `
+        <div class="rp-risk-row rp-risk-${r.level}">
+          <span class="rp-risk-dot"></span>
+          <span>${_tkEsc(r.text)}</span>
+        </div>`).join('')}
+    </div>`;
+
+  // ── Загрузка сотрудников ───────────────────────────────────────
+  const loadHtml = loadList.length === 0 ? '' : `
+    <div class="rp-section">
+      <div class="rp-section-hdr">${iconSvg('user', 15)}<span>Загрузка сотрудников</span></div>
+      ${loadList.map(a => `
+        <div class="rp-load-row">
+          <div class="rp-load-name">${_tkEsc(a.name)}</div>
+          <div class="rp-load-bar-wrap">
+            <div class="rp-load-bar">
+              <div class="rp-load-seg rp-load-seg-blue"  style="width:${Math.round(a.inProg/maxLoad*100)}%"></div>
+              <div class="rp-load-seg rp-load-seg-gray"  style="width:${Math.round(a.pending/maxLoad*100)}%"></div>
+            </div>
+          </div>
+          <div class="rp-load-meta">${a.total} задач${a.overdue > 0 ? ` · <span class="rp-load-overdue">${a.overdue} просрочено</span>` : ''}</div>
+        </div>`).join('')}
+      <div class="rp-load-legend">
+        <span class="rp-load-leg-dot" style="background:var(--cyan)"></span>В работе
+        <span class="rp-load-leg-dot" style="background:var(--gray-200);margin-left:12px"></span>Ожидает
+      </div>
+    </div>`;
+
+  // ── Следующие действия ─────────────────────────────────────────
+  const nextHtml = nextActions.length === 0 ? '' : `
+    <div class="rp-section">
+      <div class="rp-section-hdr">${iconSvg('list', 15)}<span>Следующие действия</span></div>
+      ${nextActions.map((t,i) => {
+        const pr = _tkGetPriority(t.priority);
+        const dl = _tkDeadlineInfo(t.deadline, t.status);
+        const st = _tkGetStatus(t.status);
+        return `<div class="rp-next-row" onclick="navigate('tasks');setTimeout(()=>openTaskDetail('${_tkEsc(t.id)}'),150)">
+          <span class="rp-next-num">${i+1}</span>
+          <span class="rp-pr-dot" style="background:${pr.dot}" title="${_tkEsc(pr.label)}"></span>
+          <span class="rp-task-title">${_tkEsc(t.title)}</span>
+          ${t.assignee_name ? `<span class="rp-next-who">${_tkEsc(t.assignee_name)}</span>` : ''}
+          <span class="rp-status-chip" style="background:${st.bg};color:${st.color}">${_tkEsc(st.label)}</span>
+          ${dl ? `<span class="rp-dl ${dl.cls}">${_tkEsc(dl.label)}</span>` : ''}
+        </div>`;
+      }).join('')}
+    </div>`;
+
+  // ── Итог руководителю ──────────────────────────────────────────
+  const summaryHtml = `
+    <div class="rp-summary-box">
+      <div class="rp-summary-title">${iconSvg('document', 15)} Итог для руководителя</div>
+      <div class="rp-summary-text">
+        ${summaryParts.map(p => `<p>${_tkEsc(p)}</p>`).join('')}
+      </div>
+    </div>`;
+
+  el.innerHTML = `
+    <div class="rp-page">
+      <div class="rp-page-header">
+        <div>
+          <div class="rp-page-title">Отчёт по задачам</div>
+          <div class="rp-page-date">Сформирован ${reportDate}</div>
+        </div>
+        <button class="btn-secondary" onclick="exportTkByAssignee()">${iconSvg('save',14)} Выгрузить CSV</button>
+      </div>
+      ${kpiHtml}
+      ${achievHtml}
+      ${inProgHtml}
+      ${probHtml}
+      ${risksHtml}
+      ${loadHtml}
+      ${nextHtml}
+      ${summaryHtml}
+    </div>`;
+}
+window.renderTaskReport = renderTaskReport;
+
 // ──── window exports ─────────────────────────────────────────────
 window.loadTasksData    = loadTasksData;
 window.renderTasksList  = renderTasksList;

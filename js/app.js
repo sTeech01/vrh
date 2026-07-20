@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #159';
+const APP_BUILD = 'DEPLOY #160';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -403,7 +403,7 @@ function updateActiveNav() {
     el.classList.toggle('active', isActive);
   });
   // Кнопка «Ещё» — активна если текущий вид принадлежит этому меню
-  const moreViews = ['dashboard', 'problems', 'ai', 'events', 'suppliers', 'supplier', 'warehouse', 'warehouse-item', 'assignees'];
+  const moreViews = ['dashboard', 'problems', 'ai', 'events', 'suppliers', 'supplier', 'warehouse', 'warehouse-item', 'assignees', 'task-report'];
   const moreBtn = document.getElementById('mobile-more-btn');
   if (moreBtn) moreBtn.classList.toggle('active', moreViews.includes(state.view));
 }
@@ -521,6 +521,11 @@ function render() {
       break;
     case 'tasks':
       renderTasksList(content);
+      updatePlatformSidebar('tasks');
+      break;
+    case 'task-report':
+      renderTaskReport(content);
+      setBreadcrumb('Отчёт');
       updatePlatformSidebar('tasks');
       break;
     case 'assignees':
