@@ -30,6 +30,24 @@ let _tkSubPending  = null; // { subId, parentId } — ожидает ввода 
 let _tkArchiveOpen = false;
 
 // ──── Загрузка данных ──────────────────────────────────────────
+// Разные варианты ФИО, введённые вручную в поле исполнителя задачи (свободный текст),
+// схлопываются к каноничному имени из справочника «Исполнители».
+const TK_ASSIGNEE_ALIASES = {
+  'Путилин А.А.': 'Путилин Антон Александрович',
+  'Зюков':        'Зюков Д.',
+  'Парамузов Олег Николаевич': 'Парамузов О.Н.',
+};
+
+function _tkNormalizeAssignees() {
+  _tkTasks.forEach(t => {
+    const canonical = TK_ASSIGNEE_ALIASES[t.assignee_name];
+    if (canonical && canonical !== t.assignee_name) {
+      t.assignee_name = canonical;
+      _tkSaveTask(t);
+    }
+  });
+}
+
 function loadTasksData(tasksData, commentsData) {
   _tkTasks = (tasksData || []).slice();
   _tkComments = {};
@@ -37,6 +55,7 @@ function loadTasksData(tasksData, commentsData) {
     if (!_tkComments[r.task_id]) _tkComments[r.task_id] = [];
     _tkComments[r.task_id].push({ id: r.id, task_id: r.task_id, text: r.text, author: r.author || 'Руководитель', created_at: r.created_at });
   });
+  _tkNormalizeAssignees();
 }
 
 // ──── Вспомогательные функции ──────────────────────────────────
