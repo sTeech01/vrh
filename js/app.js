@@ -267,7 +267,7 @@ async function loadRemoteData() {
   // Загрузка CRM (клиенты + история этапов) - данные живут в js/crm.js
   loadCrmData(crmRes.data, crmHistRes.data);
 
-  // Загрузка Поставщиков - данные живут в js/suppliers.js
+  // Загрузка Контрагентов - данные живут в js/suppliers.js
   loadSuppliersData(supRes.data, supContRes.data, supHistRes.data, supBankRes.data);
 
   // Загрузка Склада - данные живут в js/warehouse.js
@@ -345,6 +345,7 @@ function _buildCustomItem(id, ed) {
     assignee:            ed.assignee            || '',
     notes:               ed.notes               || '',
     supplier:            ed.supplier            || '',
+    supplierId:          ed.supplierId          || null,
     payment_status:      ed.payment_status      || '',
     payment_date:        ed.payment_date        || '',
     payment_amount:      ed.payment_amount      || 0,
@@ -982,6 +983,11 @@ function purMiniLabel(status) {
   return { received: 'Получено', partial: 'Частично', ordered: 'Заказано', pending: 'Не заказано' }[status] || status;
 }
 
+function _itemSupplierName(item) {
+  const s = typeof getSupplierById === 'function' ? getSupplierById(item.supplierId) : null;
+  return (s && (s.short_name || s.full_name)) || item.supplier || '';
+}
+
 function itemTableRow(item, projectId) {
   const pct    = calcProgress(item);
   const status = getItemStatus(item);
@@ -1007,8 +1013,15 @@ function itemTableRow(item, projectId) {
     const aObj = getAllAssignees().find(a => a.name === item.assignee) || { colorIdx: 0 };
     return `<span class="assignee-mini" style="${assigneeStyle(aObj)}" onclick="event.stopPropagation();openAssigneeDrop('${item.id}',this)">${iconSvg('user', 9)} ${item.assignee}</span>`;
   })();
+  const supplierTag = (()=>{
+    const name = _itemSupplierName(item);
+    const esc  = typeof _supEsc === 'function' ? _supEsc : (v => v || '');
+    return name
+      ? `<span class="assignee-mini supplier-mini" onclick="event.stopPropagation();openSupplierDrop('${item.id}',this)">${iconSvg('cart', 9)} ${esc(name)}</span>`
+      : `<span class="assignee-mini assignee-empty" onclick="event.stopPropagation();openSupplierDrop('${item.id}',this)">${iconSvg('cart', 9)} Контрагент</span>`;
+  })();
   const tagsLine    = (purTag || assigneeTag)
-    ? `<div class="ig-name-tags">${purTag}${assigneeTag}</div>`
+    ? `<div class="ig-name-tags">${purTag}${assigneeTag}${supplierTag}</div>`
     : '';
 
   const nameTipHtml = (()=>{
@@ -1137,7 +1150,7 @@ function renderItem(el, projectId, itemId) {
               const cls = ss === 'shipped' ? 'color:#166534;font-weight:600' : 'color:#92400E;font-weight:600';
               return `<div class="item-meta-pair"><label>Отгрузка</label><span style="${cls}">${SHIP_LABELS[ss]}</span></div>`;
             })()}
-            ${item.supplier ? `<div class="item-meta-pair"><label>Поставщик</label><span>${item.supplier}</span></div>` : ''}
+            ${_itemSupplierName(item) ? `<div class="item-meta-pair"><label>Контрагент</label><span>${_itemSupplierName(item)}</span></div>` : ''}
             ${(()=>{
               const ps = item.payment_status;
               if (!ps && !item.payment_amount && !item.payment_date) return '';
@@ -1386,7 +1399,7 @@ function renderReport(el, projectId) {
         ${cName ? `<div class="pr-complex-label complex-${cid}">${cName}</div>` : ''}
         <table class="pr-table" style="${multiGroup ? 'margin-bottom:10px' : ''}">
           <thead><tr>
-            <th>Наименование</th><th>Кол-во</th><th>Ед.</th><th>Поставщик</th><th>Оплата</th><th>Ожид. поставка</th><th>Примечание</th>
+            <th>Наименование</th><th>Кол-во</th><th>Ед.</th><th>Контрагент</th><th>Оплата</th><th>Ожид. поставка</th><th>Примечание</th>
           </tr></thead>
           <tbody>
             ${cRows.map(i => {
@@ -1404,7 +1417,7 @@ function renderReport(el, projectId) {
                 <td>${i.name}</td>
                 <td style="font-weight:700">${i.quantity} ${i.unit}</td>
                 <td>${i.unit}</td>
-                <td>${i.supplier || '—'}</td>
+                <td>${_itemSupplierName(i) || '—'}</td>
                 <td>${payLabel}${i.payment_amount ? `<br><span style="font-size:11px;color:var(--gray-500)">${Number(i.payment_amount).toLocaleString('ru-RU')} руб.</span>` : ''}</td>
                 <td>${expDelTxt}</td>
                 <td style="color:var(--gray-500)">${i.notes || ''}</td>
@@ -1501,7 +1514,7 @@ function exportReportCSV(projectId) {
   if (!project) return;
   const items = getProjectItems(projectId);
 
-  const rows = [['Тип','Раздел','Комплекс','Наименование','Родительская позиция','Кол-во','Ед.изм.','Поставщик','Статус оплаты','Сумма (руб.)','Дата оплаты','Ожид. поставка','Примечание']];
+  const rows = [['Тип','Раздел','Комплекс','Наименование','Родительская позиция','Кол-во','Ед.изм.','Контрагент','Статус оплаты','Сумма (руб.)','Дата оплаты','Ожид. поставка','Примечание']];
 
   // Закупки
   const statusLabel = { [PUR.PENDING]:'Не заказано', [PUR.ORDERED]:'Заказано', [PUR.PARTIAL]:'Частично' };
@@ -1509,7 +1522,7 @@ function exportReportCSV(projectId) {
   items.filter(i => i.type === 'purchased' && i.purchaseStatus !== PUR.RECEIVED).forEach(i => {
     const st = statusLabel[i.purchaseStatus] || 'Не заказано';
     rows.push(['Закупка', st, i.complexId || '', i.name, '', i.quantity, i.unit,
-      i.supplier || '', payLabel[i.payment_status || ''] || '',
+      _itemSupplierName(i) || '', payLabel[i.payment_status || ''] || '',
       i.payment_amount || '', i.payment_date || '', i.expected_delivery || '', i.notes || '']);
   });
 
@@ -1853,9 +1866,15 @@ function openUpdateModal(itemId) {
       <input type="hidden" id="modal-pay-status" value="${payStatus}">
       <div class="mn-pay-row">
         <div class="mn-pay-field">
-          <div class="mn-stat-label" style="margin-bottom:4px">Поставщик</div>
-          <input class="mn-text-input" type="text" id="modal-supplier"
-            value="${(item.supplier || '').replace(/"/g,'&quot;')}" placeholder="Название поставщика">
+          <div class="mn-stat-label" style="margin-bottom:4px">Контрагент</div>
+          <select class="mn-text-input" id="modal-supplier">
+            <option value="">— Не выбран —</option>
+            ${(typeof getSuppliersSorted === 'function' ? getSuppliersSorted() : []).map(s => {
+              const name = (s.short_name || s.full_name || '—').replace(/"/g,'&quot;');
+              const sel  = item.supplierId === s.id ? ' selected' : '';
+              return `<option value="${s.id}"${sel}>${name}${s.status === 'inactive' ? ' (неактивен)' : ''}</option>`;
+            }).join('')}
+          </select>
         </div>
         <div class="mn-pay-field">
           <div class="mn-stat-label" style="margin-bottom:4px">Сумма (руб.)</div>
@@ -2215,9 +2234,9 @@ function saveItemUpdate(itemId) {
   item.payment_status = payStatusVal;
   localEdits[itemId].payment_status = payStatusVal;
 
-  const supplierVal = (document.getElementById('modal-supplier')?.value ?? '').trim();
-  item.supplier = supplierVal;
-  localEdits[itemId].supplier = supplierVal;
+  const supplierIdVal = document.getElementById('modal-supplier')?.value || null;
+  item.supplierId = supplierIdVal;
+  localEdits[itemId].supplierId = supplierIdVal;
 
   const payAmountRaw = document.getElementById('modal-pay-amount')?.value;
   const payAmountVal = payAmountRaw ? parseFloat(payAmountRaw) : 0;
@@ -2731,7 +2750,7 @@ function renderAssigneeDrop(itemId) {
     </div>`;
   }).join('') +
   `<div class="adrop-divider"></div>
-   <div class="adrop-item adrop-add" onclick="showAddAssigneeInput('${itemId}')">${iconSvg('plus',12)} Добавить...</div>
+   <div class="adrop-item adrop-add" onclick="event.stopPropagation();closeAssigneeDrop();navigate('assignees')">${iconSvg('plus',12)} Добавить в «Исполнители»</div>
    <div class="adrop-divider"></div>
    <div class="adrop-item adrop-clear" onclick="setAssignee('${itemId}','')">— Не назначен —</div>`;
 }
@@ -2758,36 +2777,6 @@ function positionDrop(drop, rect) {
 function closeAssigneeDrop() {
   const el = document.getElementById('assignee-drop');
   if (el) el.remove();
-}
-function showAddAssigneeInput(itemId) {
-  const drop = document.getElementById('assignee-drop');
-  if (!drop) return;
-  document.removeEventListener('click', closeAssigneeDrop);
-  drop.innerHTML = `<div class="adrop-new-row" onclick="event.stopPropagation()">
-    <input id="adrop-new-input" type="text" placeholder="Имя Фамилия" autocomplete="off">
-    <button onclick="confirmAddAssignee('${itemId}')">Ок</button>
-  </div>`;
-  const inp = document.getElementById('adrop-new-input');
-  inp.focus();
-  inp.addEventListener('keydown', e => {
-    if (e.key === 'Enter') confirmAddAssignee(itemId);
-    if (e.key === 'Escape') closeAssigneeDrop();
-  });
-  setTimeout(() => document.addEventListener('click', closeAssigneeDrop, { once: true }), 0);
-}
-function confirmAddAssignee(itemId) {
-  const inp = document.getElementById('adrop-new-input');
-  if (!inp) return;
-  const name = inp.value.trim();
-  if (!name) return;
-  const all = getAllAssignees();
-  if (!all.find(a => a.name === name)) {
-    const custom = loadAssignees();
-    const nextIdx = all.length % ASSIGNEE_PALETTE.length;
-    custom.push({ name, colorIdx: nextIdx });
-    saveAssignees(custom);
-  }
-  setAssignee(itemId, name);
 }
 function setAssignee(itemId, value) {
   const item = VRH_ITEMS.find(i => i.id === itemId);
@@ -2866,8 +2855,6 @@ function deleteAssignee(name) {
 }
 window.openAssigneeDrop      = openAssigneeDrop;
 window.setAssignee           = setAssignee;
-window.showAddAssigneeInput  = showAddAssigneeInput;
-window.confirmAddAssignee    = confirmAddAssignee;
 window.showEditAssigneeInput = showEditAssigneeInput;
 window.confirmEditAssignee   = confirmEditAssignee;
 window.deleteAssignee        = deleteAssignee;
@@ -3304,6 +3291,7 @@ function applyEdits() {
     if (edit.nameFullOverride   !== undefined)  item.nameFullOverride   = edit.nameFullOverride;
     if (edit.noteTipEnabled     !== undefined)  item.noteTipEnabled     = edit.noteTipEnabled;
     if (edit.supplier           !== undefined)  item.supplier           = edit.supplier;
+    if (edit.supplierId         !== undefined)  item.supplierId         = edit.supplierId;
     if (edit.payment_status     !== undefined)  item.payment_status     = edit.payment_status;
     if (edit.payment_date       !== undefined)  item.payment_date       = edit.payment_date;
     if (edit.payment_amount     !== undefined)  item.payment_amount     = edit.payment_amount;

@@ -1,5 +1,5 @@
 ﻿/* ═══════════════════════════════════════════════════════════════
-   VRH ERP - Модуль «Поставщики» (Справочник организаций)
+   VRH ERP - Модуль «Контрагенты» (Справочник организаций)
    Prefix: sup-*   Route: #suppliers / #supplier/{id}
    ═══════════════════════════════════════════════════════════════ */
 'use strict';
@@ -146,11 +146,66 @@ function setSupViewMode(mode) {
   _supRerenderList();
 }
 
+// ── Инлайн-выбор ответственного контрагента на позиции (Production OS) ──
+function getSupplierById(id) {
+  if (!id) return null;
+  return (_suppliers || []).find(s => s.id === id) || null;
+}
+function _supDisplayName(s) {
+  return (s && (s.short_name || s.full_name)) || '';
+}
+function getSuppliersSorted() {
+  return [...(_suppliers || [])].sort((a, b) =>
+    _supDisplayName(a).toLowerCase().localeCompare(_supDisplayName(b).toLowerCase(), 'ru'));
+}
+function renderSupplierDrop(itemId) {
+  const item = (typeof VRH_ITEMS !== 'undefined') ? VRH_ITEMS.find(i => i.id === itemId) : null;
+  if (!item) return '';
+  const list = getSuppliersSorted();
+  const rows = list.map(s => {
+    const active = item.supplierId === s.id;
+    const name   = _supDisplayName(s) || '—';
+    const inactiveTag = s.status === 'inactive' ? ' <span style="opacity:.5">· неактивен</span>' : '';
+    return `<div class="adrop-item${active ? ' active' : ''}" onclick="setItemSupplier('${itemId}','${s.id}')">
+      <span style="flex:1">${_supEsc(name)}${inactiveTag}</span>
+    </div>`;
+  }).join('');
+  return rows +
+    `<div class="adrop-divider"></div>
+     <div class="adrop-item adrop-add" onclick="event.stopPropagation();closeAssigneeDrop();navigate('suppliers')">${iconSvg('plus',12)} Добавить в «Контрагенты»</div>
+     <div class="adrop-divider"></div>
+     <div class="adrop-item adrop-clear" onclick="setItemSupplier('${itemId}','')">— Не назначен —</div>`;
+}
+function openSupplierDrop(itemId, anchor) {
+  closeAssigneeDrop();
+  const rect = anchor.getBoundingClientRect();
+  const drop = document.createElement('div');
+  drop.id = 'assignee-drop';
+  drop.innerHTML = renderSupplierDrop(itemId);
+  document.body.appendChild(drop);
+  positionDrop(drop, rect);
+  setTimeout(() => document.addEventListener('click', closeAssigneeDrop, { once: true }), 0);
+}
+function setItemSupplier(itemId, supplierId) {
+  const item = VRH_ITEMS.find(i => i.id === itemId);
+  if (!item) return;
+  item.supplierId = supplierId || null;
+  if (!localEdits[itemId]) localEdits[itemId] = {};
+  localEdits[itemId].supplierId = supplierId || null;
+  saveEditsToStorage(itemId);
+  closeAssigneeDrop();
+  render();
+}
+window.getSupplierById   = getSupplierById;
+window.getSuppliersSorted = getSuppliersSorted;
+window.openSupplierDrop = openSupplierDrop;
+window.setItemSupplier  = setItemSupplier;
+
 // ── СПИСОК ПОСТАВЩИКОВ ────────────────────────────────────────────
 function renderSuppliersList(el) {
   el = el || document.getElementById('content');
   if (!el) return;
-  if (typeof setBreadcrumb === 'function') setBreadcrumb('Поставщики');
+  if (typeof setBreadcrumb === 'function') setBreadcrumb('Контрагенты');
 
   const list  = _supFiltered();
   const total = _suppliers.length;
@@ -200,7 +255,7 @@ function renderSuppliersList(el) {
   <div class="sup-page-wrap">
     <div class="sup-page-header">
       <div>
-        <div class="sup-page-title">Поставщики</div>
+        <div class="sup-page-title">Контрагенты</div>
         <div class="sup-page-subtitle">${list.length} из ${total} организаций</div>
       </div>
       <button class="btn-primary" onclick="openAddSupplierModal()">${iconSvg('plus', 14)} Добавить поставщика</button>
@@ -273,7 +328,7 @@ function renderSupplierDetail(el, supplierId) {
   const s = _suppliers.find(x => x.id === supplierId);
   if (!s) { if (typeof navigate === 'function') navigate('suppliers'); return; }
   if (_supLastId !== supplierId) { _supActiveTab = 'main'; _supLastId = supplierId; }
-  if (typeof setBreadcrumb === 'function') setBreadcrumb('Поставщики', s.short_name || s.full_name || '');
+  if (typeof setBreadcrumb === 'function') setBreadcrumb('Контрагенты', s.short_name || s.full_name || '');
 
   const isActive = s.status !== 'inactive';
   const tabsHtml = SUP_TABS.map(t => `
