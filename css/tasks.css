@@ -245,6 +245,16 @@
   white-space: nowrap;
 }
 
+.tk-priority-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .tk-status-chip-btn {
   cursor: pointer;
   user-select: none;

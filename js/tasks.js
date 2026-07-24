@@ -15,11 +15,12 @@ const TK_STATUSES = [
 ];
 
 const TK_PRIORITIES = [
-  { id: 'low',      label: 'Низкий',    dot: '#10B981' },
-  { id: 'medium',   label: 'Средний',   dot: '#F59E0B' },
-  { id: 'high',     label: 'Высокий',   dot: '#F97316' },
-  { id: 'critical', label: 'Критично',  dot: '#EF4444' },
+  { id: 'low',      label: 'Низкий',    dot: '#10B981', bg: 'rgba(16,185,129,0.10)' },
+  { id: 'medium',   label: 'Средний',   dot: '#F59E0B', bg: 'rgba(245,158,11,0.10)' },
+  { id: 'high',     label: 'Высокий',   dot: '#F97316', bg: 'rgba(249,115,22,0.10)' },
+  { id: 'critical', label: 'Критично',  dot: '#EF4444', bg: 'rgba(239,68,68,0.10)'  },
 ];
+const TK_PRIORITY_ORDER = { critical: 0, high: 1, medium: 2, low: 3 };
 
 // ──── Состояние ────────────────────────────────────────────────
 let _tkTasks       = [];
@@ -117,10 +118,12 @@ function _tkFiltered() {
     const q = search.trim().toLowerCase();
     list = list.filter(t => (t.title || '').toLowerCase().includes(q) || (t.description || '').toLowerCase().includes(q));
   }
-  // Сортировка: активные вверху, внутри — по дедлайну
-  const order = { in_progress: 0, pending: 1, paused: 2, done: 3, cancelled: 4 };
+  // Сортировка: по приоритету (критично -> низкий), затем статус, затем дедлайн
+  const statusOrder = { in_progress: 0, pending: 1, paused: 2, done: 3, cancelled: 4 };
   return list.sort((a, b) => {
-    const os = (order[a.status] ?? 9) - (order[b.status] ?? 9);
+    const ps = (TK_PRIORITY_ORDER[a.priority] ?? 2) - (TK_PRIORITY_ORDER[b.priority] ?? 2);
+    if (ps !== 0) return ps;
+    const os = (statusOrder[a.status] ?? 9) - (statusOrder[b.status] ?? 9);
     if (os !== 0) return os;
     if (a.deadline && b.deadline) return new Date(a.deadline) - new Date(b.deadline);
     if (a.deadline) return -1;
@@ -197,6 +200,7 @@ function renderTasksList(el) {
         </div>
       </div>
       <div class="tk-row-right">
+        <span class="tk-priority-chip" style="background:${pr.bg};color:${_tkEsc(pr.dot)}" title="Приоритет">${_tkEsc(pr.label)}</span>
         ${commentCnt ? `<span class="tk-row-meta">${iconSvg('chat',12)} ${commentCnt}</span>` : ''}
         <span class="tk-assignee-chip tk-assignee-chip-btn${task.assignee_name ? '' : ' tk-assignee-none'}" style="${task.assignee_name ? _tkAssigneeStyle(task.assignee_name) : ''}"
               onclick="event.stopPropagation();openTkAssigneePicker('${_tkEsc(task.id)}',this)">${task.assignee_name ? _tkEsc(task.assignee_name.split(' ')[0]) : '—'} ▾</span>
