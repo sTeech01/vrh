@@ -2771,6 +2771,8 @@ function positionDrop(drop, rect) {
   let top  = rect.bottom + 5;
   if (left + dw > window.innerWidth - 8)  left = window.innerWidth - dw - 8;
   if (top  + dh > window.innerHeight - 8) top  = rect.top - dh - 5;
+  if (top < 8)  top  = 8;
+  if (left < 8) left = 8;
   drop.style.left = left + 'px';
   drop.style.top  = top  + 'px';
 }

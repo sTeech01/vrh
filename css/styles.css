@@ -939,6 +939,8 @@ table.items-table { width: 100%; border-collapse: collapse; }
   box-shadow: 0 6px 20px rgba(0,0,0,0.13);
   z-index: 9999;
   min-width: 180px;
+  max-height: min(360px, calc(100vh - 24px));
+  overflow-y: auto;
   padding: 4px;
   font-family: Inter, sans-serif;
 }
