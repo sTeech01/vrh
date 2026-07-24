@@ -45,9 +45,9 @@ const ERP_MODULES = [
     icon: _platModIcon('<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><polyline points="3 6 4 7 6 5"/><polyline points="3 12 4 13 6 11"/><polyline points="3 18 4 19 6 17"/>'),
   },
   {
-    id: 'documents', label: 'Документы', subLabel: 'Документооборот',
-    active: false,
-    icon: _platModIcon('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>'),
+    id: 'nomenclature', label: 'Номенклатура', subLabel: 'Унификация названий материалов',
+    active: true, hash: 'nomenclature',
+    icon: _platModIcon('<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r="1.5"/>'),
   },
   {
     id: 'assignees', label: 'Исполнители', subLabel: 'Справочник сотрудников',
@@ -235,6 +235,17 @@ function updatePlatformSidebar(view) {
         Все исполнители
       </a>`;
   }
+  else if (view === 'nomenclature') {
+    html = `
+      ${_PLAT_BACK_BTN}
+      <div class="sidebar-section">Номенклатура</div>
+      <a class="nav-item" data-nav="nomenclature" href="#nomenclature">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+          <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r="1.5"/>
+        </svg>
+        Справочник
+      </a>`;
+  }
 
   nav.innerHTML = html;
 
@@ -257,12 +268,14 @@ function getPlatformContext(view) {
   const WAREHOUSE_VIEWS    = ['warehouse', 'warehouse-item'];
   const TASKS_VIEWS        = ['tasks', 'task-report'];
   const ASSIGNEES_VIEWS    = ['assignees'];
+  const NOMENCLATURE_VIEWS = ['nomenclature'];
   if (CRM_VIEWS.includes(view))          return 'crm';
   if (SUPPLIERS_VIEWS.includes(view))    return 'suppliers';
   if (ERP_PROJECTS_VIEWS.includes(view)) return 'erp-projects';
   if (WAREHOUSE_VIEWS.includes(view))    return 'warehouse';
   if (TASKS_VIEWS.includes(view))        return 'tasks';
   if (ASSIGNEES_VIEWS.includes(view))    return 'assignees';
+  if (NOMENCLATURE_VIEWS.includes(view)) return 'nomenclature';
   if (PRODUCTION_VIEWS.includes(view))   return 'production';
   return 'home';
 }

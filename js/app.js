@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #165';
+const APP_BUILD = 'DEPLOY #167';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -153,7 +153,8 @@ async function loadRemoteData() {
   const [ovRes, asRes, orRes, cpRes, wsRes, imRes, evRes, crmRes, crmHistRes,
          supRes, supContRes, supHistRes, supBankRes,
          whItemsRes, whCatsRes, whTxRes,
-         tkTasksRes, tkCommRes] = await Promise.all([
+         tkTasksRes, tkCommRes,
+         nomItemsRes, nomColsRes, nomValsRes] = await Promise.all([
     _sb.from('item_overrides').select('*'),
     _sb.from('custom_assignees').select('*').order('id'),
     _sb.from('item_order').select('*'),
@@ -172,6 +173,9 @@ async function loadRemoteData() {
     _sb.from('inventory_transactions').select('*').order('date', { ascending: false }),
     _sb.from('manager_tasks').select('*').order('created_at'),
     _sb.from('manager_task_comments').select('*').order('created_at'),
+    _sb.from('nomenclature_items').select('*').order('sort_order'),
+    _sb.from('nomenclature_columns').select('*').order('sort_order'),
+    _sb.from('nomenclature_values').select('*'),
   ]);
   if (ovRes.data) {
     localEdits = {};
@@ -278,6 +282,11 @@ async function loadRemoteData() {
   // Загрузка Задач - данные живут в js/tasks.js
   if (typeof loadTasksData === 'function') {
     loadTasksData(tkTasksRes.data, tkCommRes.data);
+  }
+
+  // Загрузка Номенклатуры - данные живут в js/nomenclature.js
+  if (typeof loadNomenclatureData === 'function') {
+    loadNomenclatureData(nomItemsRes.data, nomColsRes.data, nomValsRes.data);
   }
 }
 
@@ -404,7 +413,7 @@ function updateActiveNav() {
     el.classList.toggle('active', isActive);
   });
   // Кнопка «Ещё» — активна если текущий вид принадлежит этому меню
-  const moreViews = ['dashboard', 'problems', 'ai', 'events', 'suppliers', 'supplier', 'warehouse', 'warehouse-item', 'assignees', 'task-report'];
+  const moreViews = ['dashboard', 'problems', 'ai', 'events', 'suppliers', 'supplier', 'warehouse', 'warehouse-item', 'assignees', 'task-report', 'nomenclature'];
   const moreBtn = document.getElementById('mobile-more-btn');
   if (moreBtn) moreBtn.classList.toggle('active', moreViews.includes(state.view));
 }
@@ -533,6 +542,11 @@ function render() {
       renderAssigneesPage(content);
       setBreadcrumb('Исполнители');
       updatePlatformSidebar('assignees');
+      break;
+    case 'nomenclature':
+      renderNomenclaturePage(content);
+      setBreadcrumb('Номенклатура');
+      updatePlatformSidebar('nomenclature');
       break;
     default: navigate('home');
   }

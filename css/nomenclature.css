@@ -1,0 +1,186 @@
+/* ============================================================
+   VRH ERP — Модуль «Номенклатура» (унификация названий материалов)
+   Префикс: nom-*
+   ============================================================ */
+
+.nom-wrap {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 24px 80px;
+}
+
+.nom-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.nom-title { font-size: 22px; font-weight: 800; color: var(--gray-900); }
+.nom-sub   { font-size: 13px; color: var(--gray-400); margin-top: 2px; max-width: 520px; }
+
+.nom-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.nom-search {
+  height: 36px;
+  min-width: 260px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 0 12px;
+  font-size: 13px;
+  font-family: inherit;
+  background: #fff;
+  color: var(--gray-900);
+}
+.nom-search:focus {
+  outline: none;
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(14,165,233,.10);
+}
+
+.nom-table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  background: #fff;
+}
+
+.nom-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.nom-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--gray-50);
+  border-bottom: 1px solid var(--gray-200);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--gray-500);
+  text-align: left;
+  padding: 10px 12px;
+  white-space: nowrap;
+  z-index: 1;
+}
+
+.nom-name-head { min-width: 260px; }
+
+.nom-col-head-inner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nom-col-head-name {
+  cursor: pointer;
+  color: var(--gray-700);
+  text-transform: none;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--gray-100);
+}
+.nom-col-head-name:hover { background: var(--gray-200); }
+.nom-col-head-empty { color: var(--gray-400); font-weight: 500; }
+
+.nom-col-del-btn {
+  border: none;
+  background: none;
+  color: var(--gray-300);
+  cursor: pointer;
+  display: inline-flex;
+  padding: 2px;
+  border-radius: 4px;
+}
+.nom-col-del-btn:hover { color: #DC2626; background: var(--red-dim); }
+
+.nom-th-actions { width: 36px; }
+
+.nom-row td {
+  border-bottom: 1px solid var(--gray-100);
+  padding: 0;
+}
+.nom-row:last-child td { border-bottom: none; }
+.nom-row:hover { background: var(--gray-50); }
+
+.nom-name-cell, .nom-cell { min-width: 220px; }
+
+.nom-name-input, .nom-cell-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: var(--gray-900);
+  padding: 9px 12px;
+  outline: none;
+}
+.nom-name-input { font-weight: 600; }
+.nom-cell-input { color: var(--gray-600); }
+.nom-name-input:focus, .nom-cell-input:focus {
+  background: var(--cyan-dim);
+  box-shadow: inset 0 0 0 1px rgba(14,165,233,.35);
+}
+
+.nom-row-del {
+  width: 36px;
+  text-align: center;
+}
+.nom-row-del-btn {
+  border: none;
+  background: none;
+  color: var(--gray-300);
+  cursor: pointer;
+  display: inline-flex;
+  padding: 4px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity .12s;
+}
+.nom-row:hover .nom-row-del-btn { opacity: 1; }
+.nom-row-del-btn:hover { color: #DC2626; background: var(--red-dim); }
+
+.nom-empty-cell {
+  text-align: center;
+  color: var(--gray-400);
+  padding: 32px 12px;
+}
+
+.nom-add-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+.nom-add-input {
+  border: 1px solid var(--gray-200) !important;
+  border-radius: var(--radius);
+  background: #fff !important;
+  padding: 8px 12px !important;
+  max-width: 320px;
+}
+.nom-add-input:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(14,165,233,.10);
+}
+
+.nom-empty {
+  max-width: 460px;
+  margin: 60px auto;
+  text-align: center;
+  color: var(--gray-400);
+}
+.nom-empty-title { font-size: 16px; font-weight: 700; color: var(--gray-700); margin-top: 12px; }
+.nom-empty-sub   { font-size: 13px; margin-top: 6px; line-height: 1.5; }
