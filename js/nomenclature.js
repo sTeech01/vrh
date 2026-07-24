@@ -256,13 +256,15 @@ function renderNomenclaturePage(el) {
           <div class="nom-sub">Унификация названий материалов — варианты названий от специалистов по каждой позиции</div>
         </div>
         <div class="nom-topbar-actions">
-          <input type="text" class="nom-search" placeholder="Поиск по наименованию..." value="${_nomEsc(_nomSearch)}" oninput="setNomSearch(this.value)">
-          <button class="btn-secondary" onclick="addNomColumn()">${iconSvg('plus', 14)} Колонка</button>
+          <div class="nom-actions-row">
+            <input type="text" class="nom-search" placeholder="Поиск по наименованию..." value="${_nomEsc(_nomSearch)}" oninput="setNomSearch(this.value)">
+            <button class="btn-secondary" onclick="addNomColumn()">${iconSvg('plus', 14)} Колонка</button>
+          </div>
+          <div class="nom-actions-row">
+            <input type="text" id="nom-new-name" class="nom-name-input nom-add-input" placeholder="Новая позиция..." onkeydown="if(event.key==='Enter')confirmAddNomItem()">
+            <button class="btn-secondary" onclick="confirmAddNomItem()">${iconSvg('plus', 14)} Добавить позицию</button>
+          </div>
         </div>
-      </div>
-      <div class="nom-add-row">
-        <input type="text" id="nom-new-name" class="nom-name-input nom-add-input" placeholder="Новая позиция..." onkeydown="if(event.key==='Enter')confirmAddNomItem()">
-        <button class="btn-secondary" onclick="confirmAddNomItem()">${iconSvg('plus', 14)} Добавить позицию</button>
       </div>
       <div class="nom-table-scroll">
         <table class="nom-table">
