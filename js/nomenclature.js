@@ -260,6 +260,10 @@ function renderNomenclaturePage(el) {
           <button class="btn-secondary" onclick="addNomColumn()">${iconSvg('plus', 14)} Колонка</button>
         </div>
       </div>
+      <div class="nom-add-row">
+        <input type="text" id="nom-new-name" class="nom-name-input nom-add-input" placeholder="Новая позиция..." onkeydown="if(event.key==='Enter')confirmAddNomItem()">
+        <button class="btn-secondary" onclick="confirmAddNomItem()">${iconSvg('plus', 14)} Добавить позицию</button>
+      </div>
       <div class="nom-table-scroll">
         <table class="nom-table">
           <thead>
@@ -271,10 +275,6 @@ function renderNomenclaturePage(el) {
           </thead>
           <tbody>${rows || `<tr><td colspan="${_nomColumns.length + 2}" class="nom-empty-cell">Ничего не найдено</td></tr>`}</tbody>
         </table>
-      </div>
-      <div class="nom-add-row">
-        <input type="text" id="nom-new-name" class="nom-name-input nom-add-input" placeholder="Новая позиция..." onkeydown="if(event.key==='Enter')confirmAddNomItem()">
-        <button class="btn-secondary" onclick="confirmAddNomItem()">${iconSvg('plus', 14)} Добавить позицию</button>
       </div>
     </div>`;
 }
