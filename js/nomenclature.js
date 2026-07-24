@@ -18,6 +18,7 @@ let _nomItems   = [];   // [{id, name, sort_order}]
 let _nomColumns = [];   // [{id, assignee_name, sort_order}]
 let _nomValues  = {};   // { [itemId]: { [columnId]: value } }
 let _nomSearch  = '';
+let _nomSearchTimer = null;
 let _nomReady   = false; // false пока таблицы не созданы в Supabase
 
 // ── Загрузка данных ─────────────────────────────────────────────
@@ -80,8 +81,8 @@ function _nomRerender() {
   if (el) renderNomenclaturePage(el);
 }
 function setNomSearch(val) {
-  _nomSearch = val;
-  _nomRerender();
+  clearTimeout(_nomSearchTimer);
+  _nomSearchTimer = setTimeout(() => { _nomSearch = val; _nomRerender(); }, 250);
 }
 
 // ── CRUD: позиции ────────────────────────────────────────────────
@@ -91,7 +92,7 @@ function confirmAddNomItem() {
   const name = inp.value.trim();
   if (!name) return;
   const maxOrder = _nomItems.reduce((m, i) => Math.max(m, i.sort_order), -1);
-  const item = { id: `nom_c_${Date.now()}`, name, sort_order: maxOrder + 1 };
+  const item = { id: `nom_c_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, name, sort_order: maxOrder + 1 };
   _nomItems.push(item);
   if (_sb) {
     (async () => { try { await _sb.from('nomenclature_items').upsert(item); } catch (e) { console.error('nom add item:', e); } })();
@@ -120,7 +121,7 @@ function deleteNomItem(itemId) {
 // ── CRUD: колонки специалистов ────────────────────────────────────
 function addNomColumn() {
   const maxOrder = _nomColumns.reduce((m, c) => Math.max(m, c.sort_order), -1);
-  const col = { id: `nomcol_${Date.now()}`, assignee_name: null, sort_order: maxOrder + 1 };
+  const col = { id: `nomcol_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, assignee_name: null, sort_order: maxOrder + 1 };
   _nomColumns.push(col);
   if (_sb) {
     (async () => { try { await _sb.from('nomenclature_columns').upsert(col); } catch (e) { console.error('nom add column:', e); } })();
