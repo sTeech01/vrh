@@ -175,12 +175,14 @@
 }
 
 .nom-add-input {
+  height: 36px;
   border: 1px solid var(--gray-200) !important;
   border-radius: var(--radius);
   background: #fff !important;
-  padding: 8px 12px !important;
+  padding: 0 12px !important;
   max-width: 320px;
 }
+.nom-actions-row .btn-secondary { height: 36px; }
 .nom-add-input:focus {
   border-color: var(--cyan);
   box-shadow: 0 0 0 3px rgba(14,165,233,.10);

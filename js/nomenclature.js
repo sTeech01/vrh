@@ -214,10 +214,15 @@ function renderNomenclaturePage(el) {
 
   const colHeaders = _nomColumns.map(c => {
     const name = c.assignee_name || '';
+    let style = '';
+    if (name && typeof getAllAssignees === 'function' && typeof assigneeStyle === 'function') {
+      const aObj = getAllAssignees().find(a => a.name === name) || { colorIdx: 0 };
+      style = assigneeStyle(aObj);
+    }
     return `
     <th class="nom-col-head">
       <div class="nom-col-head-inner">
-        <span class="nom-col-head-name${name ? '' : ' nom-col-head-empty'}" onclick="openNomColumnPicker('${c.id}',this)">${name ? _nomEsc(name) : 'Выбрать исполнителя'}</span>
+        <span class="nom-col-head-name${name ? '' : ' nom-col-head-empty'}" style="${style}" onclick="openNomColumnPicker('${c.id}',this)">${name ? _nomEsc(name) : 'Выбрать исполнителя'}</span>
         <button class="nom-col-del-btn" title="Удалить колонку" onclick="event.stopPropagation();deleteNomColumn('${c.id}')">${iconSvg('x', 11)}</button>
       </div>
     </th>`;
