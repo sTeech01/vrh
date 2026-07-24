@@ -46,7 +46,9 @@
 }
 
 .nom-table-scroll {
-  overflow-x: auto;
+  overflow: auto;
+  height: calc(100vh - 300px);
+  min-height: 320px;
   border: 1px solid var(--gray-200);
   border-radius: var(--radius-lg);
   background: #fff;
@@ -54,6 +56,7 @@
 
 .nom-table {
   width: 100%;
+  min-width: max-content;
   border-collapse: collapse;
   font-size: 13px;
 }
@@ -71,10 +74,10 @@
   text-align: left;
   padding: 10px 12px;
   white-space: nowrap;
-  z-index: 1;
+  z-index: 2;
 }
 
-.nom-name-head { min-width: 260px; }
+.nom-name-head { min-width: 300px; }
 
 .nom-col-head-inner {
   display: flex;
@@ -115,7 +118,8 @@
 .nom-row:last-child td { border-bottom: none; }
 .nom-row:hover { background: var(--gray-50); }
 
-.nom-name-cell, .nom-cell { min-width: 220px; }
+.nom-name-cell { min-width: 300px; }
+.nom-cell { min-width: 220px; }
 
 .nom-name-input, .nom-cell-input {
   width: 100%;
@@ -126,12 +130,16 @@
   color: var(--gray-900);
   padding: 9px 12px;
   outline: none;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .nom-name-input { font-weight: 600; }
 .nom-cell-input { color: var(--gray-600); }
 .nom-name-input:focus, .nom-cell-input:focus {
   background: var(--cyan-dim);
   box-shadow: inset 0 0 0 1px rgba(14,165,233,.35);
+  text-overflow: clip;
 }
 
 .nom-row-del {

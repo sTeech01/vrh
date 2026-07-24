@@ -225,16 +225,19 @@ function renderNomenclaturePage(el) {
 
   const rows = filtered.map(item => {
     const vals = _nomValues[item.id] || {};
-    const cells = _nomColumns.map(c => `
+    const cells = _nomColumns.map(c => {
+      const val = vals[c.id] || '';
+      return `
       <td class="nom-cell">
-        <input type="text" class="nom-cell-input" value="${_nomEsc(vals[c.id] || '')}"
+        <input type="text" class="nom-cell-input" value="${_nomEsc(val)}" title="${_nomEsc(val)}"
                onblur="setNomValue('${item.id}','${c.id}',this.value)"
                onkeydown="if(event.key==='Enter')this.blur()">
-      </td>`).join('');
+      </td>`;
+    }).join('');
     return `
     <tr class="nom-row">
       <td class="nom-name-cell">
-        <input type="text" class="nom-name-input" value="${_nomEsc(item.name)}"
+        <input type="text" class="nom-name-input" value="${_nomEsc(item.name)}" title="${_nomEsc(item.name)}"
                onblur="renameNomItem('${item.id}',this.value)"
                onkeydown="if(event.key==='Enter')this.blur()">
       </td>
