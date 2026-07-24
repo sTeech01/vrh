@@ -927,6 +927,8 @@ table.items-table { width: 100%; border-collapse: collapse; }
 .assignee-mini svg { flex-shrink: 0; width: 9px !important; height: 9px !important; }
 .assignee-empty { background: var(--gray-100); color: var(--gray-400); font-weight: 400; }
 .assignee-empty:hover { background: var(--gray-200); color: var(--gray-600); }
+.assignee-empty-sm { font-size: 10px; padding: 1px 6px; line-height: 15px; }
+.assignee-empty-sm svg { width: 8px !important; height: 8px !important; }
 .supplier-mini { background: var(--gray-100); color: var(--gray-600); }
 .supplier-mini:hover { background: var(--gray-200); }
 

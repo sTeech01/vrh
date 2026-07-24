@@ -158,6 +158,16 @@ function getSuppliersSorted() {
   return [...(_suppliers || [])].sort((a, b) =>
     _supDisplayName(a).toLowerCase().localeCompare(_supDisplayName(b).toLowerCase(), 'ru'));
 }
+// Детерминированный цвет из палитры исполнителей — по id контрагента,
+// чтобы одна и та же организация всегда выглядела одинаково.
+function getSupplierColorStyle(s) {
+  if (!s || typeof ASSIGNEE_PALETTE === 'undefined') return '';
+  const key = String(s.id || s.short_name || s.full_name || '');
+  let h = 0;
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) & 0xffffffff;
+  const p = ASSIGNEE_PALETTE[Math.abs(h) % ASSIGNEE_PALETTE.length];
+  return `background:${p.bg};color:${p.color}`;
+}
 function renderSupplierDrop(itemId) {
   const item = (typeof VRH_ITEMS !== 'undefined') ? VRH_ITEMS.find(i => i.id === itemId) : null;
   if (!item) return '';
@@ -196,8 +206,9 @@ function setItemSupplier(itemId, supplierId) {
   closeAssigneeDrop();
   render();
 }
-window.getSupplierById   = getSupplierById;
-window.getSuppliersSorted = getSuppliersSorted;
+window.getSupplierById     = getSupplierById;
+window.getSuppliersSorted  = getSuppliersSorted;
+window.getSupplierColorStyle = getSupplierColorStyle;
 window.openSupplierDrop = openSupplierDrop;
 window.setItemSupplier  = setItemSupplier;
 

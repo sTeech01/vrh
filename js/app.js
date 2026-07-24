@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #160';
+const APP_BUILD = 'DEPLOY #165';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -1009,16 +1009,18 @@ function itemTableRow(item, projectId) {
     ? `<span class="pur-mini pur-mini-${purStatus}">${purMiniLabel(purStatus)}</span>`
     : '';
   const assigneeTag = (()=>{
-    if (!item.assignee) return `<span class="assignee-mini assignee-empty" onclick="event.stopPropagation();openAssigneeDrop('${item.id}',this)">${iconSvg('user', 9)} Назначить</span>`;
+    if (!item.assignee) return `<span class="assignee-mini assignee-empty assignee-empty-sm" onclick="event.stopPropagation();openAssigneeDrop('${item.id}',this)">${iconSvg('user', 9)} Назначить</span>`;
     const aObj = getAllAssignees().find(a => a.name === item.assignee) || { colorIdx: 0 };
     return `<span class="assignee-mini" style="${assigneeStyle(aObj)}" onclick="event.stopPropagation();openAssigneeDrop('${item.id}',this)">${iconSvg('user', 9)} ${item.assignee}</span>`;
   })();
   const supplierTag = (()=>{
-    const name = _itemSupplierName(item);
-    const esc  = typeof _supEsc === 'function' ? _supEsc : (v => v || '');
+    const sup   = typeof getSupplierById === 'function' ? getSupplierById(item.supplierId) : null;
+    const name  = _itemSupplierName(item);
+    const esc   = typeof _supEsc === 'function' ? _supEsc : (v => v || '');
+    const style = sup && typeof getSupplierColorStyle === 'function' ? getSupplierColorStyle(sup) : '';
     return name
-      ? `<span class="assignee-mini supplier-mini" onclick="event.stopPropagation();openSupplierDrop('${item.id}',this)">${iconSvg('cart', 9)} ${esc(name)}</span>`
-      : `<span class="assignee-mini assignee-empty" onclick="event.stopPropagation();openSupplierDrop('${item.id}',this)">${iconSvg('cart', 9)} Контрагент</span>`;
+      ? `<span class="assignee-mini supplier-mini" style="${style}" onclick="event.stopPropagation();openSupplierDrop('${item.id}',this)">${iconSvg('cart', 9)} ${esc(name)}</span>`
+      : `<span class="assignee-mini assignee-empty assignee-empty-sm" onclick="event.stopPropagation();openSupplierDrop('${item.id}',this)">${iconSvg('cart', 9)} Контрагент</span>`;
   })();
   const tagsLine    = (purTag || assigneeTag)
     ? `<div class="ig-name-tags">${purTag}${assigneeTag}${supplierTag}</div>`
