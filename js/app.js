@@ -4,7 +4,7 @@
 // Новая модель: Изделие → Компоненты → История
 // =============================================================
 
-const APP_BUILD = 'DEPLOY #173';
+const APP_BUILD = 'DEPLOY #174';
 
 // ── Supabase ────────────────────────────────────────────────────
 const _SB_URL = 'https://ypujmvfzboautqesvwib.supabase.co';
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function initApp() {
-  state.filter = { complex: 'all', status: 'all', search: '' };
+  state.filter = { complex: 'all', status: 'all', search: '', hideShipped: false };
   try { await loadRemoteData(); } catch(e) { console.error('loadRemoteData failed:', e); }
   applyEdits();
   setupNavigation();
@@ -854,6 +854,7 @@ function renderProject(el, projectId) {
     }
     if (searchTerm && !i.name.toLowerCase().includes(searchTerm) &&
         !i.nameShort.toLowerCase().includes(searchTerm)) return false;
+    if (state.filter.hideShipped && i.shipping_status === 'shipped') return false;
     return true;
   });
 
@@ -936,6 +937,10 @@ function renderProject(el, projectId) {
       <input type="text" class="filter-select" placeholder="Поиск..." value="${state.filter.search||''}"
         oninput="setFilter('search',this.value)" autocomplete="off" name="vrh-filter-q" id="filter-search-input"
         style="padding-right:10px;min-width:140px">
+      <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--gray-600);cursor:pointer;white-space:nowrap">
+        <input type="checkbox" ${state.filter.hideShipped ? 'checked' : ''} onchange="setFilter('hideShipped',this.checked)">
+        Скрыть отгруженные
+      </label>
       <span style="font-size:12px;color:var(--gray-400);margin-left:auto">${filtered.length} из ${items.length}</span>
       <button class="btn-primary" onclick="openCreateItemModal('${projectId}')" style="display:inline-flex;align-items:center;gap:6px;flex-shrink:0">
         ${iconSvg('plus', 12)} Добавить позицию
