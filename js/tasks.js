@@ -32,16 +32,20 @@ let _tkArchiveOpen = false;
 
 // ──── Загрузка данных ──────────────────────────────────────────
 // Разные варианты ФИО, введённые вручную в поле исполнителя задачи (свободный текст),
-// схлопываются к каноничному имени из справочника «Исполнители».
-const TK_ASSIGNEE_ALIASES = {
-  'Путилин А.А.': 'Путилин Антон Александрович',
-  'Зюков':        'Зюков Д.',
-  'Парамузов Олег Николаевич': 'Парамузов О.Н.',
-};
+// схлопываются к каноничному имени из справочника «Исполнители» — по точному совпадению,
+// а если его нет, по фамилии (первое слово), если она однозначно определяет сотрудника.
+function _tkResolveAssigneeName(raw) {
+  if (!raw) return raw;
+  const all = typeof getAllAssignees === 'function' ? getAllAssignees() : [];
+  if (all.some(a => a.name === raw)) return raw;
+  const surname = raw.trim().split(/\s+/)[0].replace(/\.$/, '');
+  const matches = all.filter(a => a.name.split(/\s+/)[0] === surname);
+  return matches.length === 1 ? matches[0].name : raw;
+}
 
 function _tkNormalizeAssignees() {
   _tkTasks.forEach(t => {
-    const canonical = TK_ASSIGNEE_ALIASES[t.assignee_name];
+    const canonical = _tkResolveAssigneeName(t.assignee_name);
     if (canonical && canonical !== t.assignee_name) {
       t.assignee_name = canonical;
       _tkSaveTask(t);
@@ -168,8 +172,11 @@ function renderTasksList(el) {
      </button>`
   ).join('');
 
-  // Фильтр по исполнителю
-  const assignees = [...new Set(all.map(t => t.assignee_name).filter(Boolean))];
+  // Фильтр по исполнителю — берём из справочника «Исполнители», а не из текста задач,
+  // плюс на всякий случай добавляем оставшиеся нестандартные имена (не должно быть после нормализации)
+  const directoryNames = typeof getAllAssignees === 'function' ? getAllAssignees().map(a => a.name) : [];
+  const strayNames = [...new Set(all.map(t => t.assignee_name).filter(Boolean))].filter(n => !directoryNames.includes(n));
+  const assignees = [...directoryNames, ...strayNames];
   const asnOpts = [
     `<option value="all" ${_tkFilter.assignee === 'all' ? 'selected' : ''}>Все исполнители</option>`,
     ...assignees.map(a => `<option value="${_tkEsc(a)}" ${_tkFilter.assignee === a ? 'selected' : ''}>${_tkEsc(a)}</option>`),
@@ -522,7 +529,11 @@ function _openTkTaskModal(task, parentId) {
   if (!overlay || !box) return;
 
   const allAssignees = typeof getAllAssignees === 'function' ? getAllAssignees() : [];
-  const asnDatalist = allAssignees.map(a => `<option value="${_tkEsc(a.name)}">`).join('');
+  const curAssignee = task?.assignee_name || '';
+  const curInDirectory = allAssignees.some(a => a.name === curAssignee);
+  const asnOptsHtml = `<option value="">— Не назначен —</option>` +
+    (curAssignee && !curInDirectory ? `<option value="${_tkEsc(curAssignee)}" selected>${_tkEsc(curAssignee)} (нет в справочнике)</option>` : '') +
+    allAssignees.map(a => `<option value="${_tkEsc(a.name)}" ${curAssignee === a.name ? 'selected' : ''}>${_tkEsc(a.name)}</option>`).join('');
 
   const prOpts = TK_PRIORITIES.map(p =>
     `<option value="${p.id}" ${(task?.priority || 'medium') === p.id ? 'selected' : ''}>${p.label}</option>`
@@ -554,9 +565,7 @@ function _openTkTaskModal(task, parentId) {
     <div class="wh-grid2">
       <div>
         <label class="mn-label">Исполнитель</label>
-        <input class="mn-input" id="tk-inp-asn" type="text" list="tk-asn-list"
-               value="${_tkEsc(task?.assignee_name || '')}" placeholder="Введите имя...">
-        <datalist id="tk-asn-list">${asnDatalist}</datalist>
+        <select class="mn-input" id="tk-inp-asn">${asnOptsHtml}</select>
       </div>
       <div>
         <label class="mn-label">Приоритет</label>
